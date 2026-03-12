@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+/* ─── Light Mode Design Tokens ──────────────────────── */
+:root {
+  --color-academic-navy: #2A4365;
+  --color-action-blue: #3182CE;
+  --color-ai-light: #EBF8FF;
+  --color-ai-lavender: #E9D8FD;
+  --color-app-bg: #F7FAFC;
+  --color-card-bg: #FFFFFF;
+  --color-text-primary: #1A202C;
+  --color-text-secondary: #718096;
+  --color-border: #E2E8F0;
+  --color-danger: #E53E3E;
+  --color-warning: #DD6B20;
+  --color-success: #38A169;
+  --color-teal: #319795;
+  --color-purple: #805AD5;
+  --color-orange: #ED8936;
+}
+
+/* ─── Dark Mode Design Tokens (applied via .dark class by next-themes) ── */
+.dark {
+  --color-academic-navy: #1A365D;
+  --color-action-blue: #63B3ED;
+  --color-ai-light: #1A202C;
+  --color-ai-lavender: #2D2640;
+  --color-app-bg: #0F1117;
+  --color-card-bg: #1A1D2E;
+  --color-text-primary: #E2E8F0;
+  --color-text-secondary: #A0AEC0;
+  --color-border: #2D3748;
+  --color-danger: #FC8181;
+  --color-warning: #F6AD55;
+  --color-success: #68D391;
+  --color-teal: #4FD1C5;
+  --color-purple: #B794F4;
+  --color-orange: #FBD38D;
+}
+
+/* ─── Tailwind v4: register tokens so utility classes work ─── */
+@theme inline {
+  --color-academic-navy: var(--color-academic-navy);
+  --color-action-blue: var(--color-action-blue);
+  --color-ai-light: var(--color-ai-light);
+  --color-ai-lavender: var(--color-ai-lavender);
+  --color-app-bg: var(--color-app-bg);
+  --color-card-bg: var(--color-card-bg);
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-border: var(--color-border);
+  --color-danger: var(--color-danger);
+  --color-warning: var(--color-warning);
+  --color-success: var(--color-success);
+  --color-teal: var(--color-teal);
+  --color-purple: var(--color-purple);
+  --color-orange: var(--color-orange);
+  --font-sans: var(--font-inter);
+}
+
+/* ─── Base styles ──────────────────────────── */
+body {
+  background: var(--color-app-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Mobile: fixed off-screen drawer */
+.sidebar-responsive {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 16rem;
+  height: 100%;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 200ms ease;
+}
+
+.sidebar-responsive.sidebar-open {
+  transform: translateX(0);
+}
+
+/* Desktop: static element in flex row */
+@media (min-width: 1024px) {
+  .sidebar-responsive {
+    position: static;
+    width: 16rem;
+    height: 100vh;
+    z-index: auto;
+    transform: none;
+    transition: none;
+    flex-shrink: 0;
+  }
+}
+
+input, select, textarea {
+  color-scheme: light;
+}
+
+.dark input, .dark select, .dark textarea {
+  color-scheme: dark;
+}
