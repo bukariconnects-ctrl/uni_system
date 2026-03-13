@@ -13,10 +13,12 @@ import {
   CalendarClock,
   Trash2,
   Pencil,
-  CheckCircle,
-  AlertTriangle,
   Send,
   FileEdit,
+  AlertTriangle,
+  MapPin,
+  User,
+  Clock,
 } from "lucide-react";
 
 interface ScheduleRow {
@@ -55,37 +57,46 @@ interface VenueOption {
   capacity: number;
 }
 
+type ModalState =
+  | { type: "add"; day: string; startTime: string }
+  | { type: "edit"; schedule: ScheduleRow }
+  | null;
+
 const DAYS = [
-  { value: "sunday", label: "الأحد" },
-  { value: "monday", label: "الإثنين" },
-  { value: "tuesday", label: "الثلاثاء" },
-  { value: "wednesday", label: "الأربعاء" },
-  { value: "thursday", label: "الخميس" },
-  { value: "friday", label: "الجمعة" },
-  { value: "saturday", label: "السبت" },
+  { value: "sunday", label: "الأحد", short: "أحد" },
+  { value: "monday", label: "الإثنين", short: "إثن" },
+  { value: "tuesday", label: "الثلاثاء", short: "ثلا" },
+  { value: "wednesday", label: "الأربعاء", short: "أرب" },
+  { value: "thursday", label: "الخميس", short: "خمي" },
 ];
 
-const DAY_LABEL: Record<string, string> = {
-  sunday: "الأحد",
-  monday: "الإثنين",
-  tuesday: "الثلاثاء",
-  wednesday: "الأربعاء",
-  thursday: "الخميس",
-  friday: "الجمعة",
-  saturday: "السبت",
+const TIME_SLOTS = [
+  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
+  "11:00", "11:30", "12:00", "12:30", "13:00", "13:30",
+  "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
+  "17:00", "17:30", "18:00",
+];
+
+const DAY_COLORS: Record<string, { bg: string; border: string; text: string }> = {
+  sunday: { bg: "bg-action-blue/20", border: "border-action-blue/40", text: "text-action-blue" },
+  monday: { bg: "bg-success/20", border: "border-success/40", text: "text-success" },
+  tuesday: { bg: "bg-purple/20", border: "border-purple/40", text: "text-purple" },
+  wednesday: { bg: "bg-warning/20", border: "border-warning/40", text: "text-warning" },
+  thursday: { bg: "bg-teal/20", border: "border-teal/40", text: "text-teal" },
 };
 
-const DAY_COLORS: Record<string, string> = {
-  sunday: "bg-action-blue/10 border-action-blue/20",
-  monday: "bg-success/10 border-success/20",
-  tuesday: "bg-purple/10 border-purple/20",
-  wednesday: "bg-warning/10 border-warning/20",
-  thursday: "bg-danger/10 border-danger/20",
-  friday: "bg-teal/10 border-teal/20",
-  saturday: "bg-text-secondary/10 border-text-secondary/20",
-};
+function timeToSlotIndex(time: string): number {
+  const idx = TIME_SLOTS.indexOf(time.slice(0, 5));
+  return idx >= 0 ? idx : 0;
+}
 
-function isConflictError(msg: string) {
+function getSlotSpan(startTime: string, endTime: string): number {
+  const startIdx = timeToSlotIndex(startTime);
+  const endIdx = timeToSlotIndex(endTime);
+  return Math.max(1, endIdx - startIdx);
+}
+
+function isConflictError(msg: string): boolean {
   return msg.includes("تعارض مكاني") || msg.includes("تعارض المحاضر") || msg.includes("تعارض طلابي");
 }
 
@@ -98,233 +109,561 @@ export function SchedulesClient({
   sections: SectionOption[];
   venues: VenueOption[];
 }) {
-  const [showForm, setShowForm] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
+  const [modal, setModal] = useState<ModalState>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [filterDay, setFilterDay] = useState<string>("all");
 
-  async function handleAction(action: () => Promise<void>) {
+  const closeModal = () => {
+    setModal(null);
+    setError("");
+  };
+
+  async function run(action: () => Promise<void>) {
     setLoading(true);
     setError("");
     try {
       await action();
-      setShowForm(false);
-      setEditId(null);
+      closeModal();
       window.location.reload();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      setError(e instanceof Error ? e.message : "حدث خطأ غير متوقع");
     } finally {
       setLoading(false);
     }
   }
 
-  const filtered = filterDay === "all"
-    ? initialSchedules
-    : initialSchedules.filter((s) => s.day_of_week === filterDay);
+  const schedulesByDayAndTime: Record<string, Record<string, ScheduleRow[]>> = {};
+  DAYS.forEach((d) => {
+    schedulesByDayAndTime[d.value] = {};
+    TIME_SLOTS.forEach((t) => {
+      schedulesByDayAndTime[d.value][t] = [];
+    });
+  });
 
-  const grouped = DAYS.reduce<Record<string, ScheduleRow[]>>((acc, day) => {
-    acc[day.value] = filtered.filter((s) => s.day_of_week === day.value);
-    return acc;
-  }, {});
+  initialSchedules.forEach((schedule) => {
+    const day = schedule.day_of_week;
+    const startSlot = schedule.start_time?.slice(0, 5);
+    if (schedulesByDayAndTime[day] && schedulesByDayAndTime[day][startSlot]) {
+      schedulesByDayAndTime[day][startSlot].push(schedule);
+    }
+  });
+
+  const occupiedSlots: Set<string> = new Set();
+  initialSchedules.forEach((schedule) => {
+    const day = schedule.day_of_week;
+    const startIdx = timeToSlotIndex(schedule.start_time);
+    const span = getSlotSpan(schedule.start_time, schedule.end_time);
+    for (let i = 0; i < span; i++) {
+      if (TIME_SLOTS[startIdx + i]) {
+        occupiedSlots.add(`${day}-${TIME_SLOTS[startIdx + i]}`);
+      }
+    }
+  });
+
+  const totalLectures = initialSchedules.length;
+  const publishedLectures = initialSchedules.filter((s) => s.status === "published").length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {error && (
         <div className={`rounded-xl px-4 py-3 text-sm ${isConflictError(error) ? "bg-warning/10 border border-warning/30 text-warning" : "bg-danger/10 text-danger"}`}>
           <div className="flex items-center gap-2">
-            {isConflictError(error) ? <AlertTriangle className="h-5 w-5 flex-shrink-0" /> : null}
+            <AlertTriangle className="h-5 w-5 flex-shrink-0" />
             <span className="font-medium">{error}</span>
           </div>
         </div>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-1">
-          <button
-            onClick={() => setFilterDay("all")}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${filterDay === "all" ? "bg-academic-navy text-white" : "bg-app-bg text-text-secondary hover:text-text-primary"}`}
-          >
-            الكل
-          </button>
-          {DAYS.map((d) => (
-            <button
-              key={d.value}
-              onClick={() => setFilterDay(d.value)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${filterDay === d.value ? "bg-academic-navy text-white" : "bg-app-bg text-text-secondary hover:text-text-primary"}`}
-            >
-              {d.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 rounded-xl bg-action-blue/10 px-3 py-2 text-action-blue">
+            <CalendarClock className="h-4 w-4" />
+            <span className="text-base font-bold">{totalLectures}</span>
+            <span className="text-xs font-medium">محاضرة</span>
+          </div>
+          <div className="flex items-center gap-2 rounded-xl bg-success/10 px-3 py-2 text-success">
+            <Send className="h-4 w-4" />
+            <span className="text-base font-bold">{publishedLectures}</span>
+            <span className="text-xs font-medium">منشورة</span>
+          </div>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 rounded-lg bg-action-blue px-4 py-2.5 text-sm font-medium text-white hover:bg-action-blue/90">
+        <button
+          onClick={() => setModal({ type: "add", day: "sunday", startTime: "08:00" })}
+          className="flex items-center gap-2 rounded-xl bg-action-blue px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-action-blue/90"
+        >
           <Plus className="h-4 w-4" />
-          محاضرة جديدة
+          إضافة محاضرة
         </button>
       </div>
 
-      {showForm && (
-        <div className="rounded-2xl border border-border bg-card-bg p-5 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-bold text-text-primary">إضافة محاضرة للجدول</h3>
-            <button onClick={() => setShowForm(false)} className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg"><X className="h-5 w-5" /></button>
-          </div>
-          <form action={(fd) => handleAction(() => createSchedule(fd))} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-text-primary">الشعبة</label>
-              <select name="section_id" required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
-                <option value="">-- اختر --</option>
-                {sections.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.courses?.code} ({s.section_code}) — {s.profiles ? `${s.profiles.first_name} ${s.profiles.last_name}` : "بدون محاضر"} — {s.semesters?.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-text-primary">القاعة</label>
-              <select name="venue_id" className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
-                <option value="">-- بدون قاعة --</option>
-                {venues.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.name} {v.code ? `(${v.code})` : ""} — سعة {v.capacity}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-text-primary">اليوم</label>
-              <select name="day_of_week" required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
-                {DAYS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-text-primary">وقت البداية</label>
-              <input type="time" name="start_time" required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue" dir="ltr" />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-text-primary">وقت النهاية</label>
-              <input type="time" name="end_time" required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue" dir="ltr" />
-            </div>
-            <div className="flex items-end">
-              <button type="submit" disabled={loading} className="w-full rounded-lg bg-action-blue px-4 py-2 text-sm font-medium text-white hover:bg-action-blue/90 disabled:opacity-50">
-                {loading ? "جاري الإضافة..." : "إضافة للجدول"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {filtered.length === 0 && !showForm && (
-        <div className="rounded-2xl border border-dashed border-border bg-card-bg p-12 text-center">
-          <CalendarClock className="mx-auto mb-3 h-10 w-10 text-text-secondary" />
-          <p className="text-sm text-text-secondary">لا توجد محاضرات مجدولة {filterDay !== "all" ? `يوم ${DAY_LABEL[filterDay]}` : ""}</p>
-        </div>
-      )}
-
-      <div className="space-y-4">
-        {DAYS.map((day) => {
-          const daySchedules = grouped[day.value];
-          if (!daySchedules || daySchedules.length === 0) return null;
-          return (
-            <div key={day.value}>
-              <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-text-primary">
-                <span className={`inline-block h-3 w-3 rounded-full ${DAY_COLORS[day.value]?.split(" ")[0]}`} />
-                {day.label}
-                <span className="text-xs font-normal text-text-secondary">({daySchedules.length} محاضرات)</span>
-              </h3>
-              <div className="space-y-2">
-                {daySchedules.map((schedule) => (
-                  <div key={schedule.id} className={`rounded-2xl border p-4 shadow-sm ${DAY_COLORS[schedule.day_of_week] || "bg-card-bg border-border"}`}>
-                    {editId === schedule.id ? (
-                      <div>
-                        <div className="mb-3 flex items-center justify-between">
-                          <h4 className="font-bold text-text-primary">تعديل الموعد</h4>
-                          <button onClick={() => setEditId(null)} className="rounded-lg p-1 text-text-secondary hover:bg-card-bg"><X className="h-4 w-4" /></button>
-                        </div>
-                        <form action={(fd) => handleAction(() => updateSchedule(schedule.id, fd))} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                          <div>
-                            <label className="mb-1 block text-xs font-medium text-text-primary">القاعة</label>
-                            <select name="venue_id" defaultValue={schedule.venue_id || ""} className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
-                              <option value="">-- بدون --</option>
-                              {venues.map((v) => <option key={v.id} value={v.id}>{v.name} {v.code ? `(${v.code})` : ""}</option>)}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="mb-1 block text-xs font-medium text-text-primary">اليوم</label>
-                            <select name="day_of_week" defaultValue={schedule.day_of_week} className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
-                              {DAYS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="mb-1 block text-xs font-medium text-text-primary">البداية</label>
-                            <input type="time" name="start_time" defaultValue={schedule.start_time} required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue" dir="ltr" />
-                          </div>
-                          <div>
-                            <label className="mb-1 block text-xs font-medium text-text-primary">النهاية</label>
-                            <input type="time" name="end_time" defaultValue={schedule.end_time} required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue" dir="ltr" />
-                          </div>
-                          <div className="flex gap-2 sm:col-span-2 lg:col-span-4">
-                            <button type="submit" disabled={loading} className="rounded-lg bg-action-blue px-4 py-2 text-sm font-medium text-white hover:bg-action-blue/90 disabled:opacity-50">
-                              {loading ? "جاري التحديث..." : "تحديث"}
-                            </button>
-                            <button type="button" onClick={() => setEditId(null)} className="rounded-lg border border-border px-3 py-2 text-sm text-text-secondary hover:bg-card-bg">إلغاء</button>
-                          </div>
-                        </form>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="text-center">
-                            <p className="text-lg font-bold text-text-primary" dir="ltr">{schedule.start_time?.slice(0, 5)}</p>
-                            <p className="text-xs text-text-secondary" dir="ltr">{schedule.end_time?.slice(0, 5)}</p>
-                          </div>
-                          <div className="h-10 w-px bg-border" />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-text-primary">
-                                {schedule.sections?.courses?.code} ({schedule.sections?.section_code})
-                              </span>
-                              <span className={`rounded-full px-2 py-0.5 text-xs ${schedule.status === "published" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}>
-                                {schedule.status === "published" ? "منشور" : "مسودة"}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-text-secondary">
-                              <span>{schedule.sections?.courses?.name}</span>
-                              {schedule.sections?.profiles && (
-                                <span>— {schedule.sections.profiles.first_name} {schedule.sections.profiles.last_name}</span>
-                              )}
-                              {schedule.venues && (
-                                <span>— {schedule.venues.name} {schedule.venues.code ? `(${schedule.venues.code})` : ""}</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => setEditId(schedule.id)} className="rounded-lg p-1.5 text-text-secondary hover:bg-card-bg" title="تعديل"><Pencil className="h-4 w-4" /></button>
-                          {schedule.status === "draft" && (
-                            <button onClick={() => handleAction(() => updateScheduleStatus(schedule.id, "published"))} className="rounded-lg p-1.5 text-text-secondary hover:bg-success/10 hover:text-success" title="نشر"><Send className="h-4 w-4" /></button>
-                          )}
-                          {schedule.status === "published" && (
-                            <button onClick={() => handleAction(() => updateScheduleStatus(schedule.id, "draft"))} className="rounded-lg p-1.5 text-text-secondary hover:bg-warning/10 hover:text-warning" title="تحويل لمسودة"><FileEdit className="h-4 w-4" /></button>
-                          )}
-                          <button
-                            onClick={() => { if (confirm("حذف هذه المحاضرة من الجدول؟")) handleAction(() => deleteSchedule(schedule.id)); }}
-                            className="rounded-lg p-1.5 text-text-secondary hover:bg-danger/10 hover:text-danger"
-                            title="حذف"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+      <div className="overflow-x-auto rounded-2xl border border-border bg-card-bg shadow-sm">
+        <div className="min-w-[900px]">
+          <div className="grid grid-cols-[80px_repeat(5,1fr)] border-b border-border bg-app-bg">
+            <div className="p-3 text-center text-xs font-semibold text-text-secondary">الوقت</div>
+            {DAYS.map((day) => (
+              <div key={day.value} className="border-r border-border p-3 text-center">
+                <p className="text-sm font-bold text-text-primary">{day.label}</p>
               </div>
+            ))}
+          </div>
+
+          <div className="relative">
+            {TIME_SLOTS.map((time, timeIdx) => (
+              <div key={time} className="grid grid-cols-[80px_repeat(5,1fr)] border-b border-border last:border-b-0">
+                <div className="flex items-center justify-center border-l border-border bg-app-bg/50 p-2 text-xs font-medium text-text-secondary" dir="ltr">
+                  {time}
+                </div>
+                {DAYS.map((day) => {
+                  const cellKey = `${day.value}-${time}`;
+                  const schedulesInSlot = schedulesByDayAndTime[day.value][time] || [];
+                  const isOccupied = occupiedSlots.has(cellKey) && schedulesInSlot.length === 0;
+
+                  if (isOccupied) {
+                    return <div key={cellKey} className="border-r border-border" />;
+                  }
+
+                  return (
+                    <div
+                      key={cellKey}
+                      className="relative min-h-[50px] border-r border-border transition-colors hover:bg-action-blue/5 cursor-pointer"
+                      onClick={() => {
+                        if (schedulesInSlot.length === 0) {
+                          setModal({ type: "add", day: day.value, startTime: time });
+                        }
+                      }}
+                    >
+                      {schedulesInSlot.map((schedule) => {
+                        const span = getSlotSpan(schedule.start_time, schedule.end_time);
+                        const colors = DAY_COLORS[day.value] || DAY_COLORS.sunday;
+
+                        return (
+                          <div
+                            key={schedule.id}
+                            className={`absolute inset-x-1 top-1 z-10 overflow-hidden rounded-lg border ${colors.bg} ${colors.border} p-2 shadow-sm`}
+                            style={{ height: `calc(${span * 50}px - 8px)` }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setModal({ type: "edit", schedule });
+                            }}
+                          >
+                            <div className="flex h-full flex-col">
+                              <div className="flex items-start justify-between gap-1">
+                                <p className={`text-xs font-bold ${colors.text}`}>
+                                  {schedule.sections?.courses?.code}
+                                </p>
+                                <span className={`rounded px-1 py-0.5 text-[10px] font-medium ${
+                                  schedule.status === "published" ? "bg-success/20 text-success" : "bg-warning/20 text-warning"
+                                }`}>
+                                  {schedule.status === "published" ? "منشور" : "مسودة"}
+                                </span>
+                              </div>
+                              <p className="mt-0.5 text-[10px] text-text-secondary line-clamp-1">
+                                {schedule.sections?.courses?.name}
+                              </p>
+                              {span >= 2 && (
+                                <>
+                                  <div className="mt-auto space-y-0.5 text-[10px] text-text-secondary">
+                                    {schedule.sections?.profiles && (
+                                      <p className="flex items-center gap-1">
+                                        <User className="h-2.5 w-2.5" />
+                                        {schedule.sections.profiles.first_name} {schedule.sections.profiles.last_name}
+                                      </p>
+                                    )}
+                                    {schedule.venues && (
+                                      <p className="flex items-center gap-1">
+                                        <MapPin className="h-2.5 w-2.5" />
+                                        {schedule.venues.code || schedule.venues.name}
+                                      </p>
+                                    )}
+                                    <p className="flex items-center gap-1" dir="ltr">
+                                      <Clock className="h-2.5 w-2.5" />
+                                      {schedule.start_time?.slice(0, 5)} - {schedule.end_time?.slice(0, 5)}
+                                    </p>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4 text-xs text-text-secondary">
+        <span className="font-medium">دليل الألوان:</span>
+        {DAYS.map((day) => {
+          const colors = DAY_COLORS[day.value];
+          return (
+            <div key={day.value} className="flex items-center gap-1.5">
+              <span className={`h-3 w-3 rounded ${colors.bg} ${colors.border} border`} />
+              <span>{day.label}</span>
             </div>
           );
         })}
       </div>
+
+      {modal?.type === "add" && (
+        <AddLectureModal
+          defaultDay={modal.day}
+          defaultStartTime={modal.startTime}
+          sections={sections}
+          venues={venues}
+          loading={loading}
+          error={error}
+          onClose={closeModal}
+          onSubmit={(fd) => run(() => createSchedule(fd))}
+        />
+      )}
+
+      {modal?.type === "edit" && (
+        <EditLectureModal
+          schedule={modal.schedule}
+          venues={venues}
+          loading={loading}
+          error={error}
+          onClose={closeModal}
+          onUpdate={(fd) => run(() => updateSchedule(modal.schedule.id, fd))}
+          onDelete={() => {
+            if (confirm("حذف هذه المحاضرة من الجدول؟")) {
+              run(() => deleteSchedule(modal.schedule.id));
+            }
+          }}
+          onPublish={() => run(() => updateScheduleStatus(modal.schedule.id, "published"))}
+          onUnpublish={() => run(() => updateScheduleStatus(modal.schedule.id, "draft"))}
+        />
+      )}
     </div>
+  );
+}
+
+function Modal({
+  title,
+  subtitle,
+  onClose,
+  error,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  onClose: () => void;
+  error: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="w-full max-w-lg rounded-2xl bg-card-bg shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <div>
+            <h2 className="text-lg font-bold text-text-primary">{title}</h2>
+            {subtitle && <p className="text-xs text-text-secondary">{subtitle}</p>}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-app-bg"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        {error && (
+          <div className={`mx-6 mt-4 rounded-lg px-4 py-3 text-sm ${isConflictError(error) ? "bg-warning/10 border border-warning/30 text-warning" : "bg-danger/10 text-danger"}`}>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          </div>
+        )}
+        <div className="p-6">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+const DAYS_FULL = [
+  { value: "sunday", label: "الأحد" },
+  { value: "monday", label: "الإثنين" },
+  { value: "tuesday", label: "الثلاثاء" },
+  { value: "wednesday", label: "الأربعاء" },
+  { value: "thursday", label: "الخميس" },
+  { value: "friday", label: "الجمعة" },
+  { value: "saturday", label: "السبت" },
+];
+
+function AddLectureModal({
+  defaultDay,
+  defaultStartTime,
+  sections,
+  venues,
+  loading,
+  error,
+  onClose,
+  onSubmit,
+}: {
+  defaultDay: string;
+  defaultStartTime: string;
+  sections: SectionOption[];
+  venues: VenueOption[];
+  loading: boolean;
+  error: string;
+  onClose: () => void;
+  onSubmit: (fd: FormData) => void;
+}) {
+  const [startTime, setStartTime] = useState(defaultStartTime);
+
+  const suggestedEndTime = () => {
+    const idx = TIME_SLOTS.indexOf(startTime);
+    if (idx >= 0 && idx + 2 < TIME_SLOTS.length) {
+      return TIME_SLOTS[idx + 2];
+    }
+    return TIME_SLOTS[TIME_SLOTS.length - 1];
+  };
+
+  return (
+    <Modal title="إضافة محاضرة للجدول" onClose={onClose} error={error}>
+      <form action={onSubmit} className="space-y-4">
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-text-primary">الشعبة</label>
+          <select
+            name="section_id"
+            required
+            className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
+          >
+            <option value="">— اختر الشعبة —</option>
+            {sections.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.courses?.code} ({s.section_code}) — {s.profiles ? `${s.profiles.first_name} ${s.profiles.last_name}` : "بدون محاضر"} — {s.semesters?.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-text-primary">القاعة</label>
+          <select
+            name="venue_id"
+            className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
+          >
+            <option value="">— بدون قاعة —</option>
+            {venues.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name} {v.code ? `(${v.code})` : ""} — سعة {v.capacity}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-text-primary">اليوم</label>
+          <select
+            name="day_of_week"
+            required
+            defaultValue={defaultDay}
+            className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
+          >
+            {DAYS_FULL.map((d) => (
+              <option key={d.value} value={d.value}>{d.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-text-primary">وقت البداية</label>
+            <input
+              type="time"
+              name="start_time"
+              required
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
+              dir="ltr"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-text-primary">وقت النهاية</label>
+            <input
+              type="time"
+              name="end_time"
+              required
+              defaultValue={suggestedEndTime()}
+              className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
+              dir="ltr"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-xl bg-action-blue py-2.5 text-sm font-semibold text-white transition-colors hover:bg-action-blue/90 disabled:opacity-50"
+        >
+          {loading ? "جاري الإضافة..." : "إضافة للجدول"}
+        </button>
+      </form>
+    </Modal>
+  );
+}
+
+function EditLectureModal({
+  schedule,
+  venues,
+  loading,
+  error,
+  onClose,
+  onUpdate,
+  onDelete,
+  onPublish,
+  onUnpublish,
+}: {
+  schedule: ScheduleRow;
+  venues: VenueOption[];
+  loading: boolean;
+  error: string;
+  onClose: () => void;
+  onUpdate: (fd: FormData) => void;
+  onDelete: () => void;
+  onPublish: () => void;
+  onUnpublish: () => void;
+}) {
+  return (
+    <Modal
+      title={`${schedule.sections?.courses?.code} (${schedule.sections?.section_code})`}
+      subtitle={schedule.sections?.courses?.name}
+      onClose={onClose}
+      error={error}
+    >
+      <div className="space-y-4">
+        <div className="rounded-xl bg-app-bg p-4">
+          <div className="grid gap-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-text-secondary">المحاضر:</span>
+              <span className="font-medium text-text-primary">
+                {schedule.sections?.profiles
+                  ? `${schedule.sections.profiles.first_name} ${schedule.sections.profiles.last_name}`
+                  : "غير معيّن"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-text-secondary">الفصل:</span>
+              <span className="font-medium text-text-primary">{schedule.sections?.semesters?.name || "—"}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-text-secondary">الحالة:</span>
+              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                schedule.status === "published" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+              }`}>
+                {schedule.status === "published" ? "منشور" : "مسودة"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <form action={onUpdate} className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-text-primary">القاعة</label>
+            <select
+              name="venue_id"
+              defaultValue={schedule.venue_id || ""}
+              className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
+            >
+              <option value="">— بدون قاعة —</option>
+              {venues.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name} {v.code ? `(${v.code})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-text-primary">اليوم</label>
+            <select
+              name="day_of_week"
+              defaultValue={schedule.day_of_week}
+              className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
+            >
+              {DAYS_FULL.map((d) => (
+                <option key={d.value} value={d.value}>{d.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-text-primary">وقت البداية</label>
+              <input
+                type="time"
+                name="start_time"
+                required
+                defaultValue={schedule.start_time?.slice(0, 5)}
+                className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
+                dir="ltr"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-text-primary">وقت النهاية</label>
+              <input
+                type="time"
+                name="end_time"
+                required
+                defaultValue={schedule.end_time?.slice(0, 5)}
+                className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
+                dir="ltr"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-xl bg-action-blue py-2.5 text-sm font-semibold text-white transition-colors hover:bg-action-blue/90 disabled:opacity-50"
+          >
+            {loading ? "جاري التحديث..." : "تحديث الموعد"}
+          </button>
+        </form>
+
+        <div className="flex gap-2 border-t border-border pt-4">
+          {schedule.status === "draft" && (
+            <button
+              onClick={onPublish}
+              disabled={loading}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-success/10 py-2.5 text-sm font-medium text-success transition-colors hover:bg-success/20 disabled:opacity-50"
+            >
+              <Send className="h-4 w-4" />
+              نشر
+            </button>
+          )}
+          {schedule.status === "published" && (
+            <button
+              onClick={onUnpublish}
+              disabled={loading}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-warning/10 py-2.5 text-sm font-medium text-warning transition-colors hover:bg-warning/20 disabled:opacity-50"
+            >
+              <FileEdit className="h-4 w-4" />
+              تحويل لمسودة
+            </button>
+          )}
+          <button
+            onClick={onDelete}
+            disabled={loading}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-danger/10 py-2.5 text-sm font-medium text-danger transition-colors hover:bg-danger/20 disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+            حذف
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }

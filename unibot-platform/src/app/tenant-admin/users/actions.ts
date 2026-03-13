@@ -11,12 +11,176 @@ export async function getUsers() {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("*, student_profiles(*), faculty_profiles(*)")
+    .select(`
+      *,
+      student_profiles(*),
+      faculty_profiles(*),
+      student_majors(major_id, majors(name, code)),
+      faculty_departments(department_id, departments(name, code)),
+      profile_custom_roles(custom_role_id, custom_roles(name))
+    `)
     .eq("tenant_id", profile.tenant_id)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
   return data || [];
+}
+
+export async function getColleges() {
+  const { profile } = await requireRole(["tenant_admin"]);
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("colleges")
+    .select("id, name, code")
+    .eq("tenant_id", profile.tenant_id)
+    .order("name");
+
+  return data || [];
+}
+
+export async function getAcademicLevels() {
+  const { profile } = await requireRole(["tenant_admin"]);
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("academic_levels")
+    .select("id, level_number, name, major_id")
+    .eq("tenant_id", profile.tenant_id)
+    .order("level_number");
+
+  return data || [];
+}
+
+export async function createUser(formData: FormData) {
+  const { profile } = await requireRole(["tenant_admin"]);
+  const supabase = await createClient();
+  const admin = await createAdminClient();
+
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  const first_name = formData.get("first_name") as string;
+  const last_name = formData.get("last_name") as string;
+  const role = formData.get("role") as UserRole;
+  const phone = formData.get("phone") as string;
+
+  const major_id = formData.get("major_id") as string;
+  const academic_level_id = formData.get("academic_level_id") as string;
+  const student_number = formData.get("student_number") as string;
+  const enrollment_year = formData.get("enrollment_year") as string;
+
+  const department_id = formData.get("department_id") as string;
+  const employee_id = formData.get("employee_id") as string;
+  const specialization = formData.get("specialization") as string;
+
+  const custom_role_id = formData.get("custom_role_id") as string;
+  const scope_type = formData.get("scope_type") as string;
+  const scope_id = formData.get("scope_id") as string;
+
+  const { data: authUser, error: authError } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: {
+      role,
+      tenant_id: profile.tenant_id,
+    },
+  });
+
+  if (authError) {
+    if (authError.message.includes("already been registered"))
+      throw new Error("البريد الإلكتروني مسجل بالفعل");
+    throw new Error(authError.message);
+  }
+
+  const { error: profileError } = await supabase.from("profiles").insert({
+    id: authUser.user.id,
+    tenant_id: profile.tenant_id,
+    role,
+    first_name,
+    last_name,
+    phone: phone || null,
+    account_status: "active",
+  });
+
+  if (profileError) {
+    await admin.auth.admin.deleteUser(authUser.user.id);
+    throw new Error(`خطأ في إنشاء الملف الشخصي: ${profileError.message}`);
+  }
+
+  if (role === "student") {
+    if (student_number) {
+      const { error: spError } = await supabase.from("student_profiles").insert({
+        profile_id: authUser.user.id,
+        tenant_id: profile.tenant_id,
+        student_number,
+        enrollment_year: enrollment_year ? parseInt(enrollment_year) : new Date().getFullYear(),
+      });
+      if (spError) throw new Error(`خطأ في بيانات الطالب: ${spError.message}`);
+    }
+
+    if (major_id) {
+      const { error: smError } = await supabase.from("student_majors").insert({
+        student_id: authUser.user.id,
+        major_id,
+        tenant_id: profile.tenant_id,
+        is_primary: true,
+        academic_level_id: academic_level_id || null,
+      });
+      if (smError) throw new Error(`خطأ في ربط التخصص: ${smError.message}`);
+    }
+  }
+
+  if (role === "faculty") {
+    if (employee_id) {
+      const { error: fpError } = await supabase.from("faculty_profiles").insert({
+        profile_id: authUser.user.id,
+        tenant_id: profile.tenant_id,
+        employee_id,
+        specialization: specialization || null,
+      });
+      if (fpError) throw new Error(`خطأ في بيانات المحاضر: ${fpError.message}`);
+    }
+
+    if (department_id) {
+      const { error: fdError } = await supabase.from("faculty_departments").insert({
+        faculty_id: authUser.user.id,
+        department_id,
+        tenant_id: profile.tenant_id,
+        is_primary: true,
+      });
+      if (fdError) throw new Error(`خطأ في ربط القسم: ${fdError.message}`);
+    }
+  }
+
+  if (role === "academic_management") {
+    if (employee_id) {
+      const { error: fpError } = await supabase.from("faculty_profiles").insert({
+        profile_id: authUser.user.id,
+        tenant_id: profile.tenant_id,
+        employee_id,
+        specialization: specialization || null,
+      });
+      if (fpError) throw new Error(`خطأ في بيانات الموظف: ${fpError.message}`);
+    }
+
+    if (custom_role_id) {
+      const scope = scope_type && scope_id ? `${scope_type}:${scope_id}` : null;
+      
+      if (scope) {
+        await supabase.from("custom_roles").update({ scope }).eq("id", custom_role_id);
+      }
+
+      const { error: pcrError } = await supabase.from("profile_custom_roles").insert({
+        profile_id: authUser.user.id,
+        custom_role_id,
+        assigned_by: profile.id,
+      });
+      if (pcrError) throw new Error(`خطأ في تعيين الدور: ${pcrError.message}`);
+    }
+  }
+
+  revalidatePath("/tenant-admin/users");
 }
 
 export async function getMajors() {

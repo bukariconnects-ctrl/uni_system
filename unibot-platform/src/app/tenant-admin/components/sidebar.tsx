@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   LayoutDashboard,
   Settings,
@@ -9,33 +10,85 @@ import {
   LogOut,
   Building2,
   BookOpen,
+  BookMarked,
   Users,
   MapPin,
   BrainCircuit,
+  ChevronDown,
+  GitBranch,
+  LayoutGrid,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types/database";
 import { SidebarShell } from "@/components/sidebar-shell";
 
-const navItems = [
-  { href: "/tenant-admin", label: "لوحة التحكم", icon: LayoutDashboard },
-  { href: "/tenant-admin/academic", label: "الهيكل الأكاديمي", icon: Building2 },
-  { href: "/tenant-admin/courses", label: "المقررات والخطط", icon: BookOpen },
+const topNavItems = [
+  { href: "/tenant-admin", label: "لوحة المعلومات", icon: LayoutDashboard, exact: true },
+  { href: "/tenant-admin/settings", label: "إعدادات الجامعة", icon: Settings },
+  { href: "/tenant-admin/venues", label: "القاعات والمباني", icon: MapPin },
+  { href: "/tenant-admin/academic", label: "الهيكل التنظيمي", icon: GitBranch },
+];
+
+const curriculumItems = [
+  { href: "/tenant-admin/courses", label: "دليل المقررات", icon: BookMarked },
+  { href: "/tenant-admin/study-plans", label: "الخطط الدراسية", icon: LayoutGrid },
+];
+
+const bottomNavItems = [
   { href: "/tenant-admin/users", label: "إدارة المستخدمين", icon: Users },
-  { href: "/tenant-admin/venues", label: "القاعات", icon: MapPin },
   { href: "/tenant-admin/knowledge", label: "قاعدة المعرفة", icon: BrainCircuit },
   { href: "/tenant-admin/calendar", label: "التقويم الأكاديمي", icon: CalendarDays },
-  { href: "/tenant-admin/settings", label: "إعدادات الجامعة", icon: Settings },
 ];
+
+function NavItem({
+  href,
+  label,
+  icon: Icon,
+  active,
+  indent,
+}: {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  active: boolean;
+  indent?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+        indent ? "pr-9" : ""
+      } ${
+        active
+          ? "bg-action-blue/10 text-action-blue"
+          : "text-text-secondary hover:bg-app-bg hover:text-text-primary"
+      }`}
+    >
+      <Icon className={indent ? "h-4 w-4" : "h-5 w-5"} />
+      {label}
+    </Link>
+  );
+}
 
 export function TenantAdminSidebar({ profile }: { profile: Profile }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
 
+  const isCurriculumActive = curriculumItems.some((i) =>
+    pathname.startsWith(i.href)
+  );
+  const [curriculumOpen, setCurriculumOpen] = useState(isCurriculumActive);
+
   async function handleLogout() {
     await supabase.auth.signOut();
     router.push("/login");
+  }
+
+  function isActive(href: string, exact?: boolean) {
+    return exact
+      ? pathname === href
+      : pathname === href || pathname.startsWith(href + "/");
   }
 
   return (
@@ -50,27 +103,60 @@ export function TenantAdminSidebar({ profile }: { profile: Profile }) {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 p-3">
-        {navItems.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            (item.href !== "/tenant-admin" && pathname.startsWith(item.href));
+      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+        {topNavItems.map((item) => (
+          <NavItem
+            key={item.href}
+            href={item.href}
+            label={item.label}
+            icon={item.icon}
+            active={isActive(item.href, item.exact)}
+          />
+        ))}
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                isActive
-                  ? "bg-action-blue/10 text-action-blue"
-                  : "text-text-secondary hover:bg-app-bg hover:text-text-primary"
+        {/* الخطط والمقررات — Dropdown */}
+        <div>
+          <button
+            onClick={() => setCurriculumOpen((p) => !p)}
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              isCurriculumActive
+                ? "bg-action-blue/10 text-action-blue"
+                : "text-text-secondary hover:bg-app-bg hover:text-text-primary"
+            }`}
+          >
+            <BookOpen className="h-5 w-5 flex-shrink-0" />
+            <span className="flex-1 text-right">الخطط والمقررات</span>
+            <ChevronDown
+              className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${
+                curriculumOpen ? "rotate-180" : ""
               }`}
-            >
-              <item.icon className="h-5 w-5" />
-              {item.label}
-            </Link>
-          );
-        })}
+            />
+          </button>
+          {curriculumOpen && (
+            <div className="mt-1 space-y-0.5">
+              {curriculumItems.map((item) => (
+                <NavItem
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  icon={item.icon}
+                  active={isActive(item.href)}
+                  indent
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {bottomNavItems.map((item) => (
+          <NavItem
+            key={item.href}
+            href={item.href}
+            label={item.label}
+            icon={item.icon}
+            active={isActive(item.href)}
+          />
+        ))}
       </nav>
 
       <div className="border-t border-border p-3">

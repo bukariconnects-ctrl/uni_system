@@ -23,9 +23,9 @@ export default async function AcademicPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text-primary">الهيكل الأكاديمي</h1>
+        <h1 className="text-2xl font-bold text-text-primary">الهيكل التنظيمي</h1>
         <p className="mt-1 text-sm text-text-secondary">
-          إدارة الكليات والأقسام والتخصصات والمستويات الدراسية
+          بناء الهيكل الأكاديمي للجامعة: الكليات ← الأقسام ← التخصصات ← المستويات
         </p>
       </div>
       <AcademicClient
