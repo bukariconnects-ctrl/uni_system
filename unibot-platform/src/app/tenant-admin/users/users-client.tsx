@@ -1295,6 +1295,7 @@ function EditUserModal({
   onClose: () => void;
   onSubmit: (fd: FormData) => void;
 }) {
+  const [showPassword, setShowPassword] = useState(false);
   const studentP = user.student_profiles?.[0];
   const facultyP = user.faculty_profiles?.[0];
   const currentDeptId = user.faculty_departments?.[0]?.department_id ?? "";
@@ -1340,28 +1341,43 @@ function EditUserModal({
           <p className="text-[10px] font-bold uppercase tracking-wider text-warning">بيانات الدخول</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className={labelCls}>البريد الإلكتروني الجديد (اختياري)</label>
+              <label className={labelCls}>البريد الإلكتروني</label>
               <input
                 type="email"
                 name="email"
-                defaultValue=""
-                placeholder={user.email ?? ""}
+                defaultValue={user.email ?? ""}
                 dir="ltr"
                 className="w-full rounded-xl border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-warning focus:ring-2 focus:ring-warning/20"
               />
-              <p className="mt-1 text-[10px] text-text-secondary">اتركه فارغاً إذا لم تُرد تغيير البريد</p>
+              <p className="mt-1 text-[10px] text-text-secondary">عدّل البريد إذا أردت تغييره، واتركه كما هو إذا لم ترد التغيير</p>
             </div>
             <div>
-              <label className={labelCls}>كلمة المرور الجديدة (اختياري)</label>
-              <input
-                type="password"
-                name="password"
-                placeholder="●●●●●●●●"
-                minLength={6}
-                dir="ltr"
-                className="w-full rounded-xl border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-warning focus:ring-2 focus:ring-warning/20"
-              />
-              <p className="mt-1 text-[10px] text-text-secondary">اتركها فارغة إذا لم تُرد تغيير كلمة المرور</p>
+              <label className={labelCls}>
+                كلمة المرور
+                <span className="mr-2 text-[10px] font-normal text-text-secondary">(اختياري — للتغيير فقط)</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="اترك فارغاً للإبقاء على كلمة المرور الحالية"
+                  minLength={6}
+                  dir="ltr"
+                  className="w-full rounded-xl border border-border bg-card-bg py-2.5 pl-3 pr-10 text-sm text-text-primary outline-none transition-colors focus:border-warning focus:ring-2 focus:ring-warning/20"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((p) => !p)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-text-secondary hover:text-text-primary transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="mt-1.5 flex items-center gap-1 text-[10px] text-text-secondary">
+                <span>🔒</span>
+                <span>كلمة المرور مُشفَّرة ولا يمكن عرضها — اكتب كلمة مرور جديدة فقط إذا أردت تغييرها</span>
+              </p>
             </div>
           </div>
         </div>
