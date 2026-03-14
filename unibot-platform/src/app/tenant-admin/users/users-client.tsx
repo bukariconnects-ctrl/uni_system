@@ -9,6 +9,8 @@ import {
   assignCustomRole,
   removeCustomRoleAssignment,
   createUser,
+  deleteUser,
+  updateUser,
 } from "./actions";
 import {
   Upload,
@@ -28,6 +30,12 @@ import {
   Search,
   Eye,
   EyeOff,
+  Pencil,
+  Phone,
+  Mail,
+  Calendar,
+  Hash,
+  BookOpen,
 } from "lucide-react";
 
 interface StudentMajorLink {
@@ -54,10 +62,14 @@ interface UserRow {
   id: string;
   first_name: string;
   last_name: string;
+  email: string | null;
   role: string;
   account_status: string;
   created_at: string;
   phone: string | null;
+  national_id: string | null;
+  gender: string | null;
+  date_of_birth: string | null;
   student_profiles: { student_number: string; enrollment_year: number | null }[] | null;
   faculty_profiles: { employee_id: string | null; specialization: string | null }[] | null;
   student_majors: StudentMajorLink[] | null;
@@ -113,6 +125,8 @@ type ModalState =
   | { type: "bulk-import" }
   | { type: "add-role" }
   | { type: "assign-role"; roleId: string; roleName: string }
+  | { type: "view-user"; user: UserRow }
+  | { type: "edit-user"; user: UserRow }
   | null;
 
 const ROLE_LABELS: Record<string, string> = {
@@ -345,7 +359,11 @@ export function UsersClient({
                 const customRole = user.profile_custom_roles?.[0]?.custom_roles;
 
                 return (
-                  <tr key={user.id} className="border-b border-border last:border-b-0 hover:bg-app-bg/50">
+                  <tr
+                    key={user.id}
+                    className="border-b border-border last:border-b-0 hover:bg-app-bg/50 cursor-pointer"
+                    onClick={() => setModal({ type: "view-user", user })}
+                  >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-academic-navy text-xs font-bold text-white">
@@ -396,7 +414,19 @@ export function UsersClient({
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
+                      <div
+                        className="flex items-center justify-end gap-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* Edit */}
+                        <button
+                          onClick={() => setModal({ type: "edit-user", user })}
+                          className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-action-blue/10 hover:text-action-blue"
+                          title="تعديل"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        {/* Suspend / Activate */}
                         {user.account_status === "active" && user.role !== "tenant_admin" && (
                           <button
                             onClick={() => run(() => updateUserStatus(user.id, "suspended"))}
@@ -413,6 +443,19 @@ export function UsersClient({
                             title="إعادة تفعيل"
                           >
                             <UserCheck className="h-4 w-4" />
+                          </button>
+                        )}
+                        {/* Delete */}
+                        {user.role !== "tenant_admin" && (
+                          <button
+                            onClick={() => {
+                              if (confirm(`هل أنت متأكد من حذف المستخدم "${user.first_name} ${user.last_name}"؟ لا يمكن التراجع عن هذا الإجراء.`))
+                                run(() => deleteUser(user.id));
+                            }}
+                            className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-danger/10 hover:text-danger"
+                            title="حذف"
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         )}
                       </div>
@@ -536,6 +579,26 @@ export function UsersClient({
           error={error}
           onClose={closeModal}
           onSubmit={(fd) => run(() => assignCustomRole(fd))}
+        />
+      )}
+
+      {modal?.type === "view-user" && (
+        <ViewUserModal
+          user={modal.user}
+          onClose={closeModal}
+          onEdit={() => setModal({ type: "edit-user", user: modal.user })}
+        />
+      )}
+
+      {modal?.type === "edit-user" && (
+        <EditUserModal
+          user={modal.user}
+          departments={departments}
+          customRoles={customRoles}
+          loading={loading}
+          error={error}
+          onClose={closeModal}
+          onSubmit={(fd) => run(() => updateUser(modal.user.id, fd))}
         />
       )}
     </div>
@@ -1076,6 +1139,329 @@ function AssignRoleModal({
         >
           {loading ? "جاري التعيين..." : "تعيين الدور"}
         </button>
+      </form>
+    </Modal>
+  );
+}
+
+/* ─── View User Modal ─────────────────────────────────────── */
+function ViewUserModal({
+  user,
+  onClose,
+  onEdit,
+}: {
+  user: UserRow;
+  onClose: () => void;
+  onEdit: () => void;
+}) {
+  const status = STATUS_LABELS[user.account_status] || STATUS_LABELS.active;
+  const majorLink = user.student_majors?.[0]?.majors;
+  const deptLink = user.faculty_departments?.[0]?.departments;
+  const amDept = user.academic_management_departments?.[0]?.departments;
+  const studentP = user.student_profiles?.[0];
+  const facultyP = user.faculty_profiles?.[0];
+  const croles = user.profile_custom_roles ?? [];
+
+  const avatarBgMap: Record<string, string> = {
+    student: "bg-action-blue",
+    faculty: "bg-success",
+    academic_management: "bg-purple",
+    tenant_admin: "bg-academic-navy",
+  };
+  const avatarBg = avatarBgMap[user.role] ?? "bg-academic-navy";
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-lg rounded-2xl bg-card-bg shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="relative bg-gradient-to-r from-academic-navy to-academic-navy/80 px-6 pt-6 pb-14">
+          <button
+            onClick={onClose}
+            className="absolute left-4 top-4 rounded-lg p-1.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <p className="text-xs text-white/60 mb-1">ملف المستخدم</p>
+          <h2 className="text-xl font-bold text-white">{user.first_name} {user.last_name}</h2>
+        </div>
+
+        {/* Avatar */}
+        <div className="px-6">
+          <div className="relative -mt-10 mb-4 flex items-end gap-4">
+            <div className={`flex h-20 w-20 items-center justify-center rounded-2xl ${avatarBg} text-2xl font-bold text-white shadow-lg border-4 border-card-bg`}>
+              {user.first_name?.[0]}{user.last_name?.[0]}
+            </div>
+            <div className="pb-1 flex flex-wrap items-center gap-2">
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${ROLE_COLORS[user.role]}`}>
+                {ROLE_LABELS[user.role] || user.role}
+              </span>
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${status.color}`}>
+                {status.label}
+              </span>
+              {croles.map((cr) => cr.custom_roles && (
+                <span key={cr.custom_role_id} className="rounded-full bg-purple/10 px-3 py-1 text-xs font-semibold text-purple">
+                  {cr.custom_roles.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Details */}
+        <div className="px-6 pb-2 space-y-3 max-h-[45vh] overflow-y-auto">
+          <div className="rounded-xl bg-app-bg p-4 space-y-2.5">
+            <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">معلومات الاتصال</p>
+            <ViewRow icon={<Mail className="h-4 w-4" />} label="البريد الإلكتروني" value={user.email || "\u2014"} ltr />
+            <ViewRow icon={<Phone className="h-4 w-4" />} label="الهاتف" value={user.phone || "\u2014"} ltr />
+            <ViewRow icon={<Hash className="h-4 w-4" />} label="الهوية الوطنية" value={user.national_id || "\u2014"} ltr />
+            <ViewRow icon={<Calendar className="h-4 w-4" />} label="تاريخ الإنشاء" value={new Date(user.created_at).toLocaleDateString("ar-SA")} />
+          </div>
+
+          {(studentP || majorLink) && (
+            <div className="rounded-xl border border-action-blue/20 bg-action-blue/5 p-4 space-y-2.5">
+              <p className="text-[10px] font-bold text-action-blue uppercase tracking-wider mb-3">بيانات الطالب</p>
+              {studentP?.student_number && <ViewRow icon={<Hash className="h-4 w-4" />} label="رقم الطالب" value={studentP.student_number} ltr />}
+              {studentP?.enrollment_year && <ViewRow icon={<Calendar className="h-4 w-4" />} label="سنة الالتحاق" value={String(studentP.enrollment_year)} />}
+              {majorLink && <ViewRow icon={<BookOpen className="h-4 w-4" />} label="التخصص" value={`${majorLink.name}${majorLink.code ? ` (${majorLink.code})` : ""}`} />}
+            </div>
+          )}
+
+          {(facultyP || deptLink || amDept) && (
+            <div className="rounded-xl border border-success/20 bg-success/5 p-4 space-y-2.5">
+              <p className="text-[10px] font-bold text-success uppercase tracking-wider mb-3">
+                {user.role === "academic_management" ? "بيانات الإدارة" : "بيانات المحاضر"}
+              </p>
+              {facultyP?.employee_id && <ViewRow icon={<Hash className="h-4 w-4" />} label="رقم الموظف" value={facultyP.employee_id} ltr />}
+              {facultyP?.specialization && <ViewRow icon={<BookOpen className="h-4 w-4" />} label="التخصص" value={facultyP.specialization} />}
+              {deptLink && <ViewRow icon={<Building2 className="h-4 w-4" />} label="القسم" value={deptLink.name} />}
+              {amDept && <ViewRow icon={<Building2 className="h-4 w-4" />} label="القسم المُدار" value={amDept.name} />}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-border px-6 py-4 flex items-center justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-border px-5 py-2 text-sm font-medium text-text-secondary hover:bg-app-bg transition-colors"
+          >
+            إغلاق
+          </button>
+          {user.role !== "tenant_admin" && (
+            <button
+              onClick={onEdit}
+              className="flex items-center gap-2 rounded-xl bg-action-blue px-5 py-2 text-sm font-semibold text-white hover:bg-action-blue/90 transition-colors"
+            >
+              <Pencil className="h-4 w-4" />
+              تعديل البيانات
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ViewRow({ icon, label, value, ltr }: { icon: React.ReactNode; label: string; value: string; ltr?: boolean }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="text-text-secondary mt-0.5 flex-shrink-0">{icon}</span>
+      <span className="text-xs text-text-secondary w-32 flex-shrink-0 pt-0.5">{label}</span>
+      <span className={`text-sm font-medium text-text-primary flex-1 break-all ${ltr ? "text-left" : ""}`} dir={ltr ? "ltr" : undefined}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+/* ─── Edit User Modal ─────────────────────────────────────── */
+function EditUserModal({
+  user,
+  departments,
+  customRoles,
+  loading,
+  error,
+  onClose,
+  onSubmit,
+}: {
+  user: UserRow;
+  departments: DeptOption[];
+  customRoles: CustomRoleRow[];
+  loading: boolean;
+  error: string;
+  onClose: () => void;
+  onSubmit: (fd: FormData) => void;
+}) {
+  const studentP = user.student_profiles?.[0];
+  const facultyP = user.faculty_profiles?.[0];
+  const currentDeptId = user.faculty_departments?.[0]?.department_id ?? "";
+  const currentAmDeptId = user.academic_management_departments?.[0]?.department_id ?? "";
+  const currentCustomRoleId = user.profile_custom_roles?.[0]?.custom_role_id ?? "";
+
+  const inputCls = "w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20";
+  const selectCls = "w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20";
+  const labelCls = "mb-1.5 block text-xs font-semibold text-text-primary";
+
+  return (
+    <Modal
+      title="تعديل بيانات المستخدم"
+      subtitle={`${user.first_name} ${user.last_name} — ${ROLE_LABELS[user.role] || user.role}`}
+      onClose={onClose}
+      error={error}
+      wide
+    >
+      <form action={onSubmit} className="space-y-5">
+        <input type="hidden" name="role" value={user.role} />
+
+        {/* ── الاسم ─────────────────────────── */}
+        <div>
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-text-secondary">البيانات الأساسية</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className={labelCls}>الاسم الأول</label>
+              <input type="text" name="first_name" defaultValue={user.first_name} required className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>الاسم الأخير</label>
+              <input type="text" name="last_name" defaultValue={user.last_name} required className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>الهاتف (اختياري)</label>
+              <input type="tel" name="phone" defaultValue={user.phone ?? ""} dir="ltr" className={inputCls} />
+            </div>
+          </div>
+        </div>
+
+        {/* ── بيانات الدخول ─────────────────── */}
+        <div className="rounded-xl border border-warning/30 bg-warning/5 p-4 space-y-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-warning">بيانات الدخول</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className={labelCls}>البريد الإلكتروني الجديد (اختياري)</label>
+              <input
+                type="email"
+                name="email"
+                defaultValue=""
+                placeholder={user.email ?? ""}
+                dir="ltr"
+                className="w-full rounded-xl border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-warning focus:ring-2 focus:ring-warning/20"
+              />
+              <p className="mt-1 text-[10px] text-text-secondary">اتركه فارغاً إذا لم تُرد تغيير البريد</p>
+            </div>
+            <div>
+              <label className={labelCls}>كلمة المرور الجديدة (اختياري)</label>
+              <input
+                type="password"
+                name="password"
+                placeholder="●●●●●●●●"
+                minLength={6}
+                dir="ltr"
+                className="w-full rounded-xl border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-warning focus:ring-2 focus:ring-warning/20"
+              />
+              <p className="mt-1 text-[10px] text-text-secondary">اتركها فارغة إذا لم تُرد تغيير كلمة المرور</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── طالب ──────────────────────────── */}
+        {user.role === "student" && (
+          <div className="rounded-xl border border-action-blue/20 bg-action-blue/5 p-4 space-y-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-action-blue">بيانات الطالب</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className={labelCls}>رقم الطالب</label>
+                <input type="text" name="student_number" defaultValue={studentP?.student_number ?? ""} dir="ltr"
+                  className="w-full rounded-xl border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none focus:border-action-blue focus:ring-2 focus:ring-action-blue/20" />
+              </div>
+              <div>
+                <label className={labelCls}>سنة الالتحاق</label>
+                <input type="number" name="enrollment_year" defaultValue={studentP?.enrollment_year ?? new Date().getFullYear()}
+                  min="2000" max="2100" dir="ltr"
+                  className="w-full rounded-xl border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none focus:border-action-blue focus:ring-2 focus:ring-action-blue/20" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── محاضر ─────────────────────────── */}
+        {user.role === "faculty" && (
+          <div className="rounded-xl border border-success/20 bg-success/5 p-4 space-y-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-success">بيانات المحاضر</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className={labelCls}>رقم الموظف</label>
+                <input type="text" name="employee_id" defaultValue={facultyP?.employee_id ?? ""} dir="ltr"
+                  className="w-full rounded-xl border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none focus:border-success focus:ring-2 focus:ring-success/20" />
+              </div>
+              <div>
+                <label className={labelCls}>التخصص العلمي</label>
+                <input type="text" name="specialization" defaultValue={facultyP?.specialization ?? ""}
+                  className="w-full rounded-xl border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none focus:border-success focus:ring-2 focus:ring-success/20" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelCls}>القسم</label>
+                <select name="department_id" defaultValue={currentDeptId}
+                  className="w-full rounded-xl border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none focus:border-success focus:ring-2 focus:ring-success/20">
+                  <option value="">— بدون قسم —</option>
+                  {departments.map((d) => (
+                    <option key={d.id} value={d.id}>{d.name} {d.code ? `(${d.code})` : ""}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── الإدارة الأكاديمية ────────────── */}
+        {user.role === "academic_management" && (
+          <div className="rounded-xl border border-purple/20 bg-purple/5 p-4 space-y-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-purple">بيانات الإدارة الأكاديمية</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className={labelCls}>رقم الموظف</label>
+                <input type="text" name="employee_id" defaultValue={facultyP?.employee_id ?? ""} dir="ltr"
+                  className="w-full rounded-xl border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none focus:border-purple focus:ring-2 focus:ring-purple/20" />
+              </div>
+              <div>
+                <label className={labelCls}>الدور المخصص</label>
+                <select name="am_custom_role_id" defaultValue={currentCustomRoleId}
+                  className="w-full rounded-xl border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none focus:border-purple focus:ring-2 focus:ring-purple/20">
+                  <option value="">— بدون دور —</option>
+                  {customRoles.map((r) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelCls}>
+                  القسم المُدار
+                  <span className="mr-1 text-danger">*</span>
+                </label>
+                <select name="am_department_id" defaultValue={currentAmDeptId}
+                  className="w-full rounded-xl border border-purple/40 bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none focus:border-purple focus:ring-2 focus:ring-purple/20">
+                  <option value="">— اختر القسم —</option>
+                  {departments.map((d) => (
+                    <option key={d.id} value={d.id}>{d.name} {d.code ? `(${d.code})` : ""}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-3 pt-1">
+          <button type="button" onClick={onClose}
+            className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium text-text-secondary hover:bg-app-bg transition-colors">
+            إلغاء
+          </button>
+          <button type="submit" disabled={loading}
+            className="flex-1 rounded-xl bg-action-blue py-2.5 text-sm font-semibold text-white hover:bg-action-blue/90 disabled:opacity-50 transition-colors">
+            {loading ? "جاري الحفظ..." : "حفظ التعديلات"}
+          </button>
+        </div>
       </form>
     </Modal>
   );

@@ -1,5 +1,6 @@
 "use server";
 
+
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
@@ -375,6 +376,137 @@ export async function updateUserStatus(
   if (error) throw new Error(error.message);
   revalidatePath("/tenant-admin/users");
 }
+
+export async function deleteUser(userId: string) {
+  await requireRole(["tenant_admin"]);
+  const admin = await createAdminClient();
+
+  // Deleting from auth.users will cascade to profiles via ON DELETE CASCADE
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/tenant-admin/users");
+}
+
+export async function updateUser(userId: string, formData: FormData) {
+  await requireRole(["tenant_admin"]);
+  const supabase = await createClient();
+  const admin = await createAdminClient();
+
+  const first_name = formData.get("first_name") as string;
+  const last_name = formData.get("last_name") as string;
+  const phone = formData.get("phone") as string;
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  const role = formData.get("role") as string;
+  const student_number = formData.get("student_number") as string;
+  const enrollment_year = formData.get("enrollment_year") as string;
+  const employee_id = formData.get("employee_id") as string;
+  const specialization = formData.get("specialization") as string;
+  const department_id = formData.get("department_id") as string;
+  const am_department_id = formData.get("am_department_id") as string;
+
+  // Auth updates (email / password) — require service role
+  const authUpdate: { email?: string; password?: string } = {};
+  if (email) authUpdate.email = email;
+  if (password) authUpdate.password = password;
+  if (Object.keys(authUpdate).length > 0) {
+    const { error: authErr } = await admin.auth.admin.updateUserById(userId, authUpdate);
+    if (authErr) throw new Error(authErr.message);
+  }
+
+  // Core profile update
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({ first_name, last_name, phone: phone || null })
+    .eq("id", userId);
+  if (profileError) throw new Error(profileError.message);
+
+  // ── Student ────────────────────────────────────────────────
+  if (role === "student") {
+    await supabase
+      .from("student_profiles")
+      .update({
+        student_number: student_number || undefined,
+        enrollment_year: enrollment_year ? parseInt(enrollment_year) : undefined,
+      })
+      .eq("profile_id", userId);
+  }
+
+  // ── Faculty ────────────────────────────────────────────────
+  if (role === "faculty") {
+    // Faculty profile (employee_id, specialization)
+    await supabase
+      .from("faculty_profiles")
+      .update({
+        employee_id: employee_id || null,
+        specialization: specialization || null,
+      })
+      .eq("profile_id", userId);
+
+    // Department assignment — replace primary department
+    if (department_id) {
+      // Get tenant_id from the user profile
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("tenant_id")
+        .eq("id", userId)
+        .single();
+
+      if (prof?.tenant_id) {
+        // Remove old primary dept and set new one
+        await supabase
+          .from("faculty_departments")
+          .delete()
+          .eq("faculty_id", userId)
+          .eq("is_primary", true);
+
+        await supabase.from("faculty_departments").upsert({
+          faculty_id: userId,
+          department_id,
+          tenant_id: prof.tenant_id,
+          is_primary: true,
+        }, { onConflict: "faculty_id,department_id" });
+      }
+    }
+  }
+
+  // ── Academic Management ────────────────────────────────────
+  if (role === "academic_management") {
+    // Faculty_profile for employee_id (shared table)
+    await supabase
+      .from("faculty_profiles")
+      .update({
+        employee_id: employee_id || null,
+        specialization: specialization || null,
+      })
+      .eq("profile_id", userId);
+
+    // Managed department
+    if (am_department_id) {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("tenant_id")
+        .eq("id", userId)
+        .single();
+
+      if (prof?.tenant_id) {
+        await supabase
+          .from("academic_management_departments")
+          .delete()
+          .eq("profile_id", userId);
+
+        await supabase.from("academic_management_departments").insert({
+          profile_id: userId,
+          department_id: am_department_id,
+          tenant_id: prof.tenant_id,
+        });
+      }
+    }
+  }
+
+  revalidatePath("/tenant-admin/users");
+}
+
 
 export async function getCustomRoles() {
   const { profile } = await requireRole(["tenant_admin"]);
