@@ -1,13 +1,15 @@
 import { requireRole } from "@/lib/auth/get-user";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { UsersClient } from "./users-client";
 
 export default async function UsersPage() {
   const { profile } = await requireRole(["tenant_admin"]);
-  const supabase = await createClient();
+  // Use service client that fully bypasses RLS (no user JWT interference).
+  // Security is enforced via requireRole above.
+  const serviceClient = createServiceClient();
 
   const [usersRes, rolesRes, majorsRes, deptsRes, collegesRes, levelsRes] = await Promise.all([
-    supabase
+    serviceClient
       .from("profiles")
       .select(`
         *,
@@ -15,32 +17,32 @@ export default async function UsersPage() {
         faculty_profiles!left(*),
         student_majors!left(major_id, majors(name, code)),
         faculty_departments!left(department_id, departments(name, code)),
-        profile_custom_roles!left(custom_role_id, custom_roles(name)),
-        academic_management_departments!left(department_id, departments(name, code))
+        profile_custom_roles!profile_custom_roles_profile_id_fkey(custom_role_id, custom_roles(name)),
+        academic_management_departments!academic_management_departments_profile_id_fkey(department_id, departments(name, code))
       `)
       .eq("tenant_id", profile.tenant_id)
       .order("created_at", { ascending: false }),
-    supabase
+    serviceClient
       .from("custom_roles")
       .select("*, profile_custom_roles(profile_id, profiles!profile_custom_roles_profile_id_fkey(first_name, last_name))")
       .eq("tenant_id", profile.tenant_id)
       .order("created_at"),
-    supabase
+    serviceClient
       .from("majors")
       .select("id, name, code, department_id")
       .eq("tenant_id", profile.tenant_id)
       .order("name"),
-    supabase
+    serviceClient
       .from("departments")
       .select("id, name, code, college_id")
       .eq("tenant_id", profile.tenant_id)
       .order("name"),
-    supabase
+    serviceClient
       .from("colleges")
       .select("id, name, code")
       .eq("tenant_id", profile.tenant_id)
       .order("name"),
-    supabase
+    serviceClient
       .from("academic_levels")
       .select("id, level_number, name, major_id")
       .eq("tenant_id", profile.tenant_id)
