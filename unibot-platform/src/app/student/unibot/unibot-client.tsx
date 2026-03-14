@@ -9,8 +9,8 @@ import {
   FileText,
   Clock,
   Sparkles,
-  MessageSquare,
   X,
+  BookOpen,
 } from "lucide-react";
 import type { ChatbotConversation } from "@/lib/types/database";
 import { getConversationMessages, endConversation } from "./actions";
@@ -45,10 +45,7 @@ export function UnibotClient({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sources, setSources] = useState<SourceChunk[]>([]);
-  const [showSources, setShowSources] = useState(false);
-  const [selectedSource, setSelectedSource] = useState<SourceChunk | null>(
-    null
-  );
+  const [selectedSource, setSelectedSource] = useState<SourceChunk | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -59,7 +56,6 @@ export function UnibotClient({
   async function loadConversation(convId: string) {
     setActiveConvId(convId);
     setSources([]);
-    setShowSources(false);
     const msgs = await getConversationMessages(convId);
     setMessages(msgs as ChatMessage[]);
   }
@@ -145,7 +141,6 @@ export function UnibotClient({
     setActiveConvId(null);
     setMessages([]);
     setSources([]);
-    setShowSources(false);
   }
 
   async function handleEndConversation(convId: string) {
@@ -161,256 +156,248 @@ export function UnibotClient({
     "لم أجد معلومات كافية حول هذا الموضوع في قاعدة معرفتي";
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] gap-0">
-      <div className="flex w-64 flex-col border-l border-border bg-card-bg">
-        <div className="flex items-center justify-between border-b border-border p-3">
-          <h2 className="text-sm font-bold text-text-primary">المحادثات</h2>
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden flex-col lg:flex-row">
+      <div className="flex w-full flex-col lg:w-[40%] border-l border-border bg-card-bg">
+        <div className="flex items-center gap-2 border-b border-border bg-gradient-to-l from-ai-light to-ai-lavender px-4 py-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 shadow-sm">
+            <Sparkles className="h-4 w-4 text-purple" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-sm font-bold text-text-primary">UniBot</h1>
+            <p className="truncate text-xs text-text-secondary">المساعد الذكي للمحتوى الأكاديمي</p>
+          </div>
+          <select
+            value={activeConvId || ""}
+            onChange={(e) => {
+              if (!e.target.value) handleNewConversation();
+              else loadConversation(e.target.value);
+            }}
+            className="max-w-[110px] truncate rounded-lg border border-white/40 bg-white/30 px-2 py-1 text-xs text-text-primary outline-none backdrop-blur-sm"
+          >
+            <option value="">+ جديد</option>
+            {conversations.map((conv) => (
+              <option key={conv.id} value={conv.id}>
+                {conv.title ||
+                  new Date(conv.created_at).toLocaleDateString("ar-SA", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+              </option>
+            ))}
+          </select>
           <button
             onClick={handleNewConversation}
-            className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-app-bg hover:text-action-blue"
+            className="rounded-lg p-1.5 text-text-secondary/80 transition-colors hover:bg-white/30"
+            title="محادثة جديدة"
           >
             <Plus className="h-4 w-4" />
           </button>
         </div>
-        <div className="flex-1 space-y-1 overflow-y-auto p-2">
-          {conversations.map((conv) => (
+
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          {messages.length === 0 && (
+            <div className="flex h-full flex-col items-center justify-center text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-ai-light to-ai-lavender">
+                <Bot className="h-8 w-8 text-purple" />
+              </div>
+              <h2 className="mb-2 text-lg font-bold text-text-primary">مرحباً في UniBot</h2>
+              <p className="mb-5 max-w-xs text-xs text-text-secondary">
+                اسألني عن اللوائح الأكاديمية والمقررات. سأستشهد بالمصادر تلقائياً وتظهر في اللوحة المجاورة.
+              </p>
+              <div className="w-full space-y-2">
+                {[
+                  "ما هي شروط الإنذار الأكاديمي؟",
+                  "كم عدد ساعات التخرج؟",
+                  "ما هي سياسة الغياب؟",
+                  "ما هي التكاليف القادمة؟",
+                ].map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => {
+                      setInput(q);
+                      inputRef.current?.focus();
+                    }}
+                    className="w-full rounded-xl border border-border bg-app-bg p-2.5 text-right text-xs text-text-secondary transition-colors hover:border-action-blue hover:text-action-blue"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {messages.map((msg) => (
             <div
-              key={conv.id}
-              className={`group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${activeConvId === conv.id
-                ? "bg-action-blue/10 text-action-blue"
-                : "text-text-secondary hover:bg-app-bg"
-                }`}
-              onClick={() => loadConversation(conv.id)}
+              key={msg.id}
+              className={`mb-4 flex gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
             >
-              <MessageSquare className="h-4 w-4 shrink-0" />
-              <span className="flex-1 truncate text-right">
-                {conv.title
-                  ? conv.title
-                  : (() => {
-                    const d = new Date(conv.created_at);
-                    const now = new Date();
-                    const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
-                    if (diffDays === 0) return `اليوم · ${d.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}`;
-                    if (diffDays === 1) return "أمس";
-                    return d.toLocaleDateString("ar-SA", { month: "short", day: "numeric" });
-                  })()}
-              </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEndConversation(conv.id);
-                }}
-                className="hidden rounded p-0.5 text-text-secondary hover:text-danger group-hover:block"
+              <div
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                  msg.role === "user"
+                    ? "bg-action-blue text-white"
+                    : "bg-gradient-to-br from-ai-light to-ai-lavender text-purple"
+                }`}
               >
-                <X className="h-3 w-3" />
-              </button>
+                {msg.role === "user" ? (
+                  <User className="h-3.5 w-3.5" />
+                ) : (
+                  <Bot className="h-3.5 w-3.5" />
+                )}
+              </div>
+              <div
+                className={`max-w-[85%] rounded-2xl px-3 py-2.5 ${
+                  msg.role === "user"
+                    ? "bg-action-blue text-white"
+                    : msg.content.includes(noAnswerPattern)
+                    ? "border border-border bg-app-bg text-text-secondary"
+                    : "border border-ai-lavender/50 bg-gradient-to-br from-ai-light/60 to-ai-lavender/30 text-text-primary"
+                }`}
+              >
+                <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
+                {msg.role === "assistant" &&
+                  msg.source_chunk_ids.length > 0 &&
+                  sources.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border/40 pt-2">
+                      {sources
+                        .filter((s) => msg.source_chunk_ids.includes(s.id))
+                        .map((source, idx) => (
+                          <button
+                            key={source.id}
+                            onClick={() => setSelectedSource(source)}
+                            className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                              selectedSource?.id === source.id
+                                ? "bg-action-blue text-white"
+                                : "bg-action-blue/10 text-action-blue hover:bg-action-blue/20"
+                            }`}
+                          >
+                            {source.page_number ? (
+                              <>
+                                <FileText className="h-3 w-3" />
+                                📄 ص. {source.page_number}
+                              </>
+                            ) : source.timestamp_sec ? (
+                              <>
+                                <Clock className="h-3 w-3" />
+                                {source.timestamp_sec}ث
+                              </>
+                            ) : (
+                              <>
+                                <FileText className="h-3 w-3" />
+                                مصدر {idx + 1}
+                              </>
+                            )}
+                          </button>
+                        ))}
+                    </div>
+                  )}
+              </div>
             </div>
           ))}
-          {conversations.length === 0 && (
-            <p className="p-3 text-center text-xs text-text-secondary">
-              لا توجد محادثات بعد
-            </p>
+
+          {loading && (
+            <div className="mb-4 flex gap-2.5">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-ai-light to-ai-lavender text-purple">
+                <Bot className="h-3.5 w-3.5" />
+              </div>
+              <div className="rounded-2xl border border-ai-lavender/50 bg-gradient-to-br from-ai-light/60 to-ai-lavender/30 px-4 py-3">
+                <div className="flex items-center gap-1.5">
+                  <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-purple/60 [animation-delay:0ms]" />
+                  <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-purple/60 [animation-delay:150ms]" />
+                  <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-purple/60 [animation-delay:300ms]" />
+                </div>
+              </div>
+            </div>
           )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        <div className="border-t border-border bg-card-bg px-4 py-3">
+          <form onSubmit={handleSend} className="flex gap-2">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend(e);
+                }
+              }}
+              placeholder="اكتب سؤالك هنا..."
+              rows={1}
+              className="flex-1 resize-none rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors placeholder:text-text-secondary focus:border-action-blue"
+            />
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue text-white transition-colors hover:bg-action-blue/90 disabled:opacity-50"
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          </form>
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col">
-        {showSources && selectedSource ? (
-          <div className="flex h-full flex-col border-l border-border">
-            <div className="flex items-center justify-between border-b border-border bg-card-bg px-4 py-3">
-              <div className="flex items-center gap-2">
+      <div className="hidden flex-col lg:flex lg:w-[60%] bg-gray-50/30">
+        <div className="flex items-center gap-3 border-b border-border bg-card-bg px-5 py-3">
+          <BookOpen className="h-4 w-4 text-text-secondary" />
+          <span className="text-sm font-medium text-text-primary">
+            {selectedSource
+              ? selectedSource.page_number
+                ? `المستند — صفحة ${selectedSource.page_number}`
+                : selectedSource.timestamp_sec
+                ? `المستند — ${selectedSource.timestamp_sec} ث`
+                : "مقتطف المصدر"
+              : "عارض المستند"}
+          </span>
+          {selectedSource && (
+            <button
+              onClick={() => setSelectedSource(null)}
+              className="mr-auto rounded-lg p-1 text-text-secondary transition-colors hover:bg-app-bg"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-8">
+          {selectedSource ? (
+            <div className="mx-auto max-w-2xl">
+              <div className="mb-4 flex items-center gap-2 rounded-xl bg-action-blue/10 px-4 py-2.5">
                 <FileText className="h-4 w-4 text-action-blue" />
-                <span className="text-sm font-medium text-text-primary">
+                <span className="text-xs font-semibold text-action-blue">
                   {selectedSource.page_number
                     ? `صفحة ${selectedSource.page_number}`
                     : selectedSource.timestamp_sec
-                      ? `${selectedSource.timestamp_sec} ثانية`
-                      : "مصدر"}
+                    ? `${selectedSource.timestamp_sec} ث`
+                    : "مقتطف"}
                 </span>
               </div>
-              <button
-                onClick={() => {
-                  setShowSources(false);
-                  setSelectedSource(null);
-                }}
-                className="rounded-lg p-1 text-text-secondary hover:text-text-primary"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="rounded-xl border border-border bg-app-bg p-4">
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-primary">
+              <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+                <p className="whitespace-pre-wrap text-sm leading-loose text-text-primary">
                   {selectedSource.content}
                 </p>
               </div>
             </div>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-3 border-b border-border bg-gradient-to-l from-ai-light to-ai-lavender px-6 py-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 shadow-sm">
-                <Sparkles className="h-5 w-5 text-purple" />
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center text-center">
+              <div className="mb-6 flex h-28 w-28 items-center justify-center rounded-3xl border-2 border-dashed border-border bg-card-bg">
+                <FileText className="h-12 w-12 text-text-secondary/30" />
               </div>
-              <div>
-                <h1 className="text-base font-bold text-text-primary">
-                  UniBot
-                </h1>
-                <p className="text-xs text-text-secondary">
-                  المساعد الذكي — أسأل عن اللوائح والمقررات
-                </p>
+              <h3 className="mb-2 text-xl font-bold text-text-primary">عارض المستندات</h3>
+              <p className="max-w-sm text-sm leading-relaxed text-text-secondary">
+                عندما يستشهد UniBot بمصدر من المحتوى التعليمي، اضغط على شريحة المصدر في فقاعة الرسالة لعرض المقتطف هنا.
+              </p>
+              <div className="mt-6 flex items-center gap-2 rounded-xl border border-border bg-card-bg px-4 py-2.5">
+                <span className="rounded-full bg-action-blue/10 px-2 py-0.5 text-xs font-medium text-action-blue">
+                  📄 ص. 15
+                </span>
+                <span className="text-xs text-text-secondary">مثال على شريحة مصدر</span>
               </div>
             </div>
-
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              {messages.length === 0 && (
-                <div className="flex h-full flex-col items-center justify-center text-center">
-                  <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-ai-light to-ai-lavender">
-                    <Bot className="h-10 w-10 text-purple" />
-                  </div>
-                  <h2 className="mb-2 text-xl font-bold text-text-primary">
-                    مرحباً بك في UniBot
-                  </h2>
-                  <p className="mb-6 max-w-md text-sm text-text-secondary">
-                    أنا مساعدك الذكي. يمكنني الإجابة على أسئلتك حول اللوائح
-                    الأكاديمية والمقررات الدراسية. اسأل أي سؤال!
-                  </p>
-                  <div className="grid max-w-lg grid-cols-2 gap-3">
-                    {[
-                      "ما هي شروط الإنذار الأكاديمي؟",
-                      "كم عدد ساعات التخرج؟",
-                      "ما هي سياسة الغياب؟",
-                      "ما هي التكاليف القادمة؟",
-                    ].map((q) => (
-                      <button
-                        key={q}
-                        onClick={() => {
-                          setInput(q);
-                          inputRef.current?.focus();
-                        }}
-                        className="rounded-xl border border-border bg-card-bg p-3 text-right text-xs text-text-secondary transition-colors hover:border-action-blue hover:text-action-blue"
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`mb-4 flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
-                >
-                  <div
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${msg.role === "user"
-                      ? "bg-action-blue text-white"
-                      : "bg-gradient-to-br from-ai-light to-ai-lavender text-purple"
-                      }`}
-                  >
-                    {msg.role === "user" ? (
-                      <User className="h-4 w-4" />
-                    ) : (
-                      <Bot className="h-4 w-4" />
-                    )}
-                  </div>
-                  <div
-                    className={`max-w-[70%] rounded-2xl px-4 py-3 ${msg.role === "user"
-                      ? "bg-action-blue text-white"
-                      : msg.content.includes(noAnswerPattern)
-                        ? "border border-border bg-app-bg text-text-secondary"
-                        : "border border-border bg-card-bg text-text-primary"
-                      }`}
-                  >
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                      {msg.content}
-                    </p>
-                    {msg.role === "assistant" &&
-                      msg.source_chunk_ids.length > 0 &&
-                      sources.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border/50 pt-2">
-                          {sources
-                            .filter((s) =>
-                              msg.source_chunk_ids.includes(s.id)
-                            )
-                            .map((source, idx) => (
-                              <button
-                                key={source.id}
-                                onClick={() => {
-                                  setSelectedSource(source);
-                                  setShowSources(true);
-                                }}
-                                className="flex items-center gap-1 rounded-full bg-action-blue/10 px-2.5 py-1 text-xs font-medium text-action-blue transition-colors hover:bg-action-blue/20"
-                              >
-                                {source.page_number ? (
-                                  <>
-                                    <FileText className="h-3 w-3" />
-                                    ص. {source.page_number}
-                                  </>
-                                ) : source.timestamp_sec ? (
-                                  <>
-                                    <Clock className="h-3 w-3" />
-                                    {source.timestamp_sec}ث
-                                  </>
-                                ) : (
-                                  <>
-                                    <FileText className="h-3 w-3" />
-                                    مصدر {idx + 1}
-                                  </>
-                                )}
-                              </button>
-                            ))}
-                        </div>
-                      )}
-                  </div>
-                </div>
-              ))}
-
-              {loading && (
-                <div className="mb-4 flex gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-ai-light to-ai-lavender text-purple">
-                    <Bot className="h-4 w-4" />
-                  </div>
-                  <div className="rounded-2xl border border-border bg-card-bg px-4 py-3">
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 animate-bounce rounded-full bg-purple/60 [animation-delay:0ms]" />
-                      <div className="h-2 w-2 animate-bounce rounded-full bg-purple/60 [animation-delay:150ms]" />
-                      <div className="h-2 w-2 animate-bounce rounded-full bg-purple/60 [animation-delay:300ms]" />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div ref={messagesEndRef} />
-            </div>
-
-            <div className="border-t border-border bg-card-bg px-6 py-4">
-              <form onSubmit={handleSend} className="flex gap-3">
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend(e);
-                    }
-                  }}
-                  placeholder="اكتب سؤالك هنا..."
-                  rows={1}
-                  className="flex-1 resize-none rounded-xl border border-border bg-app-bg px-4 py-3 text-sm text-text-primary outline-none transition-colors placeholder:text-text-secondary focus:border-action-blue"
-                />
-                <button
-                  type="submit"
-                  disabled={loading || !input.trim()}
-                  className="flex h-12 w-12 items-center justify-center rounded-xl bg-action-blue text-white transition-colors hover:bg-action-blue/90 disabled:opacity-50"
-                >
-                  <Send className="h-5 w-5" />
-                </button>
-              </form>
-            </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

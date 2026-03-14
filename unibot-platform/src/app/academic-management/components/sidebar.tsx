@@ -26,7 +26,7 @@ const navItems = [
   { href: "/academic-management/tickets", label: "إدارة التذاكر", icon: TicketIcon },
 ];
 
-export function AcademicManagementSidebar({ profile }: { profile: Profile }) {
+export function AcademicManagementSidebar({ profile, tenantName }: { profile: Profile; tenantName?: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -45,6 +45,7 @@ export function AcademicManagementSidebar({ profile }: { profile: Profile }) {
         <div>
           <p className="text-sm font-bold text-text-primary">UniBot</p>
           <p className="text-xs text-text-secondary">الإدارة الأكاديمية</p>
+          {tenantName && <p className="truncate text-[10px] text-text-secondary/70">{tenantName}</p>}
         </div>
       </div>
 

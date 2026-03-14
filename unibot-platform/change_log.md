@@ -1807,3 +1807,548 @@ function parseConflictError(message: string): string {
 - واجهة الشعب تعرض إحصائيات الامتلاء بشكل بصري واضح.
 
 ---
+
+## إصلاح معماري: عزل البيانات داخل المؤسسة وتفويض الصلاحيات بالنطاق
+**التاريخ:** 2026-03-14
+
+### وصف المشكلة المعمارية
+تم اكتشاف خلل معماري حرج: **"غياب العزل داخل المؤسسة الواحدة" (Lack of Intra-Tenant Isolation)**. كان بإمكان أي مستخدم بدور `academic_management` مشاهدة وتعديل بيانات (التخصصات، المقررات، الشعب، الجداول، التذاكر) لـ **جميع الأقسام** داخل الجامعة. هذا يعني أن رئيس قسم علوم الحاسوب يستطيع الاطلاع على بيانات قسم الهندسة والعكس.
+
+### الحل المُطبَّق: تفويض الصلاحيات بالنطاق (Scope-Based Authorization)
+
+#### المرحلة 1: قاعدة البيانات — جدول الربط والدوال
+
+**الملف المُنشأ:** `supabase/migrations/20260313222415_intra_tenant_isolation.sql`
+
+##### جدول الربط الجديد: `academic_management_departments`
+| العمود | النوع | الوصف |
+|--------|-------|-------|
+| `profile_id` | UUID (FK → profiles) | معرّف مستخدم الإدارة الأكاديمية |
+| `department_id` | UUID (FK → departments) | القسم المُعيَّن له |
+| `tenant_id` | UUID (FK → tenants) | الجامعة |
+| `assigned_at` | TIMESTAMPTZ | تاريخ التعيين |
+| `assigned_by` | UUID (FK → profiles) | من قام بالتعيين |
+
+##### دالة المساعدة (SECURITY DEFINER): `get_my_managed_departments()`
+```sql
+CREATE OR REPLACE FUNCTION get_my_managed_departments()
+RETURNS UUID[] LANGUAGE SQL SECURITY DEFINER STABLE AS $$
+    SELECT COALESCE(
+        ARRAY(SELECT department_id FROM academic_management_departments WHERE profile_id = auth.uid()),
+        '{}'::UUID[]
+    );
+$$;
+```
+- تُرجع مصفوفة بمعرّفات الأقسام المُسنَدة للمستخدم الحالي
+- `SECURITY DEFINER` يضمن تجاوز RLS عند الاستدعاء
+
+#### المرحلة 2: سياسات RLS الجديدة (Row Level Security)
+
+##### الجداول المُعالَجة:
+
+| الجدول | السياسة القديمة (المحذوفة) | السياسة الجديدة المُقيَّدة |
+|--------|--------------------------|--------------------------|
+| `majors` | `admin_write_majors` (يشمل academic_management لكل الأقسام) | `academic_management_scoped_write_majors`: يقيّد الوصول على `department_id = ANY(get_my_managed_departments())` |
+| `courses` | لا توجد (لم تكن موجودة لـ academic_management) | `academic_management_scoped_write_courses`: يقيّد على `department_id = ANY(get_my_managed_departments())` |
+| `sections` | `academic_management_write_sections` (كل الأقسام) | `academic_management_scoped_write_sections`: يقيّد على `course_id IN (courses WHERE department_id = ANY(...))` |
+| `schedules` | `academic_management_write_schedules` (كل الأقسام) | `academic_management_scoped_write_schedules`: يقيّد على `section_id IN (sections → courses WHERE department_id = ANY(...))` |
+
+##### RLS على الجدول الجديد `academic_management_departments`:
+- `tenant_admin_manage_am_departments`: مدير الجامعة وsuperadmin يديران السجلات
+- `am_read_own_department_assignments`: مستخدم الإدارة الأكاديمية يقرأ تعيينه الخاص فقط
+
+#### المرحلة 3: تطبيق Migration على قاعدة البيانات
+تم تنفيذ `npx supabase db push` تلقائياً بنجاح. المـigration المُطبَّق:
+```
+✅ 20260313222415_intra_tenant_isolation.sql — Finished supabase db push.
+```
+
+#### المرحلة 4: إعادة هيكلة واجهة إدارة المستخدمين (Tenant Admin)
+
+##### الملفات المُعدَّلة:
+
+**`src/app/tenant-admin/users/page.tsx`**
+- إضافة `academic_management_departments(department_id, departments(name, code))` لاستعلام المستخدمين
+
+**`src/app/tenant-admin/users/actions.ts`**
+- عند إنشاء مستخدم بدور `academic_management`:
+  - إلزامية تحديد `am_department_id` (يُرفع خطأ إذا لم يُحدَّد)
+  - إدراج سجل في `academic_management_departments` (profile_id, department_id, tenant_id, assigned_by)
+  - حذف منطق `scope_type`/`scope_id` القديم
+
+**`src/app/tenant-admin/users/users-client.tsx`**
+- إضافة واجهة `AmDeptLink` وتحديث `UserRow` لتشمل `academic_management_departments`
+- في نموذج "إضافة مستخدم" لدور `academic_management`:
+  - **إزالة**: حقلا "نطاق الإدارة" و"الكلية/القسم" (scope_type + scope_id)
+  - **إضافة**: dropdown إلزامي "القسم المُدار" (`am_department_id`) مع رسالة توضيحية
+  - بيان تحذيري: "سيتمكن هذا المستخدم فقط من الوصول إلى بيانات القسم المُعيَّن له"
+- في جدول المستخدمين: عرض القسم المُدار للإدارة الأكاديمية بعلامة بنفسجية مميزة
+
+### ملخص التغييرات الأمنية
+
+| قبل الإصلاح | بعد الإصلاح |
+|-------------|-------------|
+| academic_management يرى جميع الأقسام | يرى قسمه المُعيَّن فقط |
+| يمكنه تعديل التخصصات في أي قسم | يعدّل تخصصات قسمه فقط |
+| يمكنه إدارة الشعب لجميع المقررات | يدير شعب مقررات قسمه فقط |
+| يمكنه تعديل الجداول لجميع الأقسام | يعدّل جداول قسمه فقط |
+| لا ربط واضح بين المستخدم والقسم | ربط صريح في جدول `academic_management_departments` |
+
+### الملفات المُنشأة
+- `supabase/migrations/20260313222415_intra_tenant_isolation.sql`
+
+### الملفات المُعدَّلة
+- `src/app/tenant-admin/users/page.tsx`
+- `src/app/tenant-admin/users/actions.ts`
+- `src/app/tenant-admin/users/users-client.tsx`
+
+### المشاكل
+- لا توجد مشاكل. Migration تم تطبيقه بنجاح تلقائياً.
+
+---
+
+## تحسين UX: المرحلة 5 و 6 — إدارة الشعب والجدول المرئي التفاعلي
+**التاريخ:** 2026-03-14
+
+### وصف التحسين
+إعادة هيكلة كاملة لصفحتي "إدارة الشعب" و"الجدول الدراسي" لدور الإدارة الأكاديمية، مع إضافة نظام تصفية متقدم للجدول المرئي.
+
+---
+
+### المرحلة 5: إدارة الشعب الدراسية (Kanban-style)
+
+#### `src/app/academic-management/sections/sections-client.tsx`
+
+##### نمط التصميم: قائمة مجمّعة بالمقرر (Accordion Kanban)
+- كل مقرر يظهر كبطاقة قابلة للطي/التوسيع تحتوي على جميع شعبه
+- رأس البطاقة يعرض: كود المقرر، الاسم، عدد الشعب، المسجلين الكلي، شريط التقدم
+- التلوين التحذيري: برتقالي عند الامتلاء > 80%، أحمر عند الامتلاء الكامل
+
+##### بيانات كل شعبة
+- **Badge الامتلاء**: `enrolled_count / max_capacity` مع لون تكيّفي (أخضر/برتقالي/أحمر)
+- **شريط تقدم** مرئي داخل كل بطاقة شعبة
+- **حالة الشعبة**: مفتوحة / مغلقة / مؤرشفة / مدمجة
+
+##### Modal إضافة شعبة
+- اختيار المقرر (إلزامي)
+- اختيار الفصل الدراسي (إلزامي)
+- كود الشعبة (إلزامي)
+- المحاضر (اختياري)
+- السعة القصوى (افتراضي: 40)
+
+##### إجراءات على الشعبة
+| الإجراء | الشرط | الوصف |
+|---------|-------|-------|
+| تعيين محاضر | مفتوحة | dropdown لاختيار المحاضر |
+| إغلاق | مفتوحة | تغيير الحالة إلى `closed` |
+| دمج | مفتوحة | نقل الطلاب لشعبة أخرى من نفس المقرر |
+| إعادة فتح | مغلقة | تغيير الحالة إلى `open` |
+| أرشفة | مغلقة | تغيير الحالة إلى `archived` |
+
+---
+
+### المرحلة 6: الجدول الدراسي المرئي (Google Calendar Style)
+
+#### `src/app/academic-management/schedules/schedules-client.tsx`
+
+##### شبكة الجدول المرئي
+- **الأعمدة**: أيام الأسبوع (الأحد → الخميس)
+- **الصفوف**: فترات زمنية من 08:00 إلى 18:00 بفواصل 30 دقيقة (21 فترة)
+- **الخلايا**: النقر على خلية فارغة يفتح modal "إضافة محاضرة" بالوقت المحدد مسبقاً
+- **الكتل الملونة**: كل يوم بلون مميز (أزرق / أخضر / بنفسجي / برتقالي / تركوازي)
+
+##### محتوى كتلة المحاضرة
+- كود المقرر + حالة النشر (منشور/مسودة)
+- اسم المقرر (مقتصر بسطر واحد)
+- اسم المحاضر (أيقونة User)
+- كود القاعة (أيقونة MapPin)
+- الوقت (أيقونة Clock)
+
+##### **جديد — نظام التصفية الثلاثي (Major → Level → Semester)**
+أُضيف شريط تصفية في أعلى الصفحة يتكون من 3 dropdowns متتالية:
+
+| الفلتر | المصدر | السلوك |
+|--------|--------|--------|
+| التخصص | `majors` | اختيار التخصص يصفّي المستويات المتاحة |
+| المستوى | `academic_levels` (مُصفّى بالتخصص) | معطّل حتى اختيار التخصص |
+| الفصل الدراسي | `semesters` | مستقل عن التخصص |
+
+**منطق التصفية:**
+1. بالفصل: `schedule.sections.semesters.id === filterSemesterId`
+2. بالتخصص + المستوى: يُحدَّد `validCourseIds` من `study_plan_courses` حيث `major_id = X` و `academic_level_id = Y`، ثم يُعرض فقط ما `schedule.sections.course_id IN validCourseIds`
+
+زر "مسح الفلاتر" يظهر فقط عند تفعيل فلتر واحد على الأقل.
+
+##### معالجة تعارضات قاعدة البيانات (Trigger Exceptions)
+| نوع التعارض | رسالة Trigger | الرسالة المعروضة |
+|-------------|---------------|------------------|
+| `SPATIAL_CONFLICT` | القاعة محجوزة | تعارض مكاني: القاعة محجوزة في نفس الوقت |
+| `FACULTY_CONFLICT` | المحاضر مشغول | تعارض المحاضر: المحاضر لديه محاضرة أخرى في نفس الوقت |
+| `STUDENT_CONFLICT` | تعارض طلابي | تعارض طلابي: مقرر إجباري في نفس المستوى الأكاديمي مجدول في نفس الوقت |
+
+رسائل التعارض تظهر بخلفية برتقالية (`bg-warning/10`) مع أيقونة `AlertTriangle`، بينما الأخطاء العادية تظهر بخلفية حمراء.
+
+---
+
+### البيانات المُضافة للصفحة (`schedules/page.tsx`)
+
+| الجدول | الحقول | الغرض |
+|--------|--------|-------|
+| `semesters` | `id, name, status` | dropdown فلتر الفصل |
+| `majors` | `id, name, code` | dropdown فلتر التخصص |
+| `academic_levels` | `id, name, level_number, major_id` | dropdown فلتر المستوى |
+| `study_plan_courses` | `course_id, major_id, academic_level_id` | ربط الفلتر بالمقررات |
+
+تحديث استعلام `schedules` ليشمل `course_id` و`semester_id` و`semesters(id, name)` داخل الـ sections المُضمَّنة.
+
+---
+
+### الملفات المُعدَّلة
+- `src/app/academic-management/schedules/page.tsx` — إضافة 4 استعلامات جديدة + تحديث استعلام schedules
+- `src/app/academic-management/schedules/schedules-client.tsx` — إضافة نظام التصفية الثلاثي
+
+### الملفات غير المُعدَّلة (مكتملة مسبقاً)
+- `src/app/academic-management/sections/sections-client.tsx` — اكتملت في جلسة سابقة
+- `src/app/academic-management/sections/actions.ts` — Server Actions مكتملة
+- `src/app/academic-management/schedules/actions.ts` — Server Actions مع معالجة التعارضات مكتملة
+
+### المشاكل
+- لا توجد مشاكل.
+
+---
+
+## تحسين UX: المرحلة 7، 8 و 9 — محتوى المقرر، سجل الدرجات، والحضور الذكي
+**التاريخ:** 2026-03-14
+
+### وصف التحسين
+إعادة هيكلة شاملة لثلاث صفحات رئيسية في واجهة أعضاء هيئة التدريس، مع تحسينات UX تقارب معايير Enterprise SaaS الحديثة.
+
+---
+
+### المرحلة 7: محتوى المقرر — Accordion بالأسابيع + مفتاح AI متوهج
+
+#### `src/app/faculty/materials/materials-client.tsx`
+
+##### التصميم الجديد: مجموعات الأسابيع القابلة للطي
+- كل أسبوع يُعرض كـ accordion قابل للطي/التوسيع
+- رأس كل accordion يحتوي: رقم الأسبوع في مربع ملون، عنوان "الأسبوع X"، عداد المواد
+- الحالة الافتراضية: جميع الأسابيع مفتوحة — `collapsedWeeks: Set<string>` يبدأ فارغاً
+- أيقونة `ChevronDown` تدور 180° عند الطي بانتقال 200ms
+
+##### مفتاح الاعتماد للذكاء الاصطناعي — `AiApprovedToggle` (تحديث جذري)
+| الحالة | المظهر |
+|--------|--------|
+| غير معتمد | مستطيل رمادي + نقطة بيضاء على اليسار |
+| معتمد | مستطيل أزرق + **توهج** `shadow-[0_0_12px_rgba(49,130,206,0.5)]` + نقطة بيضاء على اليمين |
+
+- نص "معتمد للذكاء الاصطناعي ✨" يتغير لونه إلى `text-action-blue` عند التفعيل
+- انتقال حركي 300ms للنقطة والألوان
+
+---
+
+### المرحلة 8: سجل الدرجات — تجربة جداول البيانات (Spreadsheet)
+
+#### `src/app/faculty/gradebook/gradebook-client.tsx` (إعادة كتابة كاملة)
+
+##### نمط التحرير المباشر في الخلايا
+- لا يوجد modal أو زر "تعديل" منفصل — كل خلية درجة هي `input` مرئي دائماً
+- الخلايا شفافة الخلفية، تُظهر حدوداً زرقاء عند التركيز `focus:ring-inset focus:ring-action-blue/30`
+- رؤوس الأعمدة: أعمال السنة (30) / منتصف الفصل (30) / النهائي (40) / المجموع (100)
+
+##### نظام `drafts` و `dirty`
+| المتغير | النوع | الوصف |
+|---------|------|-------|
+| `drafts` | `Record<string, {coursework, midterm, final}: string>` | قيم الخلايا في الذاكرة |
+| `dirty` | `Set<string>` | معرّفات الصفوف المتغيرة غير المحفوظة |
+
+- الصف المعدّل: خلفية `bg-action-blue/[0.03]` + نقطة زرقاء صغيرة بجانب اسم الطالب
+- حساب المجموع اللحظي: `c + m + f` — يطابق `GENERATED ALWAYS AS` في DB
+- تلوين تكيّفي للمجموع: أخضر ≥ 60 | برتقالي 50–59 | أحمر < 50
+
+##### زر "حفظ التغييرات"
+- يظهر فقط عند `dirty.size > 0` مع عداد الصفوف: `حفظ التغييرات (3)`
+- يستخدم `Promise.all()` لحفظ جميع الإدخالات في آنٍ واحد
+- بعد الحفظ: يعرض "تم الحفظ بنجاح" لمدة 2.5 ثانية
+- "نشر الدرجات" يظهر فقط عند `dirty.size === 0` (منع النشر قبل الحفظ)
+
+#### `src/app/faculty/gradebook/actions.ts` (إضافة)
+```typescript
+export async function saveGradeValues(
+  entryId: string,
+  coursework: number | null,
+  midterm: number | null,
+  final: number | null
+)
+```
+
+---
+
+### المرحلة 9: إدارة الحضور — عرض QR ضخم + تجديد تلقائي
+
+#### `src/app/faculty/attendance/attendance-client.tsx`
+
+##### عرض رمز QR الضخم
+- صورة QR حقيقية بحجم 256×256px عبر `api.qrserver.com` — لا توجد مكتبات خارجية
+- `key={qrData.token}` يُجبر React على إعادة تحميل الصورة عند تجديد الـ token
+
+##### مؤقت التجديد التلقائي (10 ثوانٍ)
+| المتغير | الوصف |
+|---------|-------|
+| `countdown` | عداد يبدأ من 10 وينقص كل ثانية |
+| `activeQrSessionId` | معرّف الجلسة النشطة |
+
+- `useEffect` مع `setInterval` — عند وصول العداد لـ 1: يستدعي `handleGenerateQr` تلقائياً
+- إعادة تهيئة الـ interval عند تغيير `qrData.token`
+
+##### شريط التقدم الملون
+| الوقت المتبقي | لون الشريط |
+|---------------|-----------|
+| 7–10 ثوانٍ | `bg-action-blue` |
+| 4–6 ثوانٍ | `bg-warning` |
+| 1–3 ثوانٍ | `bg-danger` |
+
+---
+
+### الملفات المُعدَّلة
+- `src/app/faculty/materials/materials-client.tsx`
+- `src/app/faculty/gradebook/gradebook-client.tsx`
+- `src/app/faculty/gradebook/actions.ts`
+- `src/app/faculty/attendance/attendance-client.tsx`
+
+### المشاكل
+- لا توجد مشاكل. QR يُولَّد بدون مكتبات خارجية عبر `api.qrserver.com`.
+
+---
+
+## UX Refactoring: Phase 10, 11 & 12 — Student Dashboard, UniBot Chat, and Smart Ticketing
+**التاريخ:** 2026-03-14
+
+### وصف التحسين
+تحديث شامل لتجربة دور الطالب في ثلاثة محاور: لوحة التحكم الأكاديمية، واجهة UniBot بالشاشة المنقسمة، ونظام التذاكر الذكي.
+
+---
+
+### المرحلة 10: لوحة تحكم الطالب — مساري الدراسي + الجدول الأسبوعي
+
+#### `src/app/student/page.tsx`
+
+##### ودجت "مساري الدراسي" المُحسَّن
+- خلفية متدرجة `from-card-bg via-ai-light/20 to-ai-lavender/20` للبطاقة
+- شريط تقدم بارتفاع `h-5` مع تدرج `from-action-blue via-purple to-ai-lavender`
+- علامات مرجعية عند 25% / 50% / 75% (`w-px bg-white/50`)
+- عداد النسبة المئوية `{progressPct}%` بخط كبير أزرق في المنتصف
+
+##### بطاقة المعدل التراكمي — لون تكيّفي
+| المعدل | اللون |
+|--------|-------|
+| ≥ 3.5 | `text-success` + `bg-success/10` — ممتاز |
+| ≥ 2.5 | `text-action-blue` + `bg-action-blue/10` — جيد جداً |
+| ≥ 2.0 | `text-warning` + `bg-warning/10` — جيد |
+| < 2.0 | `text-danger` + `bg-danger/10` — ضعيف |
+
+##### الجدول الأسبوعي (جديد)
+- يجلب `schedules` عبر `section_id IN [...]` بعد استخراج معرّفات الشعب من `enrollments`
+- شبكة `grid-cols-2 sm:grid-cols-3 lg:grid-cols-5` للأيام النشطة فقط
+- كل يوم يعرض بطاقات المقررات مع الكود، الاسم، والوقت بتنسيق `HH:MM – HH:MM`
+
+---
+
+### المرحلة 11: UniBot — واجهة الشاشة المنقسمة
+
+#### `src/app/student/unibot/unibot-client.tsx` (إعادة هيكلة جذرية)
+
+##### التخطيط الجديد
+```
+[Chat Panel — 40% RTL-right] | [PDF Viewer — 60% RTL-left]
+```
+- `flex-col` على الموبايل (عارض المستند مخفي)
+- `lg:flex-row` على الشاشات الكبيرة
+
+##### لوحة المحادثة (40%)
+- رأس يحتوي: أيقونة UniBot + عنوان + **قائمة منسدلة** لاختيار المحادثة أو بدء جديدة
+- **فقاعات المساعد** بتدرج AI: `bg-gradient-to-br from-ai-light/60 to-ai-lavender/30 border-ai-lavender/50`
+- **فقاعات المستخدم**: `bg-action-blue text-white`
+- مؤشر تحميل بثلاث نقاط متحركة بتدرج AI
+
+##### شرائح المصادر (Citation Chips) — تحسين
+- الضغط على الشريحة يُحدِّث `selectedSource` → يعرض المقتطف في لوحة المستند
+- الشريحة المحددة حالياً تتحول إلى `bg-action-blue text-white`
+- أُزيل `showSources` (state مُهمل) واستُبدل بالتحديث المباشر للوحة اليسرى
+
+##### لوحة عارض المستند (60%)
+| الحالة | المحتوى |
+|--------|---------|
+| لا يوجد مصدر محدد | رسالة ترحيبية + مثال على شريحة مصدر |
+| مصدر محدد | شارة الصفحة + نص المقتطف في بطاقة بيضاء |
+
+---
+
+### المرحلة 12: نظام التذاكر — بطاقة اقتراح AI المُعزَّزة
+
+#### `src/app/student/tickets/tickets-client.tsx`
+
+##### بطاقة اقتراح UniBot (الخطوة 2) — تصميم جديد
+- رأس البطاقة: `bg-warning/10 border-b border-warning/20` مع أيقونة `Sparkles` في مربع `bg-warning/20`
+- العنوان: **"اقتراح من المساعد الذكي"** (بدلاً من "وجدنا إجابة محتملة من UniBot")
+- الوصف الثانوي: "UniBot وجد إجابة محتملة لمشكلتك"
+
+##### أزرار الاستجابة
+| الزر | التصميم |
+|------|---------|
+| **هذا يحل مشكلتي** | `bg-success rounded-xl font-semibold` |
+| **مواصلة إرسال التذكرة** | `border-2 border-border hover:border-warning/40 hover:bg-warning/5` |
+
+---
+
+### الملفات المُعدَّلة
+- `src/app/student/page.tsx`
+- `src/app/student/unibot/unibot-client.tsx`
+- `src/app/student/tickets/tickets-client.tsx`
+
+### المشاكل
+- لا توجد مشاكل. `showSources` أُزيل بعد أن أصبح `selectedSource` وحده كافياً.
+
+---
+
+## إصلاح أمني: عزل نطاق رئيس القسم (Department Scope Isolation)
+**التاريخ:** 2026-03-14
+
+### وصف المشكلة
+كان جميع رؤساء الأقسام (`academic_management`) يرون نفس البيانات (جميع التخصصات والمقررات والشعب والجداول) بدلاً من رؤية البيانات الخاصة بقسمهم فقط.
+
+**مثال:**
+- إبراهيم حسن (رئيس قسم علوم الحاسوب) كان يرى تخصصات قسم الاقتصاد
+- أحمد المقطري (رئيس قسم الاقتصاد) كان يرى تخصصات قسم علوم الحاسوب
+
+### الحل المُطبَّق
+تصفية البيانات بناءً على `department_id` المرتبط بالمستخدم في جدول `academic_management_departments`:
+
+```
+department_id → majors → study_plan_courses → course_ids → sections/schedules
+```
+
+### سلسلة التصفية
+1. جلب `department_id` من `academic_management_departments` للمستخدم الحالي
+2. جلب `major_ids` من `majors` حيث `department_id` يطابق
+3. جلب `course_ids` من `study_plan_courses` حيث `major_id` في القائمة
+4. تصفية `sections` و `schedules` و `enrollments` بناءً على `course_id`
+
+### الملفات المُعدَّلة
+
+#### `src/app/academic-management/schedules/page.tsx`
+- جلب `department_id` من `academic_management_departments`
+- تصفية `majors` بناءً على `department_id`
+- تصفية `academic_levels` و `study_plan_courses` بناءً على `major_ids`
+- تصفية `sections` بناءً على `course_ids` المستخرجة
+- تصفية `schedules` بعد الجلب عبر `sections.course_id`
+
+#### `src/app/academic-management/sections/page.tsx`
+- جلب `department_id` ثم `major_ids` ثم `course_ids`
+- تصفية `courses` و `sections` بناءً على `course_ids`
+
+#### `src/app/academic-management/enrollments/page.tsx`
+- نفس منطق التصفية للـ `sections` و `enrollments`
+
+#### `src/app/academic-management/analytics/actions.ts`
+- إضافة دالة مساعدة `getScopedCourseIds()` لاستخراج المقررات المسموحة
+- تصفية `getRiskZoneData()` و `getCourseRiskFlags()` و `getAllRiskScores()` بناءً على `course_id`
+- `tenant_admin` يتجاوز التصفية ويرى جميع البيانات
+
+### ملاحظات
+- التذاكر (`tickets`) لا تحتاج تصفية لأنها ليست مرتبطة بمقررات محددة
+- `tenant_admin` يرى جميع البيانات بدون تصفية
+- إذا لم يكن للمستخدم `department_id` مُعيَّن، يرى جميع البيانات (fallback)
+
+---
+
+## Hotfix: Tenant Admin Users Visibility
+**التاريخ:** 2026-03-14
+
+### وصف المشكلة
+عند إضافة مستخدمين جدد (طلاب، محاضرين، إلخ) من خلال واجهة مدير الجامعة، تظهر رسالة "تمت الإضافة بنجاح" لكن المستخدمين لا يظهرون في قائمة إدارة المستخدمين، والعدادات تُظهر 0.
+
+### السبب الجذري
+مشكلة في سياسات RLS (Row Level Security) على جدول `profiles` والجداول المرتبطة:
+1. الدوال المساعدة `current_tenant_id()` و `current_user_role()` كانت تُسبب recursion عند محاولة قراءة من جدول `profiles`
+2. السياسات القديمة لم تكن تعمل بشكل صحيح مع `tenant_admin`
+
+### الحل المُطبَّق
+
+#### 1. إنشاء دوال مساعدة جديدة بـ SECURITY DEFINER
+```sql
+CREATE OR REPLACE FUNCTION auth_tenant_id() RETURNS UUID
+LANGUAGE sql STABLE SECURITY DEFINER
+AS $$ SELECT tenant_id FROM profiles WHERE id = auth.uid(); $$;
+
+CREATE OR REPLACE FUNCTION auth_user_role() RETURNS TEXT
+LANGUAGE sql STABLE SECURITY DEFINER
+AS $$ SELECT role::text FROM profiles WHERE id = auth.uid(); $$;
+```
+
+#### 2. إعادة إنشاء سياسات RLS للجداول التالية:
+- **profiles**: سياسات للـ super_admin, tenant_admin, وقراءة المستخدمين
+- **student_profiles**: سياسات للإدارة والقراءة
+- **faculty_profiles**: سياسات للإدارة والقراءة
+- **student_majors**: سياسات للإدارة والقراءة
+- **faculty_departments**: سياسات للإدارة والقراءة
+- **academic_management_departments**: سياسات للإدارة والقراءة
+
+### الملفات المُعدَّلة
+- `supabase/migrations/20260314054800_fix_profiles_rls_final.sql` (جديد)
+
+### ملاحظات
+- استخدام `SECURITY DEFINER` يسمح للدوال بتجاوز RLS عند قراءة بيانات المستخدم الحالي
+- السياسات الجديدة تضمن أن `tenant_admin` يمكنه رؤية وإدارة جميع المستخدمين في نفس الـ tenant
+- جميع المستخدمين في نفس الـ tenant يمكنهم قراءة بيانات بعضهم البعض
+
+---
+
+## Hotfix: User Management List Empty State
+**التاريخ:** 2026-03-14
+
+### وصف المشكلة
+صفحة إدارة المستخدمين تُظهر قائمة فارغة والعدادات تُظهر 0، رغم أن لوحة التحكم الرئيسية تُظهر وجود مستخدمين (20 مستخدم).
+
+### السبب الجذري
+مشكلتان في الكود:
+
+1. **استعلام الـ Supabase**: الـ joins لم تكن تستخدم `!left` بشكل صريح مما قد يُسبب فشل الاستعلام عند عدم وجود بيانات مرتبطة.
+
+2. **TypeScript Interfaces**: الـ `UserRow` interface كان يُعرِّف `student_profiles` و `faculty_profiles` كـ objects بينما Supabase يُرجعها كـ arrays.
+
+### الحل المُطبَّق
+
+#### 1. إصلاح استعلام الـ fetch في `page.tsx`
+```typescript
+// قبل
+.select(`*, student_profiles(*), faculty_profiles(*)...`)
+
+// بعد
+.select(`*, student_profiles!left(*), faculty_profiles!left(*)...`)
+```
+
+#### 2. إصلاح الـ TypeScript interfaces في `users-client.tsx`
+```typescript
+// قبل
+student_profiles: { student_number: string; ... } | null;
+faculty_profiles: { employee_id: string | null; ... } | null;
+
+// بعد
+student_profiles: { student_number: string; ... }[] | null;
+faculty_profiles: { employee_id: string | null; ... }[] | null;
+```
+
+#### 3. إصلاح الوصول للبيانات في الـ rendering
+```typescript
+// قبل
+user.student_profiles?.student_number
+
+// بعد
+user.student_profiles?.[0]?.student_number
+```
+
+### الملفات المُعدَّلة
+- `src/app/tenant-admin/users/page.tsx` - إضافة `!left` للـ joins
+- `src/app/tenant-admin/users/users-client.tsx` - إصلاح الـ interfaces والـ rendering
+
+---

@@ -23,6 +23,7 @@ import {
   Trash2,
   BookOpen,
   Send,
+  ChevronDown,
 } from "lucide-react";
 
 const CONTENT_TYPES = [
@@ -58,6 +59,15 @@ export function MaterialsClient({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [fileName, setFileName] = useState("");
+  const [collapsedWeeks, setCollapsedWeeks] = useState<Set<string>>(new Set());
+
+  function toggleWeek(week: string) {
+    setCollapsedWeeks((prev) => {
+      const next = new Set(prev);
+      if (next.has(week)) next.delete(week); else next.add(week);
+      return next;
+    });
+  }
 
   const filtered = filterSection
     ? materials.filter((m: any) => m.section_id === filterSection)
@@ -204,67 +214,94 @@ export function MaterialsClient({
 
           {Object.entries(grouped)
             .sort(([a], [b]) => Number(a) - Number(b))
-            .map(([week, items]) => (
-              <div key={week}>
-                <h3 className="mb-2 text-sm font-bold text-text-primary">
-                  {Number(week) === 0 ? "بدون أسبوع" : `الأسبوع ${week}`}
-                </h3>
-                <div className="space-y-2">
-                  {(items as any[]).map((material: any) => {
-                    const typeInfo = CONTENT_TYPES.find((t) => t.value === material.content_type) || CONTENT_TYPES[5];
-                    const TypeIcon = typeInfo.icon;
-                    return (
-                      <div key={material.id} className="rounded-2xl border border-border bg-card-bg p-4 shadow-sm">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue/10">
-                              <TypeIcon className="h-5 w-5 text-action-blue" />
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-text-primary">{material.title}</span>
-                                <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary">{typeInfo.label}</span>
-                                {material.is_published ? (
-                                  <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs text-success">منشور</span>
-                                ) : (
-                                  <span className="rounded-full bg-warning/10 px-2 py-0.5 text-xs text-warning">مسودة</span>
-                                )}
+            .map(([week, items]) => {
+              const isCollapsed = collapsedWeeks.has(week);
+              return (
+                <div key={week} className="overflow-hidden rounded-2xl border border-border bg-card-bg shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => toggleWeek(week)}
+                    className="flex w-full items-center justify-between px-5 py-3.5 text-right transition-colors hover:bg-app-bg/60"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-action-blue/10 text-sm font-bold text-action-blue">
+                        {Number(week) === 0 ? "—" : week}
+                      </span>
+                      <span className="text-sm font-bold text-text-primary">
+                        {Number(week) === 0 ? "بدون أسبوع" : `الأسبوع ${week}`}
+                      </span>
+                      <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary">
+                        {(items as any[]).length} {(items as any[]).length === 1 ? "مادة" : "مواد"}
+                      </span>
+                    </div>
+                    <ChevronDown
+                      className={`h-4 w-4 text-text-secondary transition-transform duration-200 ${
+                        isCollapsed ? "" : "rotate-180"
+                      }`}
+                    />
+                  </button>
+
+                  {!isCollapsed && (
+                    <div className="border-t border-border bg-app-bg/20 p-4">
+                      <div className="space-y-2">
+                        {(items as any[]).map((material: any) => {
+                          const typeInfo = CONTENT_TYPES.find((t) => t.value === material.content_type) || CONTENT_TYPES[5];
+                          const TypeIcon = typeInfo.icon;
+                          return (
+                            <div key={material.id} className="rounded-xl border border-border bg-card-bg p-4 shadow-sm">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue/10">
+                                    <TypeIcon className="h-5 w-5 text-action-blue" />
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-text-primary">{material.title}</span>
+                                      <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary">{typeInfo.label}</span>
+                                      {material.is_published ? (
+                                        <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs text-success">منشور</span>
+                                      ) : (
+                                        <span className="rounded-full bg-warning/10 px-2 py-0.5 text-xs text-warning">مسودة</span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs text-text-secondary">
+                                      {material.file_size_bytes && (
+                                        <span>{(material.file_size_bytes / 1024 / 1024).toFixed(1)} MB</span>
+                                      )}
+                                      <span>{new Date(material.created_at).toLocaleDateString("ar-SA")}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <AiApprovedToggle
+                                    materialId={material.id}
+                                    approved={material.is_ai_approved}
+                                    onToggle={handleAction}
+                                  />
+                                  <button
+                                    onClick={() => handleAction(() => togglePublish(material.id, !material.is_published))}
+                                    className={`rounded-lg p-1.5 ${material.is_published ? "text-success hover:bg-success/10" : "text-text-secondary hover:bg-app-bg"}`}
+                                    title={material.is_published ? "إلغاء النشر" : "نشر"}
+                                  >
+                                    {material.is_published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                                  </button>
+                                  <button
+                                    onClick={() => { if (confirm("حذف هذه المادة؟")) handleAction(() => deleteMaterial(material.id)); }}
+                                    className="rounded-lg p-1.5 text-text-secondary hover:bg-danger/10 hover:text-danger"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2 text-xs text-text-secondary">
-                                {material.file_size_bytes && (
-                                  <span>{(material.file_size_bytes / 1024 / 1024).toFixed(1)} MB</span>
-                                )}
-                                <span>{new Date(material.created_at).toLocaleDateString("ar-SA")}</span>
-                              </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <AiApprovedToggle
-                              materialId={material.id}
-                              approved={material.is_ai_approved}
-                              onToggle={handleAction}
-                            />
-                            <button
-                              onClick={() => handleAction(() => togglePublish(material.id, !material.is_published))}
-                              className={`rounded-lg p-1.5 ${material.is_published ? "text-success hover:bg-success/10" : "text-text-secondary hover:bg-app-bg"}`}
-                              title={material.is_published ? "إلغاء النشر" : "نشر"}
-                            >
-                              {material.is_published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                            </button>
-                            <button
-                              onClick={() => { if (confirm("حذف هذه المادة؟")) handleAction(() => deleteMaterial(material.id)); }}
-                              className="rounded-lg p-1.5 text-text-secondary hover:bg-danger/10 hover:text-danger"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
         </div>
       )}
 
@@ -361,17 +398,31 @@ function AiApprovedToggle({
   onToggle: (action: () => Promise<void>) => void;
 }) {
   return (
-    <button
-      onClick={() => onToggle(() => toggleAiApproved(materialId, !approved))}
-      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-        approved
-          ? "bg-gradient-to-r from-ai-light to-ai-lavender text-action-blue shadow-sm"
-          : "border border-border bg-card-bg text-text-secondary hover:border-action-blue/30"
-      }`}
-      title={approved ? "معتمد لـ UniBot AI — اضغط لإلغاء" : "اعتماد لـ UniBot AI"}
-    >
-      <Sparkles className={`h-3.5 w-3.5 ${approved ? "text-action-blue" : "text-text-secondary"}`} />
-      {approved ? "AI ✓" : "AI"}
-    </button>
+    <div className="flex items-center gap-2">
+      <span
+        className={`flex items-center gap-1 text-xs font-semibold transition-colors ${
+          approved ? "text-action-blue" : "text-text-secondary"
+        }`}
+      >
+        <Sparkles className="h-3 w-3" />
+        معتمد للذكاء الاصطناعي ✨
+      </span>
+      <button
+        type="button"
+        onClick={() => onToggle(() => toggleAiApproved(materialId, !approved))}
+        title={approved ? "معتمد لـ UniBot AI — اضغط لإلغاء" : "اعتماد لـ UniBot AI"}
+        className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-all duration-300 focus:outline-none ${
+          approved
+            ? "bg-action-blue shadow-[0_0_12px_rgba(49,130,206,0.5)]"
+            : "bg-border hover:bg-text-secondary/40"
+        }`}
+      >
+        <span
+          className={`pointer-events-none inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-300 ${
+            approved ? "translate-x-4" : "translate-x-0.5"
+          }`}
+        />
+      </button>
+    </div>
   );
 }

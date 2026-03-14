@@ -99,6 +99,7 @@ export async function createUser(formData: FormData) {
     role,
     first_name,
     last_name,
+    email,
     phone: phone || null,
     account_status: "active",
   });
@@ -154,6 +155,13 @@ export async function createUser(formData: FormData) {
   }
 
   if (role === "academic_management") {
+    const am_department_id = formData.get("am_department_id") as string;
+
+    if (!am_department_id) {
+      await admin.auth.admin.deleteUser(authUser.user.id);
+      throw new Error("يجب تحديد القسم لمستخدم الإدارة الأكاديمية");
+    }
+
     if (employee_id) {
       const { error: fpError } = await supabase.from("faculty_profiles").insert({
         profile_id: authUser.user.id,
@@ -164,13 +172,15 @@ export async function createUser(formData: FormData) {
       if (fpError) throw new Error(`خطأ في بيانات الموظف: ${fpError.message}`);
     }
 
-    if (custom_role_id) {
-      const scope = scope_type && scope_id ? `${scope_type}:${scope_id}` : null;
-      
-      if (scope) {
-        await supabase.from("custom_roles").update({ scope }).eq("id", custom_role_id);
-      }
+    const { error: amdError } = await supabase.from("academic_management_departments").insert({
+      profile_id: authUser.user.id,
+      department_id: am_department_id,
+      tenant_id: profile.tenant_id,
+      assigned_by: profile.id,
+    });
+    if (amdError) throw new Error(`خطأ في ربط القسم: ${amdError.message}`);
 
+    if (custom_role_id) {
       const { error: pcrError } = await supabase.from("profile_custom_roles").insert({
         profile_id: authUser.user.id,
         custom_role_id,

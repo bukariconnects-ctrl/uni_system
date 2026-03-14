@@ -11,11 +11,12 @@ export default async function UsersPage() {
       .from("profiles")
       .select(`
         *,
-        student_profiles(*),
-        faculty_profiles(*),
-        student_majors(major_id, majors(name, code)),
-        faculty_departments(department_id, departments(name, code)),
-        profile_custom_roles(custom_role_id, custom_roles(name))
+        student_profiles!left(*),
+        faculty_profiles!left(*),
+        student_majors!left(major_id, majors(name, code)),
+        faculty_departments!left(department_id, departments(name, code)),
+        profile_custom_roles!left(custom_role_id, custom_roles(name)),
+        academic_management_departments!left(department_id, departments(name, code))
       `)
       .eq("tenant_id", profile.tenant_id)
       .order("created_at", { ascending: false }),

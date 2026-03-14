@@ -4,6 +4,36 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 
+async function getScopedCourseIds(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  profile: { id: string; tenant_id: string | null; role: string }
+): Promise<string[] | null> {
+  if (profile.role === "tenant_admin") return null;
+
+  const { data: amdRow } = await supabase
+    .from("academic_management_departments")
+    .select("department_id")
+    .eq("profile_id", profile.id)
+    .single();
+
+  if (!amdRow?.department_id) return null;
+
+  const { data: majorsData } = await supabase
+    .from("majors")
+    .select("id")
+    .eq("department_id", amdRow.department_id);
+
+  const majorIds = (majorsData || []).map((m) => m.id);
+  if (majorIds.length === 0) return [];
+
+  const { data: spcData } = await supabase
+    .from("study_plan_courses")
+    .select("course_id")
+    .in("major_id", majorIds);
+
+  return [...new Set((spcData || []).map((s) => s.course_id))];
+}
+
 export async function getRiskZoneData(semesterId?: string) {
   const { profile } = await requireRole([
     "academic_management",
@@ -11,10 +41,12 @@ export async function getRiskZoneData(semesterId?: string) {
   ]);
   const supabase = await createClient();
 
+  const scopedCourseIds = await getScopedCourseIds(supabase, profile);
+
   let query = supabase
     .from("student_risk_scores")
     .select(
-      "*, profiles!student_risk_scores_student_id_fkey(first_name, last_name, email), sections!student_risk_scores_section_id_fkey(section_code, courses(name))"
+      "*, profiles!student_risk_scores_student_id_fkey(first_name, last_name, email), sections!student_risk_scores_section_id_fkey(section_code, course_id, courses(name))"
     )
     .eq("tenant_id", profile.tenant_id)
     .in("risk_level", ["high", "critical"])
@@ -25,7 +57,11 @@ export async function getRiskZoneData(semesterId?: string) {
   }
 
   const { data } = await query;
-  return data || [];
+
+  if (scopedCourseIds === null) return data || [];
+  return (data || []).filter(
+    (r: any) => r.sections?.course_id && scopedCourseIds.includes(r.sections.course_id)
+  );
 }
 
 export async function getCourseRiskFlags(semesterId?: string) {
@@ -35,10 +71,12 @@ export async function getCourseRiskFlags(semesterId?: string) {
   ]);
   const supabase = await createClient();
 
+  const scopedCourseIds = await getScopedCourseIds(supabase, profile);
+
   let query = supabase
     .from("course_risk_flags")
     .select(
-      "*, sections!course_risk_flags_section_id_fkey(section_code, courses(name), instructor_id, profiles!sections_instructor_id_fkey(first_name, last_name))"
+      "*, sections!course_risk_flags_section_id_fkey(section_code, course_id, courses(name), instructor_id, profiles!sections_instructor_id_fkey(first_name, last_name))"
     )
     .eq("tenant_id", profile.tenant_id)
     .eq("flagged", true)
@@ -49,7 +87,11 @@ export async function getCourseRiskFlags(semesterId?: string) {
   }
 
   const { data } = await query;
-  return data || [];
+
+  if (scopedCourseIds === null) return data || [];
+  return (data || []).filter(
+    (r: any) => r.sections?.course_id && scopedCourseIds.includes(r.sections.course_id)
+  );
 }
 
 export async function getAllRiskScores(semesterId?: string) {
@@ -59,9 +101,11 @@ export async function getAllRiskScores(semesterId?: string) {
   ]);
   const supabase = await createClient();
 
+  const scopedCourseIds = await getScopedCourseIds(supabase, profile);
+
   let query = supabase
     .from("student_risk_scores")
-    .select("risk_level")
+    .select("risk_level, section_id, sections!student_risk_scores_section_id_fkey(course_id)")
     .eq("tenant_id", profile.tenant_id);
 
   if (semesterId) {
@@ -69,7 +113,11 @@ export async function getAllRiskScores(semesterId?: string) {
   }
 
   const { data } = await query;
-  return data || [];
+
+  if (scopedCourseIds === null) return data || [];
+  return (data || []).filter(
+    (r: any) => r.sections?.course_id && scopedCourseIds.includes(r.sections.course_id)
+  );
 }
 
 export async function getSemesters() {

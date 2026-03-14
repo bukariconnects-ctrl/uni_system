@@ -19,6 +19,8 @@ import {
   MapPin,
   User,
   Clock,
+  Filter,
+  RotateCcw,
 } from "lucide-react";
 
 interface ScheduleRow {
@@ -31,9 +33,11 @@ interface ScheduleRow {
   venue_id: string | null;
   sections: {
     section_code: string;
+    course_id: string;
+    semester_id: string;
     courses: { code: string; name: string } | null;
     profiles: { first_name: string; last_name: string } | null;
-    semesters: { name: string } | null;
+    semesters: { id: string; name: string } | null;
   } | null;
   venues: { name: string; code: string | null } | null;
 }
@@ -56,6 +60,11 @@ interface VenueOption {
   venue_type: string;
   capacity: number;
 }
+
+interface SemesterOption { id: string; name: string; status: string }
+interface MajorOption { id: string; name: string; code: string | null }
+interface LevelOption { id: string; name: string | null; level_number: number; major_id: string }
+interface StudyPlanCourse { course_id: string; major_id: string; academic_level_id: string | null }
 
 type ModalState =
   | { type: "add"; day: string; startTime: string }
@@ -104,14 +113,41 @@ export function SchedulesClient({
   initialSchedules,
   sections,
   venues,
+  semesters,
+  majors,
+  academicLevels,
+  studyPlanCourses,
 }: {
   initialSchedules: ScheduleRow[];
   sections: SectionOption[];
   venues: VenueOption[];
+  semesters: SemesterOption[];
+  majors: MajorOption[];
+  academicLevels: LevelOption[];
+  studyPlanCourses: StudyPlanCourse[];
 }) {
   const [modal, setModal] = useState<ModalState>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const [filterSemesterId, setFilterSemesterId] = useState("");
+  const [filterMajorId, setFilterMajorId] = useState("");
+  const [filterLevelId, setFilterLevelId] = useState("");
+
+  const filteredLevels = academicLevels.filter((l) => !filterMajorId || l.major_id === filterMajorId);
+
+  const displayedSchedules = initialSchedules.filter((schedule) => {
+    if (filterSemesterId && schedule.sections?.semesters?.id !== filterSemesterId) return false;
+    if (filterMajorId) {
+      const validCourseIds = new Set(
+        studyPlanCourses
+          .filter((spc) => spc.major_id === filterMajorId && (!filterLevelId || spc.academic_level_id === filterLevelId))
+          .map((spc) => spc.course_id)
+      );
+      if (!validCourseIds.has(schedule.sections?.course_id || "")) return false;
+    }
+    return true;
+  });
 
   const closeModal = () => {
     setModal(null);
@@ -140,7 +176,7 @@ export function SchedulesClient({
     });
   });
 
-  initialSchedules.forEach((schedule) => {
+  displayedSchedules.forEach((schedule) => {
     const day = schedule.day_of_week;
     const startSlot = schedule.start_time?.slice(0, 5);
     if (schedulesByDayAndTime[day] && schedulesByDayAndTime[day][startSlot]) {
@@ -149,7 +185,7 @@ export function SchedulesClient({
   });
 
   const occupiedSlots: Set<string> = new Set();
-  initialSchedules.forEach((schedule) => {
+  displayedSchedules.forEach((schedule) => {
     const day = schedule.day_of_week;
     const startIdx = timeToSlotIndex(schedule.start_time);
     const span = getSlotSpan(schedule.start_time, schedule.end_time);
@@ -160,11 +196,66 @@ export function SchedulesClient({
     }
   });
 
-  const totalLectures = initialSchedules.length;
-  const publishedLectures = initialSchedules.filter((s) => s.status === "published").length;
+  const totalLectures = displayedSchedules.length;
+  const publishedLectures = displayedSchedules.filter((s) => s.status === "published").length;
 
   return (
     <div className="space-y-5">
+      <div className="rounded-2xl border border-border bg-card-bg p-4 shadow-sm">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-text-secondary">
+            <Filter className="h-4 w-4" />
+            <span>تصفية الجدول</span>
+          </div>
+          <div className="flex flex-1 flex-wrap items-center gap-3">
+            <select
+              value={filterMajorId}
+              onChange={(e) => { setFilterMajorId(e.target.value); setFilterLevelId(""); }}
+              className="min-w-[160px] rounded-xl border border-border bg-app-bg px-3 py-2 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:ring-2 focus:ring-action-blue/20"
+            >
+              <option value="">— كل التخصصات —</option>
+              {majors.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}{m.code ? ` (${m.code})` : ""}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filterLevelId}
+              onChange={(e) => setFilterLevelId(e.target.value)}
+              disabled={!filterMajorId}
+              className="min-w-[160px] rounded-xl border border-border bg-app-bg px-3 py-2 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:ring-2 focus:ring-action-blue/20 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="">— كل المستويات —</option>
+              {filteredLevels.map((l) => (
+                <option key={l.id} value={l.id}>
+                  المستوى {l.level_number}{l.name ? ` (${l.name})` : ""}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filterSemesterId}
+              onChange={(e) => setFilterSemesterId(e.target.value)}
+              className="min-w-[160px] rounded-xl border border-border bg-app-bg px-3 py-2 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:ring-2 focus:ring-action-blue/20"
+            >
+              <option value="">— كل الفصول —</option>
+              {semesters.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+            {(filterMajorId || filterLevelId || filterSemesterId) && (
+              <button
+                onClick={() => { setFilterMajorId(""); setFilterLevelId(""); setFilterSemesterId(""); }}
+                className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm text-text-secondary transition-colors hover:border-danger/40 hover:text-danger"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                مسح الفلاتر
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {error && (
         <div className={`rounded-xl px-4 py-3 text-sm ${isConflictError(error) ? "bg-warning/10 border border-warning/30 text-warning" : "bg-danger/10 text-danger"}`}>
           <div className="flex items-center gap-2">

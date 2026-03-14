@@ -29,7 +29,7 @@ const navItems = [
   { href: "/faculty/tickets", label: "تذاكري", icon: TicketIcon },
 ];
 
-export function FacultySidebar({ profile }: { profile: Profile }) {
+export function FacultySidebar({ profile, tenantName }: { profile: Profile; tenantName?: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -48,6 +48,7 @@ export function FacultySidebar({ profile }: { profile: Profile }) {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-text-primary">UniBot</p>
           <p className="text-xs text-text-secondary">بوابة المحاضر</p>
+          {tenantName && <p className="truncate text-[10px] text-text-secondary/70">{tenantName}</p>}
         </div>
         <NotificationBell userId={profile.id} tenantId={profile.tenant_id!} userRole="faculty" />
       </div>

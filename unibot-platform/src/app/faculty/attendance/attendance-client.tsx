@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   createAttendanceSession,
   generateQrCode,
@@ -39,6 +39,8 @@ export function AttendanceClient({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [records, setRecords] = useState<any[]>([]);
   const [qrData, setQrData] = useState<{ token: string; expiresAt: string } | null>(null);
+  const [activeQrSessionId, setActiveQrSessionId] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -78,12 +80,28 @@ export function AttendanceClient({
     try {
       const data = await generateQrCode(sessionId);
       setQrData(data);
+      setActiveQrSessionId(sessionId);
+      setCountdown(10);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "حدث خطأ");
     } finally {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (!activeQrSessionId) return;
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          handleGenerateQr(activeQrSessionId);
+          return 10;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [activeQrSessionId, qrData?.token]);
 
   async function handleStatusChange(recordId: string, status: "present" | "absent" | "late" | "excused") {
     setLoading(true);
@@ -148,12 +166,52 @@ export function AttendanceClient({
       )}
 
       {qrData && (
-        <div className="rounded-2xl border border-action-blue/30 bg-action-blue/5 p-6 text-center">
-          <QrCode className="mx-auto mb-3 h-16 w-16 text-action-blue" />
-          <p className="mb-2 text-sm font-bold text-text-primary">رمز QR للحضور</p>
-          <div className="mx-auto mb-3 max-w-md break-all rounded-lg bg-card-bg p-3 font-mono text-xs text-text-secondary" dir="ltr">{qrData.token}</div>
-          <p className="text-xs text-text-secondary">ينتهي في: {new Date(qrData.expiresAt).toLocaleTimeString("ar-SA")}</p>
-          <button onClick={() => setQrData(null)} className="mt-3 rounded-lg border border-border px-4 py-2 text-sm text-text-secondary hover:bg-app-bg">إغلاق</button>
+        <div className="overflow-hidden rounded-2xl border border-action-blue/20 bg-card-bg shadow-xl">
+          <div className="flex items-center justify-between border-b border-border px-6 py-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue/10">
+                <QrCode className="h-5 w-5 text-action-blue" />
+              </div>
+              <div>
+                <h3 className="font-bold text-text-primary">رمز QR للحضور</h3>
+                <p className="text-xs text-text-secondary">يتجدد تلقائياً كل 10 ثوانٍ — وجّه الكاميرا نحوه لتسجيل الحضور</p>
+              </div>
+            </div>
+            <button
+              onClick={() => { setQrData(null); setActiveQrSessionId(null); }}
+              className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-app-bg"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="flex flex-col items-center gap-6 px-6 py-10">
+            <div className="rounded-2xl border-4 border-gray-100 bg-white p-5 shadow-lg">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData.token)}&size=280x280&color=1a202c&bgcolor=ffffff&qzone=2`}
+                alt="رمز QR للحضور"
+                className="h-64 w-64"
+                key={qrData.token}
+              />
+            </div>
+
+            <div className="w-full max-w-xs">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-medium text-text-secondary">تجديد تلقائي</span>
+                <span className={`text-sm font-bold tabular-nums ${
+                  countdown <= 3 ? "text-danger" : countdown <= 6 ? "text-warning" : "text-action-blue"
+                }`}>{countdown}ث</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-app-bg">
+                <div
+                  className={`h-full rounded-full transition-all duration-1000 ${
+                    countdown <= 3 ? "bg-danger" : countdown <= 6 ? "bg-warning" : "bg-action-blue"
+                  }`}
+                  style={{ width: `${(countdown / 10) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

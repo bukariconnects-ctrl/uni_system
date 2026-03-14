@@ -82,6 +82,31 @@ export async function updateGrade(entryId: string, formData: FormData) {
   revalidatePath("/faculty/gradebook");
 }
 
+export async function saveGradeValues(
+  entryId: string,
+  coursework: number | null,
+  midterm: number | null,
+  final: number | null
+) {
+  await requireRole(["faculty"]);
+  const supabase = await createClient();
+
+  const updates: Record<string, number | null> = {};
+  if (coursework !== null) updates.coursework_grade = coursework;
+  if (midterm !== null) updates.midterm_grade = midterm;
+  if (final !== null) updates.final_grade = final;
+
+  if (Object.keys(updates).length === 0) return;
+
+  const { error } = await supabase
+    .from("gradebook_entries")
+    .update(updates)
+    .eq("id", entryId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/faculty/gradebook");
+}
+
 export async function publishGrades(sectionId: string) {
   await requireRole(["faculty"]);
   const supabase = await createClient();

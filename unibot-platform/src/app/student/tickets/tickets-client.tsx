@@ -322,34 +322,41 @@ export function TicketsClient({
                   </p>
                 </div>
               ) : aiSuggestion ? (
-                <div className="rounded-2xl border-2 border-warning/40 bg-warning/5 p-5">
-                  <div className="mb-3 flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-warning" />
-                    <h3 className="text-sm font-bold text-text-primary">
-                      وجدنا إجابة محتملة من UniBot
-                    </h3>
+                <div className="overflow-hidden rounded-2xl border-2 border-warning/50 bg-gradient-to-br from-warning/8 to-warning/5 shadow-sm">
+                  <div className="flex items-center gap-3 border-b border-warning/20 bg-warning/10 px-5 py-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-warning/20">
+                      <Sparkles className="h-4 w-4 text-warning" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-text-primary">
+                        اقتراح من المساعد الذكي
+                      </h3>
+                      <p className="text-xs text-text-secondary">UniBot وجد إجابة محتملة لمشكلتك</p>
+                    </div>
                   </div>
-                  <p className="mb-4 whitespace-pre-wrap text-sm leading-relaxed text-text-primary">
-                    {aiSuggestion}
-                  </p>
-                  <div className="flex gap-3">
-                    <form action={handleAcceptAi}>
-                      <input type="hidden" name="category" value="other" />
-                      <input type="hidden" name="title" value="حل بواسطة AI" />
+                  <div className="p-5">
+                    <p className="mb-5 whitespace-pre-wrap text-sm leading-relaxed text-text-primary">
+                      {aiSuggestion}
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      <form action={handleAcceptAi}>
+                        <input type="hidden" name="category" value="other" />
+                        <input type="hidden" name="title" value="حل بواسطة AI" />
+                        <button
+                          type="submit"
+                          className="flex items-center gap-2 rounded-xl bg-success px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-success/90"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          هذا يحل مشكلتي
+                        </button>
+                      </form>
                       <button
-                        type="submit"
-                        className="flex items-center gap-2 rounded-lg bg-success px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-success/90"
+                        onClick={() => setStep(3)}
+                        className="flex items-center gap-2 rounded-xl border-2 border-border px-5 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:border-warning/40 hover:bg-warning/5"
                       >
-                        <CheckCircle className="h-4 w-4" />
-                        هذا يحل مشكلتي
+                        مواصلة إرسال التذكرة
                       </button>
-                    </form>
-                    <button
-                      onClick={() => setStep(3)}
-                      className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-app-bg"
-                    >
-                      سأواصل فتح التذكرة
-                    </button>
+                    </div>
                   </div>
                 </div>
               ) : (

@@ -70,7 +70,7 @@ function NavItem({
   );
 }
 
-export function TenantAdminSidebar({ profile }: { profile: Profile }) {
+export function TenantAdminSidebar({ profile, tenantName }: { profile: Profile; tenantName?: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -100,6 +100,7 @@ export function TenantAdminSidebar({ profile }: { profile: Profile }) {
         <div>
           <p className="text-sm font-bold text-text-primary">UniBot</p>
           <p className="text-xs text-text-secondary">مدير الجامعة</p>
+          {tenantName && <p className="truncate text-[10px] text-text-secondary/70">{tenantName}</p>}
         </div>
       </div>
 

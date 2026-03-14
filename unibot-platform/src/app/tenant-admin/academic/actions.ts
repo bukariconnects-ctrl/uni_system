@@ -130,20 +130,40 @@ export async function createMajor(formData: FormData) {
   const total_credits = parseInt(formData.get("total_credits") as string);
   const duration_years = parseInt(formData.get("duration_years") as string);
 
-  const { error } = await supabase.from("majors").insert({
-    tenant_id: profile.tenant_id,
-    department_id,
-    name,
-    code: code || null,
-    total_credits,
-    duration_years,
-  });
+  const { data: major, error } = await supabase
+    .from("majors")
+    .insert({
+      tenant_id: profile.tenant_id,
+      department_id,
+      name,
+      code: code || null,
+      total_credits,
+      duration_years,
+    })
+    .select("id")
+    .single();
 
   if (error) {
     if (error.message.includes("unique") || error.message.includes("duplicate"))
       throw new Error("كود التخصص مكرر، يرجى استخدام كود آخر");
     throw new Error(error.message);
   }
+
+  if (major && duration_years > 0) {
+    const levelNames = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس", "السابع"];
+    const levels = Array.from({ length: duration_years }, (_, i) => ({
+      tenant_id: profile.tenant_id,
+      major_id: major.id,
+      level_number: i + 1,
+      name: `المستوى ${levelNames[i] || (i + 1)}`,
+    }));
+
+    const { error: levelsError } = await supabase.from("academic_levels").insert(levels);
+    if (levelsError) {
+      console.error("Error creating academic levels:", levelsError);
+    }
+  }
+
   revalidatePath("/tenant-admin/academic");
 }
 

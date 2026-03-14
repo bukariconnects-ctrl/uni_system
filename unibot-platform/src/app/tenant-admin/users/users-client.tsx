@@ -40,6 +40,11 @@ interface FacultyDeptLink {
   departments: { name: string; code: string | null } | null;
 }
 
+interface AmDeptLink {
+  department_id: string;
+  departments: { name: string; code: string | null } | null;
+}
+
 interface CustomRoleLink {
   custom_role_id: string;
   custom_roles: { name: string } | null;
@@ -53,11 +58,12 @@ interface UserRow {
   account_status: string;
   created_at: string;
   phone: string | null;
-  student_profiles: { student_number: string; enrollment_year: number | null } | null;
-  faculty_profiles: { employee_id: string | null; specialization: string | null } | null;
-  student_majors: StudentMajorLink[];
-  faculty_departments: FacultyDeptLink[];
-  profile_custom_roles: CustomRoleLink[];
+  student_profiles: { student_number: string; enrollment_year: number | null }[] | null;
+  faculty_profiles: { employee_id: string | null; specialization: string | null }[] | null;
+  student_majors: StudentMajorLink[] | null;
+  faculty_departments: FacultyDeptLink[] | null;
+  profile_custom_roles: CustomRoleLink[] | null;
+  academic_management_departments: AmDeptLink[] | null;
 }
 
 interface RoleAssignment {
@@ -216,8 +222,8 @@ export function UsersClient({
     const matchesSearch =
       u.first_name.toLowerCase().includes(search.toLowerCase()) ||
       u.last_name.toLowerCase().includes(search.toLowerCase()) ||
-      u.student_profiles?.student_number?.toLowerCase().includes(search.toLowerCase()) ||
-      u.faculty_profiles?.employee_id?.toLowerCase().includes(search.toLowerCase());
+      u.student_profiles?.[0]?.student_number?.toLowerCase().includes(search.toLowerCase()) ||
+      u.faculty_profiles?.[0]?.employee_id?.toLowerCase().includes(search.toLowerCase());
 
     if (tab === "all") return matchesSearch;
     if (tab === "students") return u.role === "student" && matchesSearch;
@@ -348,7 +354,7 @@ export function UsersClient({
                         <div>
                           <p className="font-medium text-text-primary">{user.first_name} {user.last_name}</p>
                           <p className="text-xs text-text-secondary">
-                            {user.student_profiles?.student_number || user.faculty_profiles?.employee_id || "—"}
+                            {user.student_profiles?.[0]?.student_number || user.faculty_profiles?.[0]?.employee_id || "—"}
                           </p>
                         </div>
                       </div>
@@ -376,7 +382,13 @@ export function UsersClient({
                           {deptLink.name} {deptLink.code ? `(${deptLink.code})` : ""}
                         </span>
                       )}
-                      {!majorLink && !deptLink && "—"}
+                      {user.role === "academic_management" && user.academic_management_departments?.[0]?.departments && (
+                        <span className="text-xs rounded-full bg-purple/10 px-2 py-0.5 text-purple">
+                          {user.academic_management_departments[0].departments.name}
+                        </span>
+                      )}
+                      {!majorLink && !deptLink && user.role !== "academic_management" && "—"}
+                      {user.role === "academic_management" && !user.academic_management_departments?.[0] && "—"}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
@@ -818,6 +830,9 @@ function AddUserModal({
         {role === "academic_management" && (
           <div className="rounded-xl border border-purple/20 bg-purple/5 p-4 space-y-4">
             <p className="text-xs font-semibold text-purple">بيانات الإدارة الأكاديمية</p>
+            <div className="rounded-lg border border-purple/30 bg-purple/5 px-3 py-2 text-xs text-purple">
+              سيتمكن هذا المستخدم فقط من الوصول إلى بيانات القسم المُعيَّن له
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-xs font-semibold text-text-primary">رقم الموظف</label>
@@ -840,35 +855,24 @@ function AddUserModal({
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-text-primary">نطاق الإدارة</label>
+              <div className="sm:col-span-2">
+                <label className="mb-1.5 block text-xs font-semibold text-text-primary">
+                  القسم المُدار
+                  <span className="mr-1 text-danger">*</span>
+                </label>
                 <select
-                  name="scope_type"
-                  className="w-full rounded-xl border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-purple focus:ring-2 focus:ring-purple/20"
+                  name="am_department_id"
+                  required
+                  className="w-full rounded-xl border border-purple/40 bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-purple focus:ring-2 focus:ring-purple/20"
                 >
-                  <option value="">— بدون نطاق —</option>
-                  <option value="college">كلية</option>
-                  <option value="department">قسم</option>
+                  <option value="">— اختر القسم —</option>
+                  {departments.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name} {d.code ? `(${d.code})` : ""}
+                    </option>
+                  ))}
                 </select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-text-primary">الكلية/القسم</label>
-                <select
-                  name="scope_id"
-                  className="w-full rounded-xl border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-purple focus:ring-2 focus:ring-purple/20"
-                >
-                  <option value="">— اختر —</option>
-                  <optgroup label="الكليات">
-                    {colleges.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="الأقسام">
-                    {departments.map((d) => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                  </optgroup>
-                </select>
+                <p className="mt-1 text-xs text-text-secondary">سيُقيَّد وصول المستخدم على هذا القسم فقط</p>
               </div>
             </div>
           </div>
