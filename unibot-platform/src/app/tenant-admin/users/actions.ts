@@ -405,19 +405,27 @@ export async function updateUser(userId: string, formData: FormData) {
   const department_id = formData.get("department_id") as string;
   const am_department_id = formData.get("am_department_id") as string;
 
-  // Auth updates (email / password) — require service role
+  // Auth updates — get current email first to compare
+  const { data: authUser } = await admin.auth.admin.getUserById(userId);
+  const currentEmail = authUser?.user?.email ?? "";
+
   const authUpdate: { email?: string; password?: string } = {};
-  if (email) authUpdate.email = email;
-  if (password) authUpdate.password = password;
+  const newEmail = email?.trim();
+  if (newEmail && newEmail !== currentEmail) authUpdate.email = newEmail;
+  if (password?.trim()) authUpdate.password = password.trim();
+
   if (Object.keys(authUpdate).length > 0) {
     const { error: authErr } = await admin.auth.admin.updateUserById(userId, authUpdate);
     if (authErr) throw new Error(authErr.message);
   }
 
-  // Core profile update
+  // Resolved email (prefer the new one if changed, else keep current)
+  const resolvedEmail = authUpdate.email ?? currentEmail;
+
+  // Core profile update — sync email to profiles table too
   const { error: profileError } = await supabase
     .from("profiles")
-    .update({ first_name, last_name, phone: phone || null })
+    .update({ first_name, last_name, phone: phone || null, email: resolvedEmail })
     .eq("id", userId);
   if (profileError) throw new Error(profileError.message);
 

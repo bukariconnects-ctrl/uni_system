@@ -1314,7 +1314,7 @@ function EditUserModal({
       error={error}
       wide
     >
-      <form action={onSubmit} className="space-y-5">
+      <form action={onSubmit} className="space-y-5" autoComplete="off">
         <input type="hidden" name="role" value={user.role} />
 
         {/* ── الاسم ─────────────────────────── */}
@@ -1347,6 +1347,7 @@ function EditUserModal({
                 name="email"
                 defaultValue={user.email ?? ""}
                 dir="ltr"
+                autoComplete="off"
                 className="w-full rounded-xl border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-warning focus:ring-2 focus:ring-warning/20"
               />
               <p className="mt-1 text-[10px] text-text-secondary">عدّل البريد إذا أردت تغييره، واتركه كما هو إذا لم ترد التغيير</p>
@@ -1363,6 +1364,7 @@ function EditUserModal({
                   placeholder="اترك فارغاً للإبقاء على كلمة المرور الحالية"
                   minLength={6}
                   dir="ltr"
+                  autoComplete="new-password"
                   className="w-full rounded-xl border border-border bg-card-bg py-2.5 pl-3 pr-10 text-sm text-text-primary outline-none transition-colors focus:border-warning focus:ring-2 focus:ring-warning/20"
                 />
                 <button

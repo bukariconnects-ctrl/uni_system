@@ -49,6 +49,31 @@ export default async function UsersPage() {
       .order("level_number"),
   ]);
 
+  // ── Hydrate emails from auth.users ────────────────────────────────────────
+  // profiles.email may be stale or null; always use auth.users as source of truth.
+  const profileList = usersRes.data ?? [];
+  if (profileList.length > 0) {
+    try {
+      // listUsers returns up to 1000 per page; for most tenants this is fine.
+      const { data: authData } = await serviceClient.auth.admin.listUsers({
+        perPage: 1000,
+      });
+      if (authData?.users?.length) {
+        // Build O(1) lookup map: id → email
+        const emailMap = new Map(authData.users.map((u) => [u.id, u.email ?? null]));
+        // Inject auth email into every profile row
+        for (const p of profileList) {
+          const authEmail = emailMap.get(p.id);
+          if (authEmail && authEmail !== p.email) {
+            (p as Record<string, unknown>).email = authEmail;
+          }
+        }
+      }
+    } catch {
+      // Non-fatal: fall back to whatever is in profiles.email
+    }
+  }
+
   return (
     <div>
       <div className="mb-6">
@@ -58,7 +83,7 @@ export default async function UsersPage() {
         </p>
       </div>
       <UsersClient
-        initialUsers={usersRes.data || []}
+        initialUsers={profileList}
         customRoles={rolesRes.data || []}
         majors={majorsRes.data || []}
         departments={deptsRes.data || []}
