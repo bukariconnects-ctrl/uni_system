@@ -10,7 +10,7 @@ export async function getColleges() {
 
   const { data, error } = await supabase
     .from("colleges")
-    .select("*, departments(*, majors(*, academic_levels(*)))")
+    .select("*, campus_id, absence_threshold, campuses(name), departments(*, majors(*, academic_levels(*)))")
     .eq("tenant_id", profile.tenant_id)
     .order("created_at", { ascending: true });
 
@@ -25,12 +25,16 @@ export async function createCollege(formData: FormData) {
   const name = formData.get("name") as string;
   const code = formData.get("code") as string;
   const dean_id = formData.get("dean_id") as string;
+  const campus_id = formData.get("campus_id") as string;
+  const absence_threshold = formData.get("absence_threshold") as string;
 
   const { error } = await supabase.from("colleges").insert({
     tenant_id: profile.tenant_id,
     name,
     code: code || null,
     dean_id: dean_id || null,
+    campus_id: campus_id || null,
+    absence_threshold: absence_threshold ? parseFloat(absence_threshold) : null,
   });
 
   if (error) {
@@ -48,10 +52,18 @@ export async function updateCollege(id: string, formData: FormData) {
   const name = formData.get("name") as string;
   const code = formData.get("code") as string;
   const dean_id = formData.get("dean_id") as string;
+  const campus_id = formData.get("campus_id") as string;
+  const absence_threshold = formData.get("absence_threshold") as string;
 
   const { error } = await supabase
     .from("colleges")
-    .update({ name, code: code || null, dean_id: dean_id || null })
+    .update({
+      name,
+      code: code || null,
+      dean_id: dean_id || null,
+      campus_id: campus_id || null,
+      absence_threshold: absence_threshold ? parseFloat(absence_threshold) : null,
+    })
     .eq("id", id);
 
   if (error) throw new Error(error.message);
@@ -150,7 +162,7 @@ export async function createMajor(formData: FormData) {
   }
 
   if (major && duration_years > 0) {
-    const levelNames = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس", "السابع"];
+    const levelNames = ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس", "السابع", "الثامن", "التاسع", "العاشر"];
     const levels = Array.from({ length: duration_years }, (_, i) => ({
       tenant_id: profile.tenant_id,
       major_id: major.id,
@@ -242,6 +254,21 @@ export async function deleteLevel(id: string) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/tenant-admin/academic");
+}
+
+export async function getCampuses() {
+  const { profile } = await requireRole(["tenant_admin"]);
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("campuses")
+    .select("id, name, location")
+    .eq("tenant_id", profile.tenant_id)
+    .eq("is_active", true)
+    .order("name");
+
+  if (error) throw new Error(error.message);
+  return data || [];
 }
 
 export async function getFacultyMembers() {

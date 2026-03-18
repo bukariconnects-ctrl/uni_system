@@ -82,13 +82,13 @@ export async function updateSemester(id: string, formData: FormData) {
 
 export async function updateSemesterStatus(
   id: string,
-  status: "planning" | "active" | "archived"
+  status: "planning" | "registration" | "active" | "grade_freeze" | "archived"
 ) {
   await requireRole(["tenant_admin"]);
   const supabase = await createClient();
 
   const updateData: Record<string, unknown> = { status };
-  if (status === "archived") {
+  if (status === "grade_freeze" || status === "archived") {
     updateData.grade_freeze_at = new Date().toISOString();
   }
 
@@ -97,6 +97,10 @@ export async function updateSemesterStatus(
     .update(updateData)
     .eq("id", id);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.message.includes("INVALID_STATE_TRANSITION"))
+      throw new Error("انتقال الحالة غير صالح: " + error.message.split("INVALID_STATE_TRANSITION: ")[1]);
+    throw new Error(error.message);
+  }
   revalidatePath("/tenant-admin/calendar");
 }

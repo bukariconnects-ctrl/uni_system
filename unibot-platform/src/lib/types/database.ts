@@ -5,6 +5,36 @@ export type UserRole =
   | "faculty"
   | "student";
 
+export type SectionStatus = "open" | "closed" | "archived" | "merged";
+
+export type SectionType = "lecture" | "lab" | "tutorial";
+
+export type SemesterStatus =
+  | "planning"
+  | "registration"
+  | "active"
+  | "grade_freeze"
+  | "archived";
+
+export type SemesterType = "first" | "second" | "summer";
+
+export type ScheduleDay =
+  | "sunday"
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday";
+
+export type ScheduleStatus = "draft" | "published";
+
+export type VenueType = "lecture_hall" | "lab" | "auditorium" | "other";
+
+export type CourseType = "theoretical" | "practical" | "hybrid";
+
+export type PlanCourseType = "mandatory" | "elective";
+
 export type AccountStatus = "active" | "suspended" | "pending";
 
 export type TicketStatus = 

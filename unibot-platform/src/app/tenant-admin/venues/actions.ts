@@ -11,7 +11,7 @@ export async function getVenues() {
 
   const { data, error } = await supabase
     .from("venues")
-    .select("*")
+    .select("*, campuses(name)")
     .eq("tenant_id", profile.tenant_id)
     .order("created_at", { ascending: true });
 
@@ -33,6 +33,7 @@ export async function createVenue(formData: FormData) {
     floor: (formData.get("floor") as string) || null,
     has_projector: formData.get("has_projector") === "true",
     has_ac: formData.get("has_ac") === "true",
+    campus_id: (formData.get("campus_id") as string) || null,
   });
 
   if (error) {
@@ -59,11 +60,27 @@ export async function updateVenue(id: string, formData: FormData) {
       has_projector: formData.get("has_projector") === "true",
       has_ac: formData.get("has_ac") === "true",
       is_active: formData.get("is_active") === "true",
+      campus_id: (formData.get("campus_id") as string) || null,
     })
     .eq("id", id);
 
   if (error) throw new Error(error.message);
   revalidatePath("/tenant-admin/venues");
+}
+
+export async function getCampusesForVenues() {
+  const { profile } = await requireRole(["tenant_admin"]);
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("campuses")
+    .select("id, name")
+    .eq("tenant_id", profile.tenant_id)
+    .eq("is_active", true)
+    .order("name");
+
+  if (error) throw new Error(error.message);
+  return data || [];
 }
 
 export async function deleteVenue(id: string) {

@@ -732,6 +732,44 @@ export type Database = {
           },
         ]
       }
+      campuses: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          location: string | null
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campuses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       channel_members: {
         Row: {
           channel_id: string
@@ -1003,6 +1041,8 @@ export type Database = {
       }
       colleges: {
         Row: {
+          absence_threshold: number | null
+          campus_id: string | null
           code: string | null
           created_at: string
           dean_id: string | null
@@ -1012,6 +1052,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          absence_threshold?: number | null
+          campus_id?: string | null
           code?: string | null
           created_at?: string
           dean_id?: string | null
@@ -1021,6 +1063,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          absence_threshold?: number | null
+          campus_id?: string | null
           code?: string | null
           created_at?: string
           dean_id?: string | null
@@ -1030,6 +1074,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "colleges_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "colleges_dean_id_fkey"
             columns: ["dean_id"]
@@ -2183,7 +2234,9 @@ export type Database = {
           instructor_id: string | null
           max_capacity: number
           merged_into_id: string | null
+          parent_section_id: string | null
           section_code: string
+          section_type: Database["public"]["Enums"]["section_type"]
           semester_id: string
           status: Database["public"]["Enums"]["section_status"]
           tenant_id: string
@@ -2197,7 +2250,9 @@ export type Database = {
           instructor_id?: string | null
           max_capacity?: number
           merged_into_id?: string | null
+          parent_section_id?: string | null
           section_code: string
+          section_type?: Database["public"]["Enums"]["section_type"]
           semester_id: string
           status?: Database["public"]["Enums"]["section_status"]
           tenant_id: string
@@ -2211,7 +2266,9 @@ export type Database = {
           instructor_id?: string | null
           max_capacity?: number
           merged_into_id?: string | null
+          parent_section_id?: string | null
           section_code?: string
+          section_type?: Database["public"]["Enums"]["section_type"]
           semester_id?: string
           status?: Database["public"]["Enums"]["section_status"]
           tenant_id?: string
@@ -2235,6 +2292,13 @@ export type Database = {
           {
             foreignKeyName: "sections_merged_into_id_fkey"
             columns: ["merged_into_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sections_parent_section_id_fkey"
+            columns: ["parent_section_id"]
             isOneToOne: false
             referencedRelation: "sections"
             referencedColumns: ["id"]
@@ -3221,6 +3285,7 @@ export type Database = {
       venues: {
         Row: {
           building: string | null
+          campus_id: string | null
           capacity: number
           code: string | null
           created_at: string
@@ -3236,6 +3301,7 @@ export type Database = {
         }
         Insert: {
           building?: string | null
+          campus_id?: string | null
           capacity?: number
           code?: string | null
           created_at?: string
@@ -3251,6 +3317,7 @@ export type Database = {
         }
         Update: {
           building?: string | null
+          campus_id?: string | null
           capacity?: number
           code?: string | null
           created_at?: string
@@ -3265,6 +3332,13 @@ export type Database = {
           venue_type?: Database["public"]["Enums"]["venue_type"]
         }
         Relationships: [
+          {
+            foreignKeyName: "venues_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "venues_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -3284,6 +3358,14 @@ export type Database = {
       calculate_student_gpa: {
         Args: { p_student_id: string; p_tenant_id: string }
         Returns: undefined
+      }
+      clone_college_to_campus: {
+        Args: {
+          p_source_college_id: string
+          p_target_campus_id: string
+          p_tenant_id: string
+        }
+        Returns: string
       }
       current_profile_id: { Args: never; Returns: string }
       current_tenant_id: { Args: never; Returns: string }
@@ -3396,7 +3478,13 @@ export type Database = {
         | "saturday"
       schedule_status: "draft" | "published"
       section_status: "open" | "closed" | "archived" | "merged"
-      semester_status: "planning" | "active" | "archived"
+      section_type: "lecture" | "lab" | "tutorial"
+      semester_status:
+        | "planning"
+        | "registration"
+        | "active"
+        | "grade_freeze"
+        | "archived"
       semester_type: "first" | "second" | "summer"
       submission_status: "submitted" | "late" | "graded" | "resubmit_requested"
       subscription_plan: "basic" | "pro" | "enterprise"
@@ -3637,7 +3725,14 @@ export const Constants = {
       ],
       schedule_status: ["draft", "published"],
       section_status: ["open", "closed", "archived", "merged"],
-      semester_status: ["planning", "active", "archived"],
+      section_type: ["lecture", "lab", "tutorial"],
+      semester_status: [
+        "planning",
+        "registration",
+        "active",
+        "grade_freeze",
+        "archived",
+      ],
       semester_type: ["first", "second", "summer"],
       submission_status: ["submitted", "late", "graded", "resubmit_requested"],
       subscription_plan: ["basic", "pro", "enterprise"],

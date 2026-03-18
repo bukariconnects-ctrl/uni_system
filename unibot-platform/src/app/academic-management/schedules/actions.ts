@@ -9,6 +9,7 @@ const CONFLICT_MESSAGES: Record<string, string> = {
   SPATIAL_CONFLICT: "تعارض مكاني: القاعة محجوزة في نفس الوقت",
   FACULTY_CONFLICT: "تعارض المحاضر: المحاضر لديه محاضرة أخرى في نفس الوقت",
   STUDENT_CONFLICT: "تعارض طلابي: مقرر إجباري في نفس المستوى الأكاديمي مجدول في نفس الوقت",
+  INVALID_STATE_TRANSITION: "انتقال الحالة غير صالح للفصل الدراسي",
 };
 
 function parseConflictError(message: string): string {
@@ -41,7 +42,7 @@ export async function getSectionsForSchedule() {
 
   const { data } = await supabase
     .from("sections")
-    .select("id, section_code, course_id, semester_id, instructor_id, courses(code, name), semesters(name, status), profiles!sections_instructor_id_fkey(first_name, last_name)")
+    .select("id, section_code, section_type, parent_section_id, course_id, semester_id, instructor_id, courses(code, name, course_type), semesters(name, status), profiles!sections_instructor_id_fkey(first_name, last_name)")
     .eq("tenant_id", profile.tenant_id)
     .eq("status", "open")
     .order("created_at", { ascending: false });
@@ -55,7 +56,7 @@ export async function getVenuesForSchedule() {
 
   const { data } = await supabase
     .from("venues")
-    .select("id, name, code, venue_type, capacity")
+    .select("id, name, code, venue_type, capacity, campus_id, campuses(name)")
     .eq("tenant_id", profile.tenant_id)
     .eq("is_active", true)
     .order("name");

@@ -11,7 +11,7 @@ export async function getSections() {
 
   const { data, error } = await supabase
     .from("sections")
-    .select("*, courses(code, name, credit_hours), semesters(name, status), profiles!sections_instructor_id_fkey(first_name, last_name)")
+    .select("*, courses(code, name, credit_hours, course_type), semesters(name, status), profiles!sections_instructor_id_fkey(first_name, last_name), parent:parent_section_id(section_code)")
     .eq("tenant_id", profile.tenant_id)
     .order("created_at", { ascending: false });
 
@@ -41,7 +41,7 @@ export async function getSemestersForSections() {
     .from("semesters")
     .select("id, name, status")
     .eq("tenant_id", profile.tenant_id)
-    .in("status", ["planning", "active"])
+    .in("status", ["planning", "registration", "active"])
     .order("created_at", { ascending: false });
 
   return data || [];
@@ -73,6 +73,7 @@ export async function createSection(formData: FormData) {
     section_code: formData.get("section_code") as string,
     instructor_id: (formData.get("instructor_id") as string) || null,
     max_capacity: parseInt(formData.get("max_capacity") as string) || 40,
+    section_type: "lecture",
     status: "open",
   });
 
@@ -82,6 +83,57 @@ export async function createSection(formData: FormData) {
     throw new Error(error.message);
   }
   revalidatePath("/academic-management/sections");
+}
+
+export async function createLabSection(formData: FormData) {
+  const { profile } = await requireRole(["academic_management"]);
+  const supabase = await createClient();
+
+  const parent_section_id = formData.get("parent_section_id") as string;
+
+  const { data: parentSection, error: parentError } = await supabase
+    .from("sections")
+    .select("course_id, semester_id, section_type")
+    .eq("id", parent_section_id)
+    .single();
+
+  if (parentError || !parentSection) throw new Error("الشعبة الأم غير موجودة");
+  if (parentSection.section_type !== "lecture")
+    throw new Error("لا يمكن إنشاء شعبة معمل تابعة لشعبة معمل أخرى");
+
+  const { error } = await supabase.from("sections").insert({
+    tenant_id: profile.tenant_id,
+    course_id: parentSection.course_id,
+    semester_id: parentSection.semester_id,
+    section_code: formData.get("section_code") as string,
+    instructor_id: (formData.get("instructor_id") as string) || null,
+    max_capacity: parseInt(formData.get("max_capacity") as string) || 20,
+    parent_section_id,
+    section_type: "lab",
+    status: "open",
+  });
+
+  if (error) {
+    if (error.message.includes("unique") || error.message.includes("duplicate"))
+      throw new Error("كود الشعبة مكرر لنفس المقرر والفصل");
+    throw new Error(error.message);
+  }
+  revalidatePath("/academic-management/sections");
+}
+
+export async function getLabSectionsForParent(parentSectionId: string) {
+  const { profile } = await requireRole(["academic_management"]);
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("sections")
+    .select("*, profiles!sections_instructor_id_fkey(first_name, last_name)")
+    .eq("tenant_id", profile.tenant_id)
+    .eq("parent_section_id", parentSectionId)
+    .order("section_code");
+
+  if (error) throw new Error(error.message);
+  return data || [];
 }
 
 export async function updateSectionStatus(id: string, status: SectionStatus) {

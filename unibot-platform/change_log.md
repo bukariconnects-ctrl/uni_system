@@ -2,6 +2,154 @@
 
 ---
 
+## Hotfix: إصلاح منطق المستويات + توليد الأنواع
+**التاريخ:** 2026-03-18
+
+### التغييرات
+- **رجوع عن خطأ:** `createMajor` — استُعيدت الصيغة الصحيحة: `duration_years` مستويات مباشرة (4 سنوات = 4 مستويات)، وليس `duration_years * 2`
+- **توليد الأنواع:** تم تشغيل `npx supabase gen types typescript --project-id leduumxihcngowpaujkr` وحفظ النتيجة في `src/lib/types/supabase.ts` بترميز UTF-8 — يعكس الآن كل الجداول والـ ENUMs المحدَّثة بما يشمل `campuses`, `section_type`, `semester_status` الجديدة
+
+---
+
+## Workflow Audit & Gap Fix: مراجعة كاملة ومطابقة مع المخطط التشغيلي
+**التاريخ:** 2026-03-18
+
+### ملخص
+مراجعة شاملة للكود والقاعدة مقارنةً بـ `accadimic_opreational_workflow.md` — تم اكتشاف 7 فجوات وإصلاحها جميعاً.
+
+### الفجوات المكتشفة والإصلاحات
+
+#### 1. خطأ منطقي: `createMajor` — حساب عدد المستويات خاطئ
+- **المشكلة:** الكود القديم أنشأ `duration_years` مستويات فقط (4 سنوات = 4 مستويات)
+- **المخطط يقول:** كل سنة = فصلان دراسيان = مستويان → 4 سنوات = **8 مستويات**
+- **الإصلاح:** `totalLevels = duration_years * 2` في `src/app/tenant-admin/academic/actions.ts`
+
+#### 2. ناقص: `createCollege` / `updateCollege` لا يحفظ `campus_id` + `absence_threshold`
+- **المشكلة:** النموذج لم يكن يرسل ولا يحفظ `campus_id` و `absence_threshold` رغم وجود الأعمدة في قاعدة البيانات
+- **الإصلاح:** إضافة الحقلين في `createCollege`, `updateCollege`, و `getColleges` (يشمل `campuses(name)`)
+
+#### 3. ناقص: `createVenue` / `updateVenue` لا يحفظ `campus_id`
+- **المشكلة:** عمود `campus_id` موجود في DB لكن actions لا ترسله
+- **الإصلاح:** إضافة `campus_id` في `createVenue` و `updateVenue` في `src/app/tenant-admin/venues/actions.ts`
+
+#### 4. ناقص: أنواع TypeScript مفقودة في `database.ts`
+- **المشكلة:** `VenueType`, `CourseType`, `PlanCourseType` كانت مستوردة من `database.ts` لكنها غير معرّفة فيه → خطأ TypeScript
+- **الإصلاح:** إضافة الثلاثة أنواع في `src/lib/types/database.ts`
+
+#### 5. ناقص: `batchEnroll` لا يعرف الشعب الهجينة ولا يلزم تحديد معمل
+- **المشكلة:** عند تسجيل طالب في شعبة هجينة `(lecture + hybrid course)` كان يسجله في النظري فقط دون إلزامه بالمعمل
+- **المخطط يقول:** التسجيل في مقرر هجين = تسجيل في النظري + تسجيل تلقائي في معمل محدد
+- **الإصلاح:**
+  - `batchEnroll` يقبل الآن `labSectionId?` كمعامل اختياري
+  - إذا كانت الشعبة `lecture` لمقرر `hybrid` وغاب `labSectionId` → يرفع `HYBRID_LAB_REQUIRED`
+  - إذا وُجد `labSectionId` → يسجّل الطالب تلقائياً في المعمل أيضاً
+  - إضافة `getLabSectionsForEnrollment(parentSectionId)` لجلب المعامل المتاحة
+  - `getOpenSections` يعرض الآن `section_type` + `course_type` ويُفلتر الشعب الفرعية
+
+#### 6. ناقص: `getSectionsForSchedule` و `getVenuesForSchedule` لا يعرضان بيانات الفروع
+- **المشكلة:** واجهة الجدولة لم تعرض `section_type`, `course_type`, أو `campus_id` للقاعات
+- **الإصلاح:** توسيع `select` في `src/app/academic-management/schedules/actions.ts`
+
+#### 7. ناقص: دوال مساعدة لقوائم الفروع (Campuses dropdowns)
+- **المشكلة:** لا توجد دوال لجلب الفروع من نماذج الكليات والقاعات
+- **الإصلاح:**
+  - إضافة `getCampuses()` في `src/app/tenant-admin/academic/actions.ts`
+  - إضافة `getCampusesForVenues()` في `src/app/tenant-admin/venues/actions.ts`
+
+### الملفات المُعدَّلة
+
+| الملف | التغييرات |
+|-------|-----------|
+| `src/app/tenant-admin/academic/actions.ts` | إصلاح `createMajor` (×2 مستويات) + `campus_id`/`absence_threshold` في colleges + `getCampuses()` |
+| `src/app/tenant-admin/venues/actions.ts` | إضافة `campus_id` في create/update + `getCampusesForVenues()` |
+| `src/app/academic-management/enrollments/actions.ts` | `batchEnroll` هجين + `getLabSectionsForEnrollment()` + فلترة `getOpenSections` |
+| `src/app/academic-management/schedules/actions.ts` | توسيع `select` للشعب والقاعات + إضافة `INVALID_STATE_TRANSITION` لقاموس الأخطاء |
+| `src/lib/types/database.ts` | إضافة `VenueType`, `CourseType`, `PlanCourseType` |
+
+---
+
+## Architectural Alignment: تنفيذ سير العمل الأكاديمي الكامل
+**التاريخ:** 2026-03-18
+
+### ملخص التغيير
+محاذاة كاملة للكود والقاعدة مع المخطط التشغيلي الموثق في `accadimic_opreational_workflow.md`. تضمنت العملية 5 مراحل: تدقيق الفجوات، هجرة قاعدة البيانات، إعادة هيكلة الـ Server Actions، سكريبت المحاكاة، والتوثيق.
+
+### الجداول الجديدة في قاعدة البيانات
+
+| الجدول | الوصف |
+|--------|-------|
+| `campuses` | الفروع الجامعية — مرتبطة بـ `tenant_id`، تُتيح العزل المكاني بين الفروع |
+
+### التعديلات على الجداول الحالية
+
+| الجدول | العمود المُضاف | الغرض |
+|--------|---------------|-------|
+| `colleges` | `campus_id` | ربط الكلية بفرع جامعي محدد |
+| `colleges` | `absence_threshold` | تجاوز نسبة الحرمان على مستوى الكلية |
+| `venues` | `campus_id` | عزل القاعات بين الفروع لمنع التعارض الخاطئ |
+| `sections` | `parent_section_id` | ربط شعبة المعمل (Child) بشعبة النظري (Parent) |
+| `sections` | `section_type` | تمييز نوع الشعبة (`lecture` / `lab` / `tutorial`) |
+| `semesters` | `status ENUM` | توسعة من 3 حالات إلى 5: `planning → registration → active → grade_freeze → archived` |
+
+### الدوال والـ Triggers الجديدة
+
+- **`clone_college_to_campus()`** — Deep Copy كاملة للكلية (أقسام + تخصصات + مستويات) من فرع لآخر بـ UUIDs جديدة
+- **`guard_semester_state_transition()`** + `trg_guard_semester_state` — منع الانتقالات غير القانونية للفصل الدراسي
+- **`guard_enrollment_semester_state()`** + `trg_guard_enrollment_state` — حظر تسجيل الطلاب إذا الفصل ليس في `registration` أو `active`
+- **`guard_grade_entry_state()`** + `trg_guard_grade_entry` — تجميد الدرجات عند حالة `grade_freeze` أو `archived`
+- **`check_schedule_conflicts()`** (مُحدَّثة) — إضافة وعي بـ `campus_id` للعزل المكاني بين الفروع + تحديد `section_type = 'lecture'` فقط في فحص التعارض الطلابي
+
+### ملفات Server Actions الجديدة / المُعدَّلة
+
+- **جديد:** `src/app/tenant-admin/campuses/actions.ts` — CRUD للفروع + `cloneCollegeToCampus()`
+- **مُعدَّل:** `src/app/academic-management/sections/actions.ts` — إضافة `createLabSection()` و `getLabSectionsForParent()` لمنطق الشعب الهجينة
+- **مُعدَّل:** `src/app/tenant-admin/calendar/actions.ts` — `updateSemesterStatus()` يدعم الآن آلة الحالة الكاملة مع رسائل خطأ عربية
+
+### تعديلات الأنواع (Types)
+
+- **مُعدَّل:** `src/lib/types/database.ts` — إضافة `SectionStatus`, `SectionType`, `SemesterStatus`, `SemesterType`, `ScheduleDay`, `ScheduleStatus`
+
+### ملف المحاكاة
+
+- **جديد:** `scripts/simulate_academic_workflow.ts` — سكريبت محاكاة كاملة (15 خطوة) تنفذ السيناريو الأكاديمي بالكامل
+  - ✅ إنشاء جامعة + فرع + كلية + قسم + تخصص + 8 مستويات
+  - ✅ مقرر CS101 نوع Hybrid + الخطة الدراسية
+  - ✅ شعبة نظري SEC-A + شعبتا معمل Lab-1 و Lab-2 مرتبطتان بـ `parent_section_id`
+  - ✅ اختبار `SPATIAL_CONFLICT` — تم الكشف والمنع بنجاح
+  - ✅ انتقال الفصل: `planning → registration → active → grade_freeze → archived`
+  - ✅ منع الرجوع إلى `planning` بعد التقدم
+  - ✅ تسجيل الطالب عمر في النظري والمعمل
+  - ✅ رصد الدرجات (`coursework + midterm + final`) → `total_grade = 89.2/100` (مُولَّد تلقائياً)
+  - ✅ `GRADE_LOCKED` — تم منع التعديل بعد تجميد الدرجات
+
+### ملف الهجرة
+
+- `supabase/migrations/20260318001114_align_academic_workflow.sql`
+
+---
+
+## Documentation: توثيق بنية الهيكل الأكاديمي
+**التاريخ:** 2026-03-18
+
+### الملفات المُنشأة
+- `docs/Academic_Structure_Architecture.md` — وثيقة معمارية تقنية شاملة بالعربية تشرح:
+  - فلسفة الهيكل الأكاديمي (Tenant → College → Department → Major → Academic Level → Semester → Course → Section → Schedule)
+  - دورة حياة تهيئة الجامعة بالتفصيل مع مراجع الجداول والـ Server Actions
+  - العزل الداخلي (Intra-Tenant Isolation) عبر `academic_management_departments` و `get_my_managed_departments()`
+  - الجداول الذكية ومنع التعارض عبر `trg_check_schedule_conflicts` (مكاني، تدريسي، طلابي)
+  - تدفق العمل بين الأدوار (tenant_admin، academic_management، faculty، student)
+  - الجداول والعلاقات والـ Triggers المهمة
+
+### الملاحظات
+- تم توليد الوثيقة بناءً على reverse-engineering للكود الفعلي من:
+  - `src/lib/types/supabase.ts`
+  - `supabase/migrations/20260307022710_part1_core_system.sql`
+  - `supabase/migrations/20260313222415_intra_tenant_isolation.sql`
+  - `src/app/tenant-admin/academic/actions.ts`
+  - `src/app/academic-management/schedules/actions.ts`
+
+---
+
 ## Sprint 0: التأسيس الأساسي والمصادقة
 **التاريخ:** 2026-03-07
 

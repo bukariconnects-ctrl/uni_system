@@ -10,10 +10,27 @@ export async function getOpenSections() {
 
   const { data, error } = await supabase
     .from("sections")
-    .select("id, section_code, max_capacity, enrolled_count, courses(code, name), semesters(name)")
+    .select("id, section_code, section_type, parent_section_id, max_capacity, enrolled_count, courses(code, name, course_type), semesters(name, status)")
     .eq("tenant_id", profile.tenant_id)
     .eq("status", "open")
+    .is("parent_section_id", null) // only parent/standalone sections for enrollment UI
     .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+export async function getLabSectionsForEnrollment(parentSectionId: string) {
+  const { profile } = await requireRole(["academic_management"]);
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("sections")
+    .select("id, section_code, max_capacity, enrolled_count, profiles!sections_instructor_id_fkey(first_name, last_name)")
+    .eq("tenant_id", profile.tenant_id)
+    .eq("parent_section_id", parentSectionId)
+    .eq("status", "open")
+    .order("section_code");
 
   if (error) throw new Error(error.message);
   return data || [];
@@ -38,10 +55,29 @@ export async function getStudents() {
 export async function batchEnroll(
   sectionId: string,
   semesterId: string,
-  studentIds: string[]
+  studentIds: string[],
+  labSectionId?: string // مطلوب للمقررات الهجينة
 ) {
   const { profile } = await requireRole(["academic_management"]);
   const supabase = await createClient();
+
+  // تحقق من نوع الشعبة والمقرر
+  const { data: sectionInfo } = await supabase
+    .from("sections")
+    .select("section_type, courses(course_type)")
+    .eq("id", sectionId)
+    .single();
+
+  const coursesData = sectionInfo?.courses as unknown as { course_type: string } | null;
+  const isHybridLecture =
+    sectionInfo?.section_type === "lecture" &&
+    coursesData?.course_type === "hybrid";
+
+  if (isHybridLecture && !labSectionId) {
+    throw new Error(
+      "HYBRID_LAB_REQUIRED: هذا المقرر هجين — يجب تحديد شعبة معمل لكل طالب عند التسجيل"
+    );
+  }
 
   const results: { success: number; errors: string[] } = {
     success: 0,
@@ -49,7 +85,8 @@ export async function batchEnroll(
   };
 
   for (const studentId of studentIds) {
-    const { error } = await supabase.from("enrollments").insert({
+    // تسجيل في شعبة النظري
+    const { error: lectureError } = await supabase.from("enrollments").insert({
       tenant_id: profile.tenant_id,
       student_id: studentId,
       section_id: sectionId,
@@ -57,15 +94,33 @@ export async function batchEnroll(
       status: "enrolled",
     });
 
-    if (error) {
-      if (error.message.includes("duplicate") || error.message.includes("unique")) {
+    if (lectureError) {
+      if (lectureError.message.includes("duplicate") || lectureError.message.includes("unique")) {
         results.errors.push(`الطالب مسجل بالفعل في هذه الشعبة`);
+      } else if (lectureError.message.includes("ENROLLMENT_BLOCKED")) {
+        results.errors.push(`التسجيل محظور: الفصل الدراسي ليس في مرحلة التسجيل`);
       } else {
-        results.errors.push(error.message);
+        results.errors.push(lectureError.message);
       }
-    } else {
-      results.success++;
+      continue;
     }
+
+    // تسجيل تلقائي في شعبة المعمل إذا كان المقرر هجيناً
+    if (isHybridLecture && labSectionId) {
+      const { error: labError } = await supabase.from("enrollments").insert({
+        tenant_id: profile.tenant_id,
+        student_id: studentId,
+        section_id: labSectionId,
+        semester_id: semesterId,
+        status: "enrolled",
+      });
+
+      if (labError && !labError.message.includes("duplicate")) {
+        results.errors.push(`تحذير: تم تسجيل الطالب في النظري لكن فشل التسجيل في المعمل: ${labError.message}`);
+      }
+    }
+
+    results.success++;
   }
 
   revalidatePath("/academic-management/enrollments");
