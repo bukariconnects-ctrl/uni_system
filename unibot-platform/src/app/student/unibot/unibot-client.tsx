@@ -99,10 +99,12 @@ export function UnibotClient({
           {
             id: data.conversation_id,
             tenant_id: tenantId,
+            student_id: profileId,
             user_id: profileId,
             session_id: null,
             is_active: true,
             created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
             ended_at: null,
             title: newTitle,
           },

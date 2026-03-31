@@ -95,12 +95,12 @@ export function SettingsClient({ tenant }: { tenant: Tenant }) {
               <input
                 type="color"
                 name="primary_color"
-                defaultValue={tenant.primary_color}
+                defaultValue={tenant.primary_color || "#000000"}
                 className="h-10 w-14 cursor-pointer rounded-lg border border-border"
               />
               <input
                 type="text"
-                defaultValue={tenant.primary_color}
+                defaultValue={tenant.primary_color || "#000000"}
                 readOnly
                 className="flex-1 rounded-lg border border-border bg-app-bg px-3 py-2.5 text-sm text-text-secondary"
                 dir="ltr"
@@ -116,12 +116,12 @@ export function SettingsClient({ tenant }: { tenant: Tenant }) {
               <input
                 type="color"
                 name="secondary_color"
-                defaultValue={tenant.secondary_color}
+                defaultValue={tenant.secondary_color || "#000000"}
                 className="h-10 w-14 cursor-pointer rounded-lg border border-border"
               />
               <input
                 type="text"
-                defaultValue={tenant.secondary_color}
+                defaultValue={tenant.secondary_color || "#000000"}
                 readOnly
                 className="flex-1 rounded-lg border border-border bg-app-bg px-3 py-2.5 text-sm text-text-secondary"
                 dir="ltr"
@@ -193,7 +193,7 @@ export function SettingsClient({ tenant }: { tenant: Tenant }) {
             </label>
             <select
               name="default_language"
-              defaultValue={tenant.default_language}
+              defaultValue={tenant.default_language || "ar"}
               className="w-full rounded-lg border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none focus:border-action-blue focus:ring-1 focus:ring-action-blue"
             >
               {LANGUAGES.map((lang) => (
@@ -242,7 +242,7 @@ export function SettingsClient({ tenant }: { tenant: Tenant }) {
               min={0}
               max={100}
               step={0.01}
-              defaultValue={tenant.absence_threshold}
+              defaultValue={tenant.absence_threshold ?? 25}
               className="w-full rounded-lg border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none focus:border-action-blue focus:ring-1 focus:ring-action-blue"
               dir="ltr"
             />

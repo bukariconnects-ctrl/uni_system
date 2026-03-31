@@ -70,6 +70,36 @@ export default async function EnrollmentsPage() {
     );
   }
 
+  // Transform sections data to match SectionOption interface
+  const transformedSections = (sectionsRes.data || []).map((s: any) => ({
+    id: s.id,
+    section_code: s.section_code,
+    max_capacity: s.max_capacity,
+    enrolled_count: s.enrolled_count,
+    semester_id: s.semester_id,
+    courses: Array.isArray(s.courses) ? s.courses[0] || null : s.courses,
+    semesters: Array.isArray(s.semesters) ? s.semesters[0] || null : s.semesters,
+  }));
+
+  // Transform students data to match StudentOption interface
+  const transformedStudents = (studentsRes.data || []).map((st: any) => ({
+    id: st.id,
+    first_name: st.first_name,
+    last_name: st.last_name,
+    student_profiles: Array.isArray(st.student_profiles) ? st.student_profiles[0] || null : st.student_profiles,
+  }));
+
+  // Transform enrollments data to match EnrollmentRow interface
+  const transformedEnrollments = filteredEnrollments.map((e: any) => ({
+    id: e.id,
+    status: e.status,
+    enrolled_at: e.enrolled_at,
+    student_id: e.student_id,
+    profiles: Array.isArray(e.profiles) ? e.profiles[0] || null : e.profiles,
+    sections: Array.isArray(e.sections) ? e.sections[0] || null : e.sections,
+    semesters: Array.isArray(e.semesters) ? e.semesters[0] || null : e.semesters,
+  }));
+
   return (
     <div>
       <div className="mb-6">
@@ -77,9 +107,9 @@ export default async function EnrollmentsPage() {
         <p className="mt-1 text-sm text-text-secondary">تسجيل الطلاب في الشعب الدراسية بالجملة</p>
       </div>
       <EnrollmentsClient
-        sections={sectionsRes.data || []}
-        students={studentsRes.data || []}
-        enrollments={filteredEnrollments as never[]}
+        sections={transformedSections}
+        students={transformedStudents}
+        enrollments={transformedEnrollments}
       />
     </div>
   );

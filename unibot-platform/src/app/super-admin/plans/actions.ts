@@ -3,7 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
-import type { SubscriptionPlan } from "@/lib/types/database";
 
 export async function getPlans() {
   await requireRole(["super_admin"]);
@@ -22,7 +21,7 @@ export async function createPlan(formData: FormData) {
   await requireRole(["super_admin"]);
   const supabase = await createClient();
 
-  const name = formData.get("name") as SubscriptionPlan;
+  const name = formData.get("name") as string;
   const price_monthly = parseFloat(formData.get("price_monthly") as string);
   const max_users = parseInt(formData.get("max_users") as string);
   const max_storage_gb = parseInt(formData.get("max_storage_gb") as string);
@@ -52,7 +51,7 @@ export async function updatePlan(id: string, formData: FormData) {
   await requireRole(["super_admin"]);
   const supabase = await createClient();
 
-  const name = formData.get("name") as SubscriptionPlan;
+  const name = formData.get("name") as string;
   const price_monthly = parseFloat(formData.get("price_monthly") as string);
   const max_users = parseInt(formData.get("max_users") as string);
   const max_storage_gb = parseInt(formData.get("max_storage_gb") as string);

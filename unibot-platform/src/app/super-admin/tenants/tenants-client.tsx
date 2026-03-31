@@ -42,6 +42,7 @@ const STATUS_MAP: Record<
 > = {
   active: { label: "نشطة", color: "text-success bg-success/10", icon: CircleDot },
   suspended: { label: "معلّقة", color: "text-warning bg-warning/10", icon: Ban },
+  trial: { label: "تجريبية", color: "text-action-blue bg-action-blue/10", icon: CircleDot },
   deleted: { label: "محذوفة", color: "text-danger bg-danger/10", icon: Trash2 },
 };
 
@@ -61,6 +62,7 @@ export function TenantsClient({
     const messages: Record<TenantStatus, string> = {
       active: "هل تريد تفعيل هذه الجامعة؟",
       suspended: "هل تريد تعليق هذه الجامعة؟ سيتم منع المستخدمين من الوصول.",
+      trial: "هل تريد تحويل هذه الجامعة إلى الوضع التجريبي؟",
       deleted: "هل أنت متأكد من حذف هذه الجامعة؟ هذا الإجراء لا يمكن التراجع عنه.",
     };
     if (!confirm(messages[status])) return;
