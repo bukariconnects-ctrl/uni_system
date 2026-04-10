@@ -5,6 +5,7 @@ import {
   createAttendanceSession,
   generateQrCode,
   closeSession,
+  reopenSession,
   getSessionRecords,
   updateAttendanceRecord,
 } from "./actions";
@@ -19,6 +20,7 @@ import {
   UserX,
   Clock,
   ShieldCheck,
+  RotateCcw,
 } from "lucide-react";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
@@ -37,6 +39,7 @@ export function AttendanceClient({
 }) {
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [attendanceMode, setAttendanceMode] = useState<"qr" | "manual">("manual");
   const [records, setRecords] = useState<any[]>([]);
   const [qrData, setQrData] = useState<{ token: string; expiresAt: string } | null>(null);
   const [activeQrSessionId, setActiveQrSessionId] = useState<string | null>(null);
@@ -60,13 +63,14 @@ export function AttendanceClient({
   async function loadRecords(sessionId: string) {
     if (expandedId === sessionId) {
       setExpandedId(null);
+      setRecords([]);
       return;
     }
     setLoading(true);
+    setExpandedId(sessionId);
     try {
       const data = await getSessionRecords(sessionId);
       setRecords(data);
-      setExpandedId(sessionId);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "حدث خطأ");
     } finally {
@@ -165,55 +169,6 @@ export function AttendanceClient({
         </div>
       )}
 
-      {qrData && (
-        <div className="overflow-hidden rounded-2xl border border-action-blue/20 bg-card-bg shadow-xl">
-          <div className="flex items-center justify-between border-b border-border px-6 py-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue/10">
-                <QrCode className="h-5 w-5 text-action-blue" />
-              </div>
-              <div>
-                <h3 className="font-bold text-text-primary">رمز QR للحضور</h3>
-                <p className="text-xs text-text-secondary">يتجدد تلقائياً كل 10 ثوانٍ — وجّه الكاميرا نحوه لتسجيل الحضور</p>
-              </div>
-            </div>
-            <button
-              onClick={() => { setQrData(null); setActiveQrSessionId(null); }}
-              className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-app-bg"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          <div className="flex flex-col items-center gap-6 px-6 py-10">
-            <div className="rounded-2xl border-4 border-gray-100 bg-white p-5 shadow-lg">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData.token)}&size=280x280&color=1a202c&bgcolor=ffffff&qzone=2`}
-                alt="رمز QR للحضور"
-                className="h-64 w-64"
-                key={qrData.token}
-              />
-            </div>
-
-            <div className="w-full max-w-xs">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-medium text-text-secondary">تجديد تلقائي</span>
-                <span className={`text-sm font-bold tabular-nums ${
-                  countdown <= 3 ? "text-danger" : countdown <= 6 ? "text-warning" : "text-action-blue"
-                }`}>{countdown}ث</span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-app-bg">
-                <div
-                  className={`h-full rounded-full transition-all duration-1000 ${
-                    countdown <= 3 ? "bg-danger" : countdown <= 6 ? "bg-warning" : "bg-action-blue"
-                  }`}
-                  style={{ width: `${(countdown / 10) * 100}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {sessions.length === 0 && !showForm && (
         <div className="rounded-2xl border border-dashed border-border bg-card-bg p-12 text-center">
@@ -249,6 +204,11 @@ export function AttendanceClient({
               </div>
               <div className="flex items-center gap-1">
                 {!session.is_open && (
+                  <button onClick={() => handleAction(() => reopenSession(session.id))} className="rounded-lg p-1.5 text-success hover:bg-success/10" title="إعادة فتح الجلسة">
+                    <RotateCcw className="h-4 w-4" />
+                  </button>
+                )}
+                {!session.is_open && (
                   <button onClick={() => handleGenerateQr(session.id)} className="rounded-lg p-1.5 text-action-blue hover:bg-action-blue/10" title="توليد QR">
                     <QrCode className="h-4 w-4" />
                   </button>
@@ -266,51 +226,134 @@ export function AttendanceClient({
 
             {isExpanded && (
               <div className="border-t border-border p-4">
-                <h4 className="mb-3 text-sm font-bold text-text-primary">سجل الحضور ({records.length} طالب)</h4>
-                {records.length === 0 ? (
-                  <p className="text-sm text-text-secondary">لا توجد سجلات</p>
-                ) : (
-                  <div className="space-y-2">
-                    {records.map((record: any) => {
-                      const cfg = STATUS_CONFIG[record.status] || STATUS_CONFIG.absent;
-                      const StatusIcon = cfg.icon;
-                      return (
-                        <div key={record.id} className="flex items-center justify-between rounded-xl border border-border p-3">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-academic-navy text-xs font-bold text-white">
-                              {record.profiles?.first_name?.[0]}{record.profiles?.last_name?.[0]}
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium text-text-primary">{record.profiles?.first_name} {record.profiles?.last_name}</span>
-                              <div className="flex items-center gap-2 text-xs text-text-secondary">
-                                {record.profiles?.student_profiles?.student_number && (
-                                  <span>{record.profiles.student_profiles.student_number}</span>
-                                )}
-                                {record.check_in_time && <span>تسجيل: {record.check_in_time}</span>}
+                {/* Mode Tabs */}
+                <div className="mb-4 flex gap-1 rounded-lg bg-app-bg p-1">
+                  <button
+                    onClick={() => { setAttendanceMode("qr"); handleGenerateQr(session.id); }}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${attendanceMode === "qr" ? "bg-card-bg text-action-blue shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
+                  >
+                    <QrCode className="h-4 w-4" />
+                    تحضير بـ QR
+                  </button>
+                  <button
+                    onClick={async () => { 
+                      setAttendanceMode("manual"); 
+                      setQrData(null); 
+                      setActiveQrSessionId(null);
+                      // Load records if not already loaded
+                      if (records.length === 0) {
+                        setLoading(true);
+                        try {
+                          const data = await getSessionRecords(session.id);
+                          setRecords(data);
+                        } catch (e) {
+                          setError(e instanceof Error ? e.message : "حدث خطأ");
+                        } finally {
+                          setLoading(false);
+                        }
+                      }
+                    }}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${attendanceMode === "manual" ? "bg-card-bg text-action-blue shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
+                  >
+                    <UserCheck className="h-4 w-4" />
+                    تحضير يدوي
+                  </button>
+                </div>
+
+                {/* QR Mode */}
+                {attendanceMode === "qr" && qrData && activeQrSessionId === session.id && (
+                  <div className="mb-4 flex flex-col items-center gap-4 rounded-xl border border-action-blue/20 bg-action-blue/5 p-6">
+                    <div className="rounded-2xl border-4 border-gray-100 bg-white p-4 shadow-lg">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData.token)}&size=200x200&color=1a202c&bgcolor=ffffff&qzone=2`}
+                        alt="رمز QR للحضور"
+                        className="h-48 w-48"
+                        key={qrData.token}
+                      />
+                    </div>
+                    <div className="w-full max-w-xs">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-xs font-medium text-text-secondary">تجديد تلقائي</span>
+                        <span className={`text-sm font-bold tabular-nums ${countdown <= 3 ? "text-danger" : countdown <= 6 ? "text-warning" : "text-action-blue"}`}>{countdown}ث</span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-white">
+                        <div className={`h-full rounded-full transition-all duration-1000 ${countdown <= 3 ? "bg-danger" : countdown <= 6 ? "bg-warning" : "bg-action-blue"}`} style={{ width: `${(countdown / 10) * 100}%` }} />
+                      </div>
+                    </div>
+                    <p className="text-center text-xs text-text-secondary">اعرض هذا الرمز للطلاب لتسجيل حضورهم تلقائياً</p>
+                  </div>
+                )}
+
+                {attendanceMode === "qr" && (!qrData || activeQrSessionId !== session.id) && (
+                  <div className="mb-4 flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-8">
+                    <QrCode className="h-12 w-12 text-text-secondary" />
+                    <p className="text-sm text-text-secondary">اضغط لتوليد رمز QR</p>
+                    <button
+                      onClick={() => handleGenerateQr(session.id)}
+                      disabled={loading}
+                      className="rounded-lg bg-action-blue px-4 py-2 text-sm font-medium text-white hover:bg-action-blue/90 disabled:opacity-50"
+                    >
+                      {loading ? "جاري التوليد..." : "توليد رمز QR"}
+                    </button>
+                  </div>
+                )}
+
+                {/* Manual Mode - Student List */}
+                {attendanceMode === "manual" && (
+                  <div>
+                    <div className="mb-3 flex items-center justify-between">
+                      <h4 className="text-sm font-bold text-text-primary">قائمة الطلاب ({records.length})</h4>
+                      <div className="flex items-center gap-2 text-xs text-text-secondary">
+                        <span className="flex items-center gap-1"><UserCheck className="h-3 w-3 text-success" /> حاضر</span>
+                        <span className="flex items-center gap-1"><UserX className="h-3 w-3 text-danger" /> غائب</span>
+                        <span className="flex items-center gap-1"><Clock className="h-3 w-3 text-warning" /> متأخر</span>
+                        <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-action-blue" /> معذور</span>
+                      </div>
+                    </div>
+                    {records.length === 0 ? (
+                      <p className="text-sm text-text-secondary">لا توجد سجلات</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {records.map((record: any) => {
+                          const cfg = STATUS_CONFIG[record.status] || STATUS_CONFIG.absent;
+                          return (
+                            <div key={record.id} className="flex items-center justify-between rounded-xl border border-border p-3">
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-academic-navy text-xs font-bold text-white">
+                                  {record.profiles?.first_name?.[0]}{record.profiles?.last_name?.[0]}
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-text-primary">{record.profiles?.first_name} {record.profiles?.last_name}</span>
+                                  <div className="flex items-center gap-2 text-xs text-text-secondary">
+                                    {record.profiles?.student_profiles?.student_number && (
+                                      <span>{record.profiles.student_profiles.student_number}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {(["present", "absent", "late", "excused"] as const).map((st) => {
+                                  const stCfg = STATUS_CONFIG[st];
+                                  const StIcon = stCfg.icon;
+                                  const isActive = record.status === st;
+                                  return (
+                                    <button
+                                      key={st}
+                                      onClick={() => handleStatusChange(record.id, st)}
+                                      disabled={loading}
+                                      className={`rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${isActive ? stCfg.color : "text-text-secondary hover:bg-app-bg"}`}
+                                      title={stCfg.label}
+                                    >
+                                      <StIcon className="h-4 w-4" />
+                                    </button>
+                                  );
+                                })}
                               </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {(["present", "absent", "late", "excused"] as const).map((st) => {
-                              const stCfg = STATUS_CONFIG[st];
-                              const StIcon = stCfg.icon;
-                              const isActive = record.status === st;
-                              return (
-                                <button
-                                  key={st}
-                                  onClick={() => handleStatusChange(record.id, st)}
-                                  disabled={loading}
-                                  className={`rounded-lg p-1.5 text-xs transition-colors ${isActive ? stCfg.color : "text-text-secondary hover:bg-app-bg"}`}
-                                  title={stCfg.label}
-                                >
-                                  <StIcon className="h-4 w-4" />
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

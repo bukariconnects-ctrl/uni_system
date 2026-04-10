@@ -7,6 +7,9 @@ import {
   sendMessage,
   searchUsers,
   startConversation,
+  getChannelMembers,
+  updateChannelSettings,
+  muteChannelMember,
 } from "./actions";
 import {
   MessageSquare,
@@ -16,6 +19,11 @@ import {
   Plus,
   Users,
   X,
+  Settings,
+  VolumeX,
+  Volume2,
+  MessageCircleOff,
+  MessageCircle,
 } from "lucide-react";
 
 type ChatTarget = {
@@ -42,6 +50,9 @@ export function MessagesClient({
   const [showNewChat, setShowNewChat] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSettings, setShowSettings] = useState(false);
+  const [channelMembers, setChannelMembers] = useState<any[]>([]);
+  const [allowStudentMessages, setAllowStudentMessages] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
@@ -159,6 +170,53 @@ export function MessagesClient({
 
   const ROLE_LABELS: Record<string, string> = { faculty: "محاضر", student: "طالب" };
 
+  async function openChannelSettings() {
+    if (!target || target.type !== "channel") return;
+    setLoading(true);
+    try {
+      const members = await getChannelMembers(target.id);
+      setChannelMembers(members);
+      // Find current channel settings from channels prop
+      const ch = channels.find((c: any) => c.id === target.id);
+      setAllowStudentMessages(ch?.allow_student_messages !== false);
+      setShowSettings(true);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "حدث خطأ");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleToggleStudentMessages() {
+    if (!target) return;
+    setLoading(true);
+    try {
+      await updateChannelSettings(target.id, { allow_student_messages: !allowStudentMessages });
+      setAllowStudentMessages(!allowStudentMessages);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "حدث خطأ");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleMuteMember(memberId: string, isMuted: boolean) {
+    if (!target) return;
+    setLoading(true);
+    try {
+      // If muting, set muted_until to far future; if unmuting, set to null
+      const muteUntil = isMuted ? null : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+      await muteChannelMember(target.id, memberId, muteUntil);
+      // Refresh members
+      const members = await getChannelMembers(target.id);
+      setChannelMembers(members);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "حدث خطأ");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="flex h-[calc(100vh-12rem)] overflow-hidden rounded-2xl border border-border bg-card-bg shadow-sm">
       <div className="flex w-72 flex-col border-l border-border">
@@ -259,10 +317,115 @@ export function MessagesClient({
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-              {target.type === "channel" ? <Hash className="h-5 w-5 text-action-blue" /> : <Users className="h-5 w-5 text-action-blue" />}
-              <span className="font-bold text-text-primary">{target.name}</span>
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <div className="flex items-center gap-3">
+                {target.type === "channel" ? <Hash className="h-5 w-5 text-action-blue" /> : <Users className="h-5 w-5 text-action-blue" />}
+                <span className="font-bold text-text-primary">{target.name}</span>
+              </div>
+              {target.type === "channel" && (
+                <button
+                  onClick={openChannelSettings}
+                  className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg hover:text-text-primary"
+                  title="إعدادات القناة"
+                >
+                  <Settings className="h-4 w-4" />
+                </button>
+              )}
             </div>
+
+            {/* Channel Settings Modal */}
+            {showSettings && target.type === "channel" && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
+                <div className="w-full max-w-md rounded-2xl bg-card-bg p-6 shadow-xl">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-text-primary">إعدادات القناة</h3>
+                    <button onClick={() => setShowSettings(false)} className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg">
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  {/* Allow Student Messages Toggle */}
+                  <div className="mb-6 flex items-center justify-between rounded-xl border border-border p-4">
+                    <div className="flex items-center gap-3">
+                      {allowStudentMessages ? (
+                        <MessageCircle className="h-5 w-5 text-success" />
+                      ) : (
+                        <MessageCircleOff className="h-5 w-5 text-danger" />
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-text-primary">السماح للطلاب بالإرسال</p>
+                        <p className="text-xs text-text-secondary">
+                          {allowStudentMessages ? "الطلاب يمكنهم إرسال رسائل" : "فقط المحاضر يمكنه الإرسال"}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleToggleStudentMessages}
+                      disabled={loading}
+                      className={`relative h-6 w-11 rounded-full transition-colors ${allowStudentMessages ? "bg-success" : "bg-gray-300"}`}
+                    >
+                      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${allowStudentMessages ? "right-0.5" : "right-5"}`} />
+                    </button>
+                  </div>
+
+                  {/* Members List */}
+                  <div>
+                    <h4 className="mb-3 text-sm font-bold text-text-primary">أعضاء القناة ({channelMembers.length})</h4>
+                    <div className="max-h-60 space-y-2 overflow-y-auto">
+                      {channelMembers.map((member: any) => {
+                        const isMuted = member.muted_until && new Date(member.muted_until) > new Date();
+                        const isAdmin = member.is_admin;
+                        return (
+                          <div key={member.id} className="flex items-center justify-between rounded-xl border border-border p-3">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-academic-navy text-xs font-bold text-white">
+                                {member.profiles?.first_name?.[0]}{member.profiles?.last_name?.[0]}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium text-text-primary">
+                                    {member.profiles?.first_name} {member.profiles?.last_name}
+                                  </span>
+                                  {isAdmin && (
+                                    <span className="rounded bg-action-blue/10 px-1.5 py-0.5 text-xs text-action-blue">مدير</span>
+                                  )}
+                                  {isMuted && (
+                                    <span className="rounded bg-danger/10 px-1.5 py-0.5 text-xs text-danger">صامت</span>
+                                  )}
+                                </div>
+                                <span className="text-xs text-text-secondary">
+                                  {ROLE_LABELS[member.profiles?.role] || member.profiles?.role}
+                                  {member.profiles?.student_profiles?.student_number && ` — ${member.profiles.student_profiles.student_number}`}
+                                </span>
+                              </div>
+                            </div>
+                            {!isAdmin && member.profiles?.role === "student" && (
+                              <button
+                                onClick={() => handleMuteMember(member.profile_id, isMuted)}
+                                disabled={loading}
+                                className={`rounded-lg p-1.5 ${isMuted ? "text-success hover:bg-success/10" : "text-danger hover:bg-danger/10"}`}
+                                title={isMuted ? "إلغاء الكتم" : "كتم الطالب"}
+                              >
+                                {isMuted ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      onClick={() => setShowSettings(false)}
+                      className="rounded-lg bg-action-blue px-4 py-2 text-sm font-medium text-white hover:bg-action-blue/90"
+                    >
+                      إغلاق
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {error && (
               <div className="mx-4 mt-2 rounded-xl bg-danger/10 px-4 py-2 text-sm text-danger">

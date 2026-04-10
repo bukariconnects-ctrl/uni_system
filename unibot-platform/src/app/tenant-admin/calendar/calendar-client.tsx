@@ -18,8 +18,8 @@ import {
 import type { Semester, SemesterStatus } from "@/lib/types/database";
 
 const SEMESTER_TYPES = [
-  { value: "fall", label: "الفصل الأول (خريف)" },
-  { value: "spring", label: "الفصل الثاني (ربيع)" },
+  { value: "first", label: "الفصل الأول" },
+  { value: "second", label: "الفصل الثاني" },
   { value: "summer", label: "الفصل الصيفي" },
 ];
 
@@ -340,7 +340,7 @@ function SemesterForm({
             </label>
             <select
               name="semester_type"
-              defaultValue={defaultValues?.semester_type || "fall"}
+              defaultValue={defaultValues?.semester_type || "first"}
               className="w-full rounded-lg border border-border bg-card-bg px-3 py-2.5 text-sm outline-none focus:border-action-blue"
             >
               {SEMESTER_TYPES.map((t) => (

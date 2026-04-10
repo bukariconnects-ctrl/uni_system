@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
@@ -51,11 +51,18 @@ export async function createAttendanceSession(formData: FormData) {
     throw new Error(error.message);
   }
 
-  const { data: enrolledStudents } = await supabase
+  // Use service client to bypass RLS for fetching enrollments and inserting records
+  const serviceClient = createServiceClient();
+  
+  console.log("Creating attendance records for session:", session.id, "section:", sectionId);
+  
+  const { data: enrolledStudents, error: enrollError } = await serviceClient
     .from("enrollments")
     .select("student_id")
     .eq("section_id", sectionId)
     .eq("status", "enrolled");
+
+  console.log("Enrolled students found:", enrolledStudents?.length || 0, "Error:", enrollError);
 
   if (enrolledStudents && enrolledStudents.length > 0) {
     const records = enrolledStudents.map((e: any) => ({
@@ -63,10 +70,18 @@ export async function createAttendanceSession(formData: FormData) {
       session_id: session.id,
       student_id: e.student_id,
       section_id: sectionId,
-      status: "absent" as const,
+      status: "present" as const,
     }));
 
-    await supabase.from("attendance_records").insert(records);
+    console.log("Inserting attendance records:", records.length);
+    const { error: insertError } = await serviceClient.from("attendance_records").insert(records);
+    if (insertError) {
+      console.error("Error inserting attendance records:", insertError);
+    } else {
+      console.log("Successfully inserted attendance records");
+    }
+  } else {
+    console.log("No enrolled students found for section:", sectionId);
   }
 
   revalidatePath("/faculty/attendance");
@@ -106,17 +121,72 @@ export async function closeSession(sessionId: string) {
   revalidatePath("/faculty/attendance");
 }
 
-export async function getSessionRecords(sessionId: string) {
+export async function reopenSession(sessionId: string) {
   await requireRole(["faculty"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
-  const { data, error } = await supabase
+  const { error } = await serviceClient
+    .from("attendance_sessions")
+    .update({ is_open: true })
+    .eq("id", sessionId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/faculty/attendance");
+}
+
+export async function getSessionRecords(sessionId: string) {
+  const { profile } = await requireRole(["faculty"]);
+  const serviceClient = createServiceClient();
+
+  // First check if records exist
+  let { data, error } = await serviceClient
     .from("attendance_records")
     .select("*, profiles!attendance_records_student_id_fkey(first_name, last_name, student_profiles(student_number))")
     .eq("session_id", sessionId)
     .order("created_at", { ascending: true });
 
   if (error) throw new Error(error.message);
+
+  // If no records exist, create them from enrollments
+  if (!data || data.length === 0) {
+    // Get session info
+    const { data: session } = await serviceClient
+      .from("attendance_sessions")
+      .select("section_id, tenant_id")
+      .eq("id", sessionId)
+      .single();
+
+    if (session) {
+      // Get enrolled students
+      const { data: enrolledStudents } = await serviceClient
+        .from("enrollments")
+        .select("student_id")
+        .eq("section_id", session.section_id)
+        .eq("status", "enrolled");
+
+      if (enrolledStudents && enrolledStudents.length > 0) {
+        const records = enrolledStudents.map((e: any) => ({
+          tenant_id: session.tenant_id,
+          session_id: sessionId,
+          student_id: e.student_id,
+          section_id: session.section_id,
+          status: "present" as const,
+        }));
+
+        await serviceClient.from("attendance_records").insert(records);
+
+        // Fetch the newly created records
+        const { data: newData } = await serviceClient
+          .from("attendance_records")
+          .select("*, profiles!attendance_records_student_id_fkey(first_name, last_name, student_profiles(student_number))")
+          .eq("session_id", sessionId)
+          .order("created_at", { ascending: true });
+
+        return newData || [];
+      }
+    }
+  }
+
   return data || [];
 }
 
@@ -126,9 +196,9 @@ export async function updateAttendanceRecord(
   reason?: string
 ) {
   const { profile } = await requireRole(["faculty"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
-  const { error } = await supabase
+  const { error } = await serviceClient
     .from("attendance_records")
     .update({
       status,

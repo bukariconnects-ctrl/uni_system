@@ -2500,3 +2500,158 @@ user.student_profiles?.[0]?.student_number
 - `src/app/tenant-admin/users/users-client.tsx` - إصلاح الـ interfaces والـ rendering
 
 ---
+
+## Hotfix: Academic Calendar Semester Type Enum Mismatch
+**التاريخ:** 2026-04-10
+
+### وصف المشكلة
+عند محاولة إنشاء فصل دراسي جديد في التقويم الأكاديمي، يظهر خطأ:
+```
+invalid input value for enum semester_type: "spring"
+```
+
+### السبب الجذري
+عدم تطابق بين قيم الـ enum في الـ UI وقاعدة البيانات:
+- **قاعدة البيانات**: `'first', 'second', 'summer'`
+- **الـ UI**: `'fall', 'spring', 'summer'`
+
+### الحل المُطبَّق
+تعديل `SEMESTER_TYPES` في `calendar-client.tsx`:
+```typescript
+// قبل
+{ value: "fall", label: "الفصل الأول (خريف)" },
+{ value: "spring", label: "الفصل الثاني (ربيع)" },
+
+// بعد
+{ value: "first", label: "الفصل الأول" },
+{ value: "second", label: "الفصل الثاني" },
+```
+
+### الملفات المُعدَّلة
+- `src/app/tenant-admin/calendar/calendar-client.tsx`
+
+---
+
+## Hotfix: Courses Not Appearing in Section Creation Form
+**التاريخ:** 2026-04-10
+
+### وصف المشكلة
+عند محاولة فتح شعبة جديدة في صفحة "إدارة الشُعب" للإدارة الأكاديمية، قائمة المقررات تظهر فارغة رغم وجود مقررات في النظام.
+
+### السبب الجذري
+مشكلتان في استعلام جلب المقررات:
+
+1. **استعلام خاطئ**: الكود كان يستخدم `.in("major_id", majorIds)` على جدول `study_plan_courses`، لكن هذا الجدول يستخدم `academic_level_id` وليس `major_id`.
+
+2. **عدم وجود fallback**: إذا لم تكن هناك مقررات في الخطة الدراسية، كان الاستعلام يُرجع قائمة فارغة بدلاً من إظهار المقررات المتاحة.
+
+### الحل المُطبَّق
+
+#### 1. إصلاح مسار الاستعلام
+```typescript
+// قبل - خطأ
+.from("study_plan_courses").in("major_id", majorIds)
+
+// بعد - صحيح
+// أولاً: جلب academic_levels للتخصصات
+.from("academic_levels").in("major_id", majorIds)
+// ثانياً: جلب المقررات من study_plan_courses
+.from("study_plan_courses").in("academic_level_id", levelIds)
+```
+
+#### 2. إضافة fallback للمقررات
+إذا لم تُوجد مقررات في الخطة الدراسية، يتم جلب المقررات من القسم مباشرة:
+```typescript
+if (!scopedCourseIds || scopedCourseIds.length === 0) {
+  const { data: deptCourses } = await supabase
+    .from("courses")
+    .select("id")
+    .eq("department_id", departmentId)
+    .eq("is_active", true);
+  scopedCourseIds = (deptCourses || []).map((c) => c.id);
+}
+```
+
+### الملفات المُعدَّلة
+- `src/app/academic-management/sections/page.tsx`
+- `src/app/academic-management/enrollments/page.tsx`
+- `src/app/academic-management/schedules/page.tsx`
+- `src/app/academic-management/analytics/actions.ts`
+
+---
+
+## Feature: Student QR Attendance Scanning
+**التاريخ:** 2026-04-10
+
+### الوصف
+إضافة ميزة تسجيل الحضور للطالب عبر مسح رمز QR المعروض من المحاضر.
+
+### كيفية الاستخدام
+1. **المحاضر**: يفتح جلسة حضور ويعرض رمز QR على الشاشة
+2. **الطالب**: يذهب إلى صفحة "سجل حضوري" → تبويب "تسجيل الحضور"
+3. **الطالب**: يمسح رمز QR بكاميرا الهاتف أو يلصق الرمز يدوياً
+4. **النظام**: يتحقق من صلاحية الرمز وتسجيل الطالب في الشعبة، ثم يُحدّث حالة الحضور
+
+### الملفات المُضافة
+- `src/app/student/attendance/actions.ts` - Server actions للتحقق من QR وتسجيل الحضور
+
+### الملفات المُعدَّلة
+- `src/app/student/attendance/attendance-client.tsx` - إضافة تبويب "تسجيل الحضور" مع واجهة إدخال رمز QR
+
+### التحققات
+- التحقق من صلاحية رمز QR (غير منتهي الصلاحية)
+- التحقق من أن الجلسة مفتوحة
+- التحقق من تسجيل الطالب في الشعبة
+- منع التسجيل المكرر
+
+---
+
+## Enhancement: Faculty Dual Attendance Mode (QR + Manual)
+**التاريخ:** 2026-04-10
+
+### الوصف
+تحسين واجهة الحضور للمحاضر لتشمل وضعين للتحضير:
+1. **تحضير بـ QR**: عرض رمز QR للطلاب لمسحه وتسجيل حضورهم تلقائياً
+2. **تحضير يدوي**: عرض قائمة الطلاب مع أزرار لتحديد الحالة (حاضر/غائب/متأخر/معذور)
+
+### كيفية الاستخدام
+1. المحاضر ينشئ جلسة حضور جديدة
+2. يضغط على السهم لتوسيع الجلسة
+3. يختار الوضع المناسب:
+   - **تحضير بـ QR**: يعرض الرمز للطلاب
+   - **تحضير يدوي**: يحدد حالة كل طالب يدوياً
+
+### الملفات المُعدَّلة
+- `src/app/faculty/attendance/attendance-client.tsx`
+
+---
+
+## Feature: Faculty Channel Management
+**التاريخ:** 2026-04-10
+
+### الوصف
+إضافة ميزة إدارة قنوات الشُعب للمحاضر:
+1. **إضافة المحاضر تلقائياً** كعضو admin في قناة الشعبة عند إنشائها
+2. **إعدادات القناة** - المحاضر يمكنه التحكم في:
+   - السماح/منع الطلاب من إرسال الرسائل
+   - كتم طالب معين (منعه من الإرسال)
+
+### كيفية الاستخدام
+1. المحاضر يذهب إلى **الرسائل**
+2. يختار قناة الشعبة من القائمة
+3. يضغط على أيقونة **الإعدادات** ⚙️ في رأس القناة
+4. يمكنه:
+   - تفعيل/تعطيل إرسال الطلاب للرسائل
+   - كتم طالب معين بالضغط على أيقونة الصوت
+
+### الملفات المُضافة
+- `supabase/migrations/20260410220000_add_instructor_to_channel.sql`
+
+### الملفات المُعدَّلة
+- `src/app/faculty/messages/actions.ts` - إضافة دوال إدارة القناة
+- `src/app/faculty/messages/messages-client.tsx` - إضافة واجهة إعدادات القناة
+
+### ملاحظة
+يجب تشغيل الـ migration في Supabase Dashboard لتفعيل الميزة.
+
+---

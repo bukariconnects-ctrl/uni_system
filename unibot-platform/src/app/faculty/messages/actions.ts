@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 
@@ -10,11 +10,11 @@ export async function getChannels() {
 
   const { data } = await supabase
     .from("channel_members")
-    .select("channels(id, name, channel_type, section_id, is_readonly, sections(section_code, courses(code, name)))")
+    .select("is_admin, channels(id, name, channel_type, section_id, is_readonly, allow_student_messages, sections(section_code, courses(code, name)))")
     .eq("profile_id", profile.id)
     .eq("tenant_id", profile.tenant_id);
 
-  return (data || []).map((cm: any) => cm.channels).filter(Boolean);
+  return (data || []).map((cm: any) => ({ ...cm.channels, is_admin: cm.is_admin })).filter(Boolean);
 }
 
 export async function getConversations() {
@@ -64,6 +64,34 @@ export async function sendMessage(formData: FormData) {
   const body = formData.get("body") as string;
 
   if (!body?.trim()) throw new Error("الرسالة فارغة");
+
+  // Check channel permissions for students
+  if (messageType === "channel" && profile.role === "student") {
+    const channelId = formData.get("channel_id") as string;
+    
+    // Check if channel allows student messages
+    const { data: channel } = await supabase
+      .from("channels")
+      .select("allow_student_messages")
+      .eq("id", channelId)
+      .single();
+    
+    if (channel?.allow_student_messages === false) {
+      throw new Error("المحاضر قام بتعطيل إرسال الرسائل في هذه القناة");
+    }
+    
+    // Check if student is muted
+    const { data: membership } = await supabase
+      .from("channel_members")
+      .select("muted_until")
+      .eq("channel_id", channelId)
+      .eq("profile_id", profile.id)
+      .single();
+    
+    if (membership?.muted_until && new Date(membership.muted_until) > new Date()) {
+      throw new Error("تم كتمك من قبل المحاضر ولا يمكنك إرسال رسائل حالياً");
+    }
+  }
 
   const insert: Record<string, unknown> = {
     tenant_id: profile.tenant_id,
@@ -124,4 +152,87 @@ export async function searchUsers(query: string) {
     .limit(20);
 
   return data || [];
+}
+
+export async function getChannelMembers(channelId: string) {
+  const { profile } = await requireRole(["faculty"]);
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("channel_members")
+    .select("*, profiles(id, first_name, last_name, role, student_profiles(student_number))")
+    .eq("channel_id", channelId)
+    .eq("tenant_id", profile.tenant_id);
+
+  return data || [];
+}
+
+export async function getChannelSettings(channelId: string) {
+  const { profile } = await requireRole(["faculty"]);
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("channels")
+    .select("id, name, allow_student_messages, settings, section_id, sections(instructor_id)")
+    .eq("id", channelId)
+    .single();
+
+  // Verify faculty is the instructor
+  const section = (data?.sections as unknown) as { instructor_id: string } | null;
+  if (section?.instructor_id !== profile.id) {
+    throw new Error("ليس لديك صلاحية إدارة هذه القناة");
+  }
+
+  return data;
+}
+
+export async function updateChannelSettings(channelId: string, settings: { allow_student_messages?: boolean }) {
+  const { profile } = await requireRole(["faculty"]);
+  const supabase = await createClient();
+
+  // Verify faculty is the instructor
+  const { data: channel } = await supabase
+    .from("channels")
+    .select("section_id, sections(instructor_id)")
+    .eq("id", channelId)
+    .single();
+
+  const section = (channel?.sections as unknown) as { instructor_id: string } | null;
+  if (section?.instructor_id !== profile.id) {
+    throw new Error("ليس لديك صلاحية إدارة هذه القناة");
+  }
+
+  const { error } = await supabase
+    .from("channels")
+    .update({ allow_student_messages: settings.allow_student_messages })
+    .eq("id", channelId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/faculty/messages");
+}
+
+export async function muteChannelMember(channelId: string, memberId: string, muteUntil: string | null) {
+  const { profile } = await requireRole(["faculty"]);
+  const serviceClient = createServiceClient();
+
+  // Verify faculty is admin of this channel
+  const { data: membership } = await serviceClient
+    .from("channel_members")
+    .select("is_admin")
+    .eq("channel_id", channelId)
+    .eq("profile_id", profile.id)
+    .single();
+
+  if (!membership?.is_admin) {
+    throw new Error("ليس لديك صلاحية إدارة هذه القناة");
+  }
+
+  const { error } = await serviceClient
+    .from("channel_members")
+    .update({ muted_until: muteUntil })
+    .eq("channel_id", channelId)
+    .eq("profile_id", memberId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/faculty/messages");
 }

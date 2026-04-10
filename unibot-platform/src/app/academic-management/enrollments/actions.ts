@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 
@@ -59,12 +59,12 @@ export async function batchEnroll(
   labSectionId?: string // مطلوب للمقررات الهجينة
 ) {
   const { profile } = await requireRole(["academic_management"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
   // تحقق من نوع الشعبة والمقرر
-  const { data: sectionInfo } = await supabase
+  const { data: sectionInfo } = await serviceClient
     .from("sections")
-    .select("section_type, courses(course_type)")
+    .select("section_type, tenant_id, courses(course_type)")
     .eq("id", sectionId)
     .single();
 
@@ -79,6 +79,9 @@ export async function batchEnroll(
     );
   }
 
+  // Use section's tenant_id to ensure consistency
+  const tenantId = sectionInfo?.tenant_id || profile.tenant_id;
+
   const results: { success: number; errors: string[] } = {
     success: 0,
     errors: [],
@@ -86,8 +89,8 @@ export async function batchEnroll(
 
   for (const studentId of studentIds) {
     // تسجيل في شعبة النظري
-    const { error: lectureError } = await supabase.from("enrollments").insert({
-      tenant_id: profile.tenant_id,
+    const { error: lectureError } = await serviceClient.from("enrollments").insert({
+      tenant_id: tenantId,
       student_id: studentId,
       section_id: sectionId,
       semester_id: semesterId,
@@ -107,8 +110,8 @@ export async function batchEnroll(
 
     // تسجيل تلقائي في شعبة المعمل إذا كان المقرر هجيناً
     if (isHybridLecture && labSectionId) {
-      const { error: labError } = await supabase.from("enrollments").insert({
-        tenant_id: profile.tenant_id,
+      const { error: labError } = await serviceClient.from("enrollments").insert({
+        tenant_id: tenantId,
         student_id: studentId,
         section_id: labSectionId,
         semester_id: semesterId,

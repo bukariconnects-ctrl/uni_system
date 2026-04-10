@@ -1,15 +1,16 @@
 import { requireRole } from "@/lib/auth/get-user";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { BookOpen, FileText, ClipboardCheck, Users } from "lucide-react";
 
 export default async function FacultyDashboard() {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
   const [sectionsRes, materialsRes, assignmentsRes] = await Promise.all([
     supabase
       .from("sections")
-      .select("id, section_code, status, enrolled_count, courses(code, name), semesters(name, status)")
+      .select("id, section_code, status, courses(code, name), semesters(name, status)")
       .eq("tenant_id", profile.tenant_id)
       .eq("instructor_id", profile.id)
       .order("created_at", { ascending: false }),
@@ -26,7 +27,31 @@ export default async function FacultyDashboard() {
   ]);
 
   const sections = sectionsRes.data || [];
-  const activeSections = sections.filter(
+  
+  // Get actual enrollment counts using service client to bypass RLS
+  const sectionIds = sections.map((s: any) => s.id);
+  let enrollmentCounts: Record<string, number> = {};
+  
+  if (sectionIds.length > 0) {
+    const { data: enrollments } = await serviceClient
+      .from("enrollments")
+      .select("section_id")
+      .in("section_id", sectionIds)
+      .eq("status", "enrolled");
+    
+    // Count enrollments per section
+    (enrollments || []).forEach((e: any) => {
+      enrollmentCounts[e.section_id] = (enrollmentCounts[e.section_id] || 0) + 1;
+    });
+  }
+  
+  // Add enrolled_count to sections
+  const sectionsWithCount = sections.map((s: any) => ({
+    ...s,
+    enrolled_count: enrollmentCounts[s.id] || 0
+  }));
+  
+  const activeSections = sectionsWithCount.filter(
     (s: any) => s.semesters?.status === "active"
   );
 

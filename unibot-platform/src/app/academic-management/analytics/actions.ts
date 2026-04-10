@@ -24,14 +24,37 @@ async function getScopedCourseIds(
     .eq("department_id", amdRow.department_id);
 
   const majorIds = (majorsData || []).map((m) => m.id);
-  if (majorIds.length === 0) return [];
+  
+  let scopedCourseIds: string[] = [];
+  
+  if (majorIds.length > 0) {
+    // Get academic_level_ids for these majors
+    const { data: levelsData } = await supabase
+      .from("academic_levels")
+      .select("id")
+      .in("major_id", majorIds);
+    const levelIds = (levelsData || []).map((l) => l.id);
 
-  const { data: spcData } = await supabase
-    .from("study_plan_courses")
-    .select("course_id")
-    .in("major_id", majorIds);
+    if (levelIds.length > 0) {
+      const { data: spcData } = await supabase
+        .from("study_plan_courses")
+        .select("course_id")
+        .in("academic_level_id", levelIds);
+      scopedCourseIds = [...new Set((spcData || []).map((s) => s.course_id))];
+    }
+  }
+  
+  // Fallback: if no courses from study_plan, get courses from the department directly
+  if (scopedCourseIds.length === 0) {
+    const { data: deptCourses } = await supabase
+      .from("courses")
+      .select("id")
+      .eq("department_id", amdRow.department_id)
+      .eq("is_active", true);
+    scopedCourseIds = (deptCourses || []).map((c) => c.id);
+  }
 
-  return [...new Set((spcData || []).map((s) => s.course_id))];
+  return scopedCourseIds;
 }
 
 export async function getRiskZoneData(semesterId?: string) {

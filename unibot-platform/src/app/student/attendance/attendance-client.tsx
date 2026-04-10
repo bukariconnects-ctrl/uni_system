@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   ClipboardCheck,
   UserCheck,
@@ -8,7 +8,12 @@ import {
   Clock,
   ShieldCheck,
   AlertTriangle,
+  QrCode,
+  Camera,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
+import { submitAttendanceByQr } from "./actions";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   present: { label: "حاضر", color: "text-success", icon: UserCheck },
@@ -26,22 +31,48 @@ export function StudentAttendanceClient({
   summaries: any[];
   records: any[];
 }) {
-  const [tab, setTab] = useState<"summary" | "details">("summary");
+  const [tab, setTab] = useState<"scan" | "summary" | "details">("scan");
   const [filterSection, setFilterSection] = useState("");
+  const [qrInput, setQrInput] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const filteredRecords = filterSection
     ? records.filter((r: any) => r.section_id === filterSection)
     : records;
 
+  async function handleSubmitQr() {
+    if (!qrInput.trim()) return;
+    setLoading(true);
+    setScanResult(null);
+    try {
+      const result = await submitAttendanceByQr(qrInput.trim());
+      setScanResult(result);
+      setQrInput("");
+    } catch (e: unknown) {
+      setScanResult({ success: false, message: e instanceof Error ? e.message : "حدث خطأ" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex gap-1 rounded-xl bg-app-bg p-1">
+        <button
+          onClick={() => setTab("scan")}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${tab === "scan" ? "bg-card-bg text-action-blue shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
+        >
+          <QrCode className="h-4 w-4" />
+          تسجيل الحضور
+        </button>
         <button
           onClick={() => setTab("summary")}
           className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${tab === "summary" ? "bg-card-bg text-action-blue shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
         >
           <ClipboardCheck className="h-4 w-4" />
-          ملخص الحضور
+          الملخص
         </button>
         <button
           onClick={() => setTab("details")}
@@ -51,6 +82,77 @@ export function StudentAttendanceClient({
           التفاصيل
         </button>
       </div>
+
+      {tab === "scan" && (
+        <div className="rounded-2xl border border-border bg-card-bg p-6 shadow-sm">
+          <div className="mb-6 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-action-blue/10">
+              <QrCode className="h-8 w-8 text-action-blue" />
+            </div>
+            <h2 className="text-lg font-bold text-text-primary">تسجيل الحضور بـ QR</h2>
+            <p className="mt-1 text-sm text-text-secondary">
+              امسح رمز QR المعروض من المحاضر أو أدخل الرمز يدوياً
+            </p>
+          </div>
+
+          {scanResult && (
+            <div className={`mb-4 flex items-center gap-3 rounded-xl p-4 ${scanResult.success ? "bg-success/10" : "bg-danger/10"}`}>
+              {scanResult.success ? (
+                <CheckCircle className="h-5 w-5 text-success" />
+              ) : (
+                <XCircle className="h-5 w-5 text-danger" />
+              )}
+              <span className={`text-sm font-medium ${scanResult.success ? "text-success" : "text-danger"}`}>
+                {scanResult.message}
+              </span>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-text-primary">
+                رمز الحضور
+              </label>
+              <input
+                type="text"
+                value={qrInput}
+                onChange={(e) => setQrInput(e.target.value)}
+                placeholder="الصق رمز QR هنا..."
+                className="w-full rounded-xl border border-border bg-app-bg px-4 py-3 text-sm outline-none transition-colors focus:border-action-blue"
+                dir="ltr"
+              />
+            </div>
+
+            <button
+              onClick={handleSubmitQr}
+              disabled={loading || !qrInput.trim()}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-action-blue px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-action-blue/90 disabled:opacity-50"
+            >
+              {loading ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <UserCheck className="h-4 w-4" />
+              )}
+              تسجيل الحضور
+            </button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-card-bg px-2 text-text-secondary">أو</span>
+              </div>
+            </div>
+
+            <p className="text-center text-xs text-text-secondary">
+              وجّه كاميرا هاتفك نحو رمز QR المعروض على شاشة المحاضر
+              <br />
+              سيتم نسخ الرمز تلقائياً عند المسح
+            </p>
+          </div>
+        </div>
+      )}
 
       {tab === "summary" && (
         <div className="space-y-3">

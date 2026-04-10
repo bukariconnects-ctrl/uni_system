@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth/get-user";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { BookOpen, TrendingUp, Calendar, Award } from "lucide-react";
 
 const DAYS: Record<string, string> = {
@@ -13,9 +13,10 @@ const DAYS: Record<string, string> = {
 export default async function StudentDashboard() {
   const { profile } = await requireRole(["student"]);
   const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
   const [enrollmentsRes, profileRes] = await Promise.all([
-    supabase
+    serviceClient
       .from("enrollments")
       .select("id, status, sections(id, section_code, courses(code, name), semesters(name, status))")
       .eq("student_id", profile.id)
