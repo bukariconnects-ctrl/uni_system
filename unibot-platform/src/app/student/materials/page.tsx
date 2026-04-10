@@ -1,12 +1,13 @@
 import { requireRole } from "@/lib/auth/get-user";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { StudentMaterialsClient } from "./materials-client";
 
 export default async function StudentMaterialsPage() {
   const { profile } = await requireRole(["student"]);
   const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
-  const { data: enrollments } = await supabase
+  const { data: enrollments } = await serviceClient
     .from("enrollments")
     .select("section_id, sections(section_code, courses(code, name))")
     .eq("student_id", profile.id)

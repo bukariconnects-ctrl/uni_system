@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth/get-user";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { EnrollmentsClient } from "./enrollments-client";
 
 export default async function EnrollmentsPage() {
@@ -23,13 +23,30 @@ export default async function EnrollmentsPage() {
     const majorIds = (majorsData || []).map((m) => m.id);
 
     if (majorIds.length > 0) {
-      const { data: spcData } = await supabase
-        .from("study_plan_courses")
-        .select("course_id")
+      // Get academic_level_ids for these majors
+      const { data: levelsData } = await supabase
+        .from("academic_levels")
+        .select("id")
         .in("major_id", majorIds);
-      scopedCourseIds = [...new Set((spcData || []).map((s) => s.course_id))];
-    } else {
-      scopedCourseIds = [];
+      const levelIds = (levelsData || []).map((l) => l.id);
+
+      if (levelIds.length > 0) {
+        const { data: spcData } = await supabase
+          .from("study_plan_courses")
+          .select("course_id")
+          .in("academic_level_id", levelIds);
+        scopedCourseIds = [...new Set((spcData || []).map((s) => s.course_id))];
+      }
+    }
+    
+    // Fallback: if no courses from study_plan, get courses from the department directly
+    if (!scopedCourseIds || scopedCourseIds.length === 0) {
+      const { data: deptCourses } = await supabase
+        .from("courses")
+        .select("id")
+        .eq("department_id", departmentId)
+        .eq("is_active", true);
+      scopedCourseIds = (deptCourses || []).map((c) => c.id);
     }
   }
 
@@ -42,10 +59,11 @@ export default async function EnrollmentsPage() {
 
   if (scopedCourseIds !== null && scopedCourseIds.length > 0) {
     sectionsQuery.in("course_id", scopedCourseIds);
-  } else if (scopedCourseIds !== null && scopedCourseIds.length === 0) {
-    sectionsQuery.in("course_id", ["00000000-0000-0000-0000-000000000000"]);
   }
+  // If scopedCourseIds is null or empty, show all tenant sections (fallback)
 
+  const serviceClient = createServiceClient();
+  
   const [sectionsRes, studentsRes, enrollmentsRes] = await Promise.all([
     sectionsQuery,
     supabase
@@ -55,7 +73,7 @@ export default async function EnrollmentsPage() {
       .eq("role", "student")
       .eq("account_status", "active")
       .order("first_name"),
-    supabase
+    serviceClient
       .from("enrollments")
       .select("id, status, enrolled_at, student_id, section_id, profiles!enrollments_student_id_fkey(first_name, last_name, student_profiles(student_number)), sections(section_code, course_id, courses(code, name)), semesters(name)")
       .eq("tenant_id", profile.tenant_id)
@@ -70,12 +88,28 @@ export default async function EnrollmentsPage() {
     );
   }
 
+  // Get actual enrollment counts using service client
+  const sectionIds = (sectionsRes.data || []).map((s: any) => s.id);
+  let enrollmentCounts: Record<string, number> = {};
+  
+  if (sectionIds.length > 0) {
+    const { data: enrollments } = await serviceClient
+      .from("enrollments")
+      .select("section_id")
+      .in("section_id", sectionIds)
+      .eq("status", "enrolled");
+    
+    (enrollments || []).forEach((e: any) => {
+      enrollmentCounts[e.section_id] = (enrollmentCounts[e.section_id] || 0) + 1;
+    });
+  }
+
   // Transform sections data to match SectionOption interface
   const transformedSections = (sectionsRes.data || []).map((s: any) => ({
     id: s.id,
     section_code: s.section_code,
     max_capacity: s.max_capacity,
-    enrolled_count: s.enrolled_count,
+    enrolled_count: enrollmentCounts[s.id] || 0,
     semester_id: s.semester_id,
     courses: Array.isArray(s.courses) ? s.courses[0] || null : s.courses,
     semesters: Array.isArray(s.semesters) ? s.semesters[0] || null : s.semesters,

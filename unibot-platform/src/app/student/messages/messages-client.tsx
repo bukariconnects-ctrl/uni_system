@@ -16,12 +16,14 @@ import {
   Plus,
   Users,
   X,
+  MessageCircleOff,
 } from "lucide-react";
 
 type ChatTarget = {
   type: "channel" | "conversation";
   id: string;
   name: string;
+  can_send?: boolean;
 };
 
 export function StudentMessagesClient({
@@ -210,11 +212,12 @@ export function StudentMessagesClient({
               {channels.map((ch: any) => (
                 <button
                   key={ch.id}
-                  onClick={() => setTarget({ type: "channel", id: ch.id, name: ch.sections?.courses?.code ? `${ch.sections.courses.code} (${ch.sections.section_code})` : ch.name })}
+                  onClick={() => setTarget({ type: "channel", id: ch.id, name: ch.sections?.courses?.code ? `${ch.sections.courses.code} (${ch.sections.section_code})` : ch.name, can_send: ch.can_send })}
                   className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-right text-sm transition-colors ${target?.id === ch.id ? "bg-action-blue/10 text-action-blue" : "text-text-secondary hover:bg-app-bg hover:text-text-primary"}`}
                 >
                   <Hash className="h-4 w-4" />
                   <span className="truncate">{ch.sections?.courses?.code ? `${ch.sections.courses.code} (${ch.sections.section_code})` : ch.name}</span>
+                  {ch.can_send === false && <MessageCircleOff className="h-3 w-3 text-danger" />}
                 </button>
               ))}
             </div>
@@ -300,19 +303,26 @@ export function StudentMessagesClient({
             </div>
 
             <div className="border-t border-border p-4">
-              <form onSubmit={handleSend} className="flex items-center gap-2">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  name="body"
-                  placeholder="اكتب رسالتك..."
-                  autoComplete="off"
-                  className="flex-1 rounded-xl border border-border bg-app-bg px-4 py-2.5 text-sm outline-none focus:border-action-blue"
-                />
-                <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue text-white hover:bg-action-blue/90">
-                  <Send className="h-4 w-4" />
-                </button>
-              </form>
+              {target.type === "channel" && target.can_send === false ? (
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-app-bg px-4 py-3 text-sm text-text-secondary">
+                  <MessageCircleOff className="h-4 w-4" />
+                  <span>المحاضر قام بتعطيل إرسال الرسائل في هذه القناة</span>
+                </div>
+              ) : (
+                <form onSubmit={handleSend} className="flex items-center gap-2">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    name="body"
+                    placeholder="اكتب رسالتك..."
+                    autoComplete="off"
+                    className="flex-1 rounded-xl border border-border bg-app-bg px-4 py-2.5 text-sm outline-none focus:border-action-blue"
+                  />
+                  <button type="submit" className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue text-white hover:bg-action-blue/90">
+                    <Send className="h-4 w-4" />
+                  </button>
+                </form>
+              )}
             </div>
           </>
         )}

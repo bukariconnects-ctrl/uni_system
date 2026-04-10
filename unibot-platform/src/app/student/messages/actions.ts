@@ -10,11 +10,15 @@ export async function getChannels() {
 
   const { data } = await supabase
     .from("channel_members")
-    .select("channels(id, name, channel_type, section_id, is_readonly, sections(section_code, courses(code, name)))")
+    .select("muted_until, channels(id, name, channel_type, section_id, is_readonly, allow_student_messages, sections(section_code, courses(code, name)))")
     .eq("profile_id", profile.id)
     .eq("tenant_id", profile.tenant_id);
 
-  return (data || []).map((cm: any) => cm.channels).filter(Boolean);
+  return (data || []).map((cm: any) => ({
+    ...cm.channels,
+    muted_until: cm.muted_until,
+    can_send: cm.channels?.allow_student_messages !== false && (!cm.muted_until || new Date(cm.muted_until) <= new Date())
+  })).filter(Boolean);
 }
 
 export async function getConversations() {
@@ -64,6 +68,34 @@ export async function sendMessage(formData: FormData) {
   const body = formData.get("body") as string;
 
   if (!body?.trim()) throw new Error("الرسالة فارغة");
+
+  // Check channel permissions for students
+  if (messageType === "channel" && profile.role === "student") {
+    const channelId = formData.get("channel_id") as string;
+    
+    // Check if channel allows student messages
+    const { data: channel } = await supabase
+      .from("channels")
+      .select("allow_student_messages")
+      .eq("id", channelId)
+      .single();
+    
+    if (channel?.allow_student_messages === false) {
+      throw new Error("المحاضر قام بتعطيل إرسال الرسائل في هذه القناة");
+    }
+    
+    // Check if student is muted
+    const { data: membership } = await supabase
+      .from("channel_members")
+      .select("muted_until")
+      .eq("channel_id", channelId)
+      .eq("profile_id", profile.id)
+      .single();
+    
+    if (membership?.muted_until && new Date(membership.muted_until) > new Date()) {
+      throw new Error("تم كتمك من قبل المحاضر ولا يمكنك إرسال رسائل حالياً");
+    }
+  }
 
   const insert: Record<string, unknown> = {
     tenant_id: profile.tenant_id,

@@ -26,13 +26,30 @@ export default async function SchedulesPage() {
 
   let scopedCourseIds: string[] | null = null;
   if (departmentId && majorIds.length > 0) {
-    const { data: spcData } = await supabase
-      .from("study_plan_courses")
-      .select("course_id")
+    // Get academic_level_ids for these majors
+    const { data: levelsData } = await supabase
+      .from("academic_levels")
+      .select("id")
       .in("major_id", majorIds);
-    scopedCourseIds = [...new Set((spcData || []).map((s) => s.course_id))];
-  } else if (departmentId) {
-    scopedCourseIds = [];
+    const levelIds = (levelsData || []).map((l) => l.id);
+
+    if (levelIds.length > 0) {
+      const { data: spcData } = await supabase
+        .from("study_plan_courses")
+        .select("course_id")
+        .in("academic_level_id", levelIds);
+      scopedCourseIds = [...new Set((spcData || []).map((s) => s.course_id))];
+    }
+  }
+  
+  // Fallback: if no courses from study_plan, get courses from the department directly
+  if (departmentId && (!scopedCourseIds || scopedCourseIds.length === 0)) {
+    const { data: deptCourses } = await supabase
+      .from("courses")
+      .select("id")
+      .eq("department_id", departmentId)
+      .eq("is_active", true);
+    scopedCourseIds = (deptCourses || []).map((c) => c.id);
   }
 
   const schedulesQuery = supabase
@@ -51,9 +68,8 @@ export default async function SchedulesPage() {
 
   if (scopedCourseIds !== null && scopedCourseIds.length > 0) {
     sectionsQuery.in("course_id", scopedCourseIds);
-  } else if (scopedCourseIds !== null && scopedCourseIds.length === 0) {
-    sectionsQuery.in("course_id", ["00000000-0000-0000-0000-000000000000"]);
   }
+  // If scopedCourseIds is null or empty, show all tenant sections (fallback)
 
   const [schedulesRes, sectionsRes, venuesRes, semestersRes, levelsRes, studyPlanRes] = await Promise.all([
     schedulesQuery,
