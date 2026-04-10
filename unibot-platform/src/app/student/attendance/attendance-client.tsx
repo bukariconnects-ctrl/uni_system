@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   ClipboardCheck,
   UserCheck,
@@ -12,8 +12,15 @@ import {
   Camera,
   CheckCircle,
   XCircle,
+  CameraOff,
 } from "lucide-react";
 import { submitAttendanceByQr } from "./actions";
+import dynamic from "next/dynamic";
+
+const Scanner = dynamic(
+  () => import("@yudiel/react-qr-scanner").then((mod) => mod.Scanner),
+  { ssr: false }
+);
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   present: { label: "حاضر", color: "text-success", icon: UserCheck },
@@ -34,9 +41,35 @@ export function StudentAttendanceClient({
   const [tab, setTab] = useState<"scan" | "summary" | "details">("scan");
   const [filterSection, setFilterSection] = useState("");
   const [qrInput, setQrInput] = useState("");
-  const [scanning, setScanning] = useState(false);
+  const [cameraActive, setCameraActive] = useState(false);
   const [scanResult, setScanResult] = useState<{ success: boolean; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
+
+  const handleQrScan = useCallback(async (result: any) => {
+    if (!result || loading) return;
+    
+    const scannedText = typeof result === "string" ? result : result[0]?.rawValue;
+    if (!scannedText || scannedText === lastScannedCode) return;
+    
+    setLastScannedCode(scannedText);
+    setLoading(true);
+    setScanResult(null);
+    
+    try {
+      const response = await submitAttendanceByQr(scannedText);
+      setScanResult(response);
+      if (response.success) {
+        setCameraActive(false);
+      }
+    } catch (e: unknown) {
+      setScanResult({ success: false, message: e instanceof Error ? e.message : "حدث خطأ" });
+    } finally {
+      setLoading(false);
+      // Reset last scanned code after a delay to allow re-scanning
+      setTimeout(() => setLastScannedCode(null), 3000);
+    }
+  }, [loading, lastScannedCode]);
 
   const filteredRecords = filterSection
     ? records.filter((r: any) => r.section_id === filterSection)
@@ -109,6 +142,61 @@ export function StudentAttendanceClient({
           )}
 
           <div className="space-y-4">
+            {/* Camera Scanner */}
+            <button
+              onClick={() => setCameraActive(!cameraActive)}
+              className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                cameraActive 
+                  ? "bg-danger/10 text-danger hover:bg-danger/20" 
+                  : "bg-action-blue/10 text-action-blue hover:bg-action-blue/20"
+              }`}
+            >
+              {cameraActive ? (
+                <>
+                  <CameraOff className="h-5 w-5" />
+                  إيقاف الكاميرا
+                </>
+              ) : (
+                <>
+                  <Camera className="h-5 w-5" />
+                  مسح QR بالكاميرا
+                </>
+              )}
+            </button>
+
+            {cameraActive && (
+              <div className="relative overflow-hidden rounded-xl border-2 border-action-blue">
+                <div className="aspect-square w-full max-w-sm mx-auto">
+                  <Scanner
+                    onScan={handleQrScan}
+                    onError={(error) => console.error("Scanner error:", error)}
+                    constraints={{ facingMode: "environment" }}
+                    styles={{
+                      container: { width: "100%", height: "100%" },
+                      video: { width: "100%", height: "100%", objectFit: "cover" },
+                    }}
+                  />
+                </div>
+                {loading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <div className="flex flex-col items-center gap-2">
+                      <span className="h-8 w-8 animate-spin rounded-full border-4 border-white border-t-transparent" />
+                      <span className="text-sm text-white">جاري التحقق...</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-card-bg px-2 text-text-secondary">أو أدخل الرمز يدوياً</span>
+              </div>
+            </div>
+
             <div>
               <label className="mb-2 block text-sm font-medium text-text-primary">
                 رمز الحضور
@@ -135,21 +223,6 @@ export function StudentAttendanceClient({
               )}
               تسجيل الحضور
             </button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-card-bg px-2 text-text-secondary">أو</span>
-              </div>
-            </div>
-
-            <p className="text-center text-xs text-text-secondary">
-              وجّه كاميرا هاتفك نحو رمز QR المعروض على شاشة المحاضر
-              <br />
-              سيتم نسخ الرمز تلقائياً عند المسح
-            </p>
           </div>
         </div>
       )}
