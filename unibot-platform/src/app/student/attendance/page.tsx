@@ -46,6 +46,7 @@ export default async function StudentAttendancePage() {
         enrollments={enrollments || []}
         summaries={summaries}
         records={records}
+        studentId={profile.id}
       />
     </div>
   );
