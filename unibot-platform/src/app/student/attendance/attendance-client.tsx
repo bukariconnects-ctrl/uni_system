@@ -13,9 +13,11 @@ import {
   CheckCircle,
   XCircle,
   CameraOff,
+  RefreshCw,
 } from "lucide-react";
 import { submitAttendanceByQr } from "./actions";
 import dynamic from "next/dynamic";
+import { createClient } from "@/lib/supabase/client";
 
 const Scanner = dynamic(
   () => import("@yudiel/react-qr-scanner").then((mod) => mod.Scanner),
@@ -31,12 +33,14 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
 
 export function StudentAttendanceClient({
   enrollments,
-  summaries,
-  records,
+  summaries: initialSummaries,
+  records: initialRecords,
+  studentId,
 }: {
   enrollments: any[];
   summaries: any[];
   records: any[];
+  studentId: string;
 }) {
   const [tab, setTab] = useState<"scan" | "summary" | "details">("scan");
   const [filterSection, setFilterSection] = useState("");
@@ -45,6 +49,74 @@ export function StudentAttendanceClient({
   const [scanResult, setScanResult] = useState<{ success: boolean; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
+  const [summaries, setSummaries] = useState(initialSummaries);
+  const [records, setRecords] = useState(initialRecords);
+
+  // Real-time subscription for attendance updates
+  useEffect(() => {
+    const supabase = createClient();
+    
+    // Subscribe to attendance_records changes for this student
+    const recordsChannel = supabase
+      .channel('student-attendance-records')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'attendance_records',
+          filter: `student_id=eq.${studentId}`,
+        },
+        async (payload) => {
+          // Refetch records when there's a change
+          const { data: newRecords } = await supabase
+            .from("attendance_records")
+            .select("*, attendance_sessions(session_date, start_time, sections(section_code, courses(code, name)))")
+            .eq("student_id", studentId)
+            .order("created_at", { ascending: false })
+            .limit(100);
+          
+          if (newRecords) {
+            setRecords(newRecords);
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to attendance_summaries changes for this student
+    const summariesChannel = supabase
+      .channel('student-attendance-summaries')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'attendance_summaries',
+          filter: `student_id=eq.${studentId}`,
+        },
+        async (payload) => {
+          // Refetch summaries when there's a change
+          const sectionIds = enrollments.map((e: any) => e.section_id);
+          if (sectionIds.length > 0) {
+            const { data: newSummaries } = await supabase
+              .from("attendance_summaries")
+              .select("*, sections(section_code, courses(code, name))")
+              .eq("student_id", studentId)
+              .in("section_id", sectionIds);
+            
+            if (newSummaries) {
+              setSummaries(newSummaries);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(recordsChannel);
+      supabase.removeChannel(summariesChannel);
+    };
+  }, [studentId, enrollments]);
 
   const handleQrScan = useCallback(async (result: any) => {
     if (!result || loading) return;
@@ -236,9 +308,11 @@ export function StudentAttendanceClient({
             </div>
           ) : (
             summaries.map((summary: any) => {
-              const pct = summary.absence_percentage ?? 0;
-              const attendPct = 100 - pct;
-              const barColor = pct >= 25 ? "bg-danger" : pct >= 15 ? "bg-warning" : "bg-success";
+              const total = summary.total_sessions ?? 0;
+              const attended = summary.attended_sessions ?? 0;
+              const attendPct = total > 0 ? Math.round((attended / total) * 100) : 100;
+              const absencePct = 100 - attendPct;
+              const barColor = absencePct >= 25 ? "bg-danger" : absencePct >= 15 ? "bg-warning" : "bg-success";
 
               return (
                 <div key={summary.id} className="rounded-2xl border border-border bg-card-bg p-5 shadow-sm">
@@ -254,8 +328,8 @@ export function StudentAttendanceClient({
                         </span>
                       )}
                     </div>
-                    <span className={`text-sm font-bold ${pct >= 25 ? "text-danger" : pct >= 15 ? "text-warning" : "text-success"}`}>
-                      {attendPct.toFixed(0)}% حضور
+                    <span className={`text-sm font-bold ${absencePct >= 25 ? "text-danger" : absencePct >= 15 ? "text-warning" : "text-success"}`}>
+                      {attendPct}% حضور
                     </span>
                   </div>
 
