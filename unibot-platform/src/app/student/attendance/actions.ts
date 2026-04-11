@@ -1,12 +1,13 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 
 export async function submitAttendanceByQr(token: string) {
   const { profile } = await requireRole(["student"]);
   const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
   // Find the session with this QR token
   const { data: session, error: sessionError } = await supabase
@@ -26,7 +27,7 @@ export async function submitAttendanceByQr(token: string) {
   }
 
   // Check if student is enrolled in this section
-  const { data: enrollment } = await supabase
+  const { data: enrollment } = await serviceClient
     .from("enrollments")
     .select("id")
     .eq("student_id", profile.id)
@@ -39,7 +40,7 @@ export async function submitAttendanceByQr(token: string) {
   }
 
   // Find the attendance record for this student in this session
-  const { data: record, error: recordError } = await supabase
+  const { data: record, error: recordError } = await serviceClient
     .from("attendance_records")
     .select("id, status")
     .eq("session_id", session.id)
@@ -55,8 +56,8 @@ export async function submitAttendanceByQr(token: string) {
     return { success: true, message: "تم تسجيل حضورك مسبقاً" };
   }
 
-  // Update attendance record to present
-  const { error: updateError } = await supabase
+  // Update attendance record to present using serviceClient to bypass RLS
+  const { error: updateError } = await serviceClient
     .from("attendance_records")
     .update({
       status: "present",
