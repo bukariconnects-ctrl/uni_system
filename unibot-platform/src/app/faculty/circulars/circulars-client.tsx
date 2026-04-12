@@ -12,12 +12,20 @@ import {
   Trash2,
   Send,
   Inbox,
+  GraduationCap,
+  Building2,
 } from "lucide-react";
 import {
   createFacultyCircular,
   publishFacultyCircular,
   deleteFacultyCircular,
 } from "./actions";
+
+interface SenderProfile {
+  first_name: string;
+  last_name: string;
+  role: string;
+}
 
 interface Circular {
   id: string;
@@ -29,6 +37,7 @@ interface Circular {
   is_published: boolean;
   created_at: string;
   expires_at: string | null;
+  sender?: SenderProfile | null;
 }
 
 interface Section {
@@ -90,7 +99,7 @@ export function FacultyCircularsClient({
 
           const { data } = await supabase
             .from("circulars")
-            .select("*")
+            .select("*, sender:profiles!circulars_created_by_fkey(first_name, last_name, role)")
             .eq("id", n.reference_id)
             .single();
 
@@ -350,99 +359,129 @@ function CircularCard({
   const isExpired =
     circular.expires_at && new Date(circular.expires_at) < new Date();
 
+  const sender = circular.sender;
+  const isFaculty = sender?.role === "faculty";
+  const senderName = sender
+    ? `${sender.first_name} ${sender.last_name}`
+    : null;
+  const senderLabel = isFaculty ? "المحاضر" : "الإدارة الأكاديمية";
+
   return (
     <div
-      className={`rounded-2xl border bg-card-bg p-4 shadow-sm ${
+      className={`overflow-hidden rounded-2xl border bg-card-bg shadow-sm ${
         circular.is_mandatory && circular.is_published
           ? "border-danger/40"
           : "border-border"
       } ${isExpired ? "opacity-60" : ""}`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-              circular.is_mandatory ? "bg-danger/10" : "bg-action-blue/10"
-            }`}
-          >
-            {circular.is_mandatory ? (
-              <AlertTriangle className="h-5 w-5 text-danger" />
-            ) : (
-              <Megaphone className="h-5 w-5 text-action-blue" />
-            )}
-          </div>
-
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-bold text-text-primary">{circular.title}</h3>
-              {isOwn && (
-                <>
-                  {circular.is_published ? (
-                    <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs text-success">
-                      منشور
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-warning/10 px-2 py-0.5 text-xs text-warning">
-                      مسودة
-                    </span>
-                  )}
-                </>
-              )}
-              {circular.is_mandatory && (
-                <span className="rounded-full bg-danger/10 px-2 py-0.5 text-xs text-danger">
-                  الزامي
-                </span>
-              )}
-              {isExpired && (
-                <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary">
-                  منتهي
-                </span>
-              )}
-              <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary">
-                {TARGET_LABELS[circular.target_type] ?? circular.target_type}
-              </span>
-            </div>
-            <p className="mt-1.5 text-sm leading-relaxed text-text-secondary">
-              {circular.body}
-            </p>
-            <p className="mt-1.5 text-xs text-text-secondary/60">
-              {new Date(circular.created_at).toLocaleString("ar-SA")}
-              {circular.expires_at && (
-                <span className="mr-3 text-warning">
-                  {" • ينتهي: "}
-                  {new Date(circular.expires_at).toLocaleDateString("ar-SA")}
-                </span>
-              )}
-            </p>
-          </div>
+      {/* Sender Header — only for received circulars */}
+      {!isOwn && senderName && (
+        <div
+          className={`flex items-center gap-2 px-4 py-2 text-xs font-medium ${
+            isFaculty
+              ? "bg-action-blue/8 text-action-blue border-b border-action-blue/15"
+              : "bg-success/8 text-success border-b border-success/15"
+          }`}
+        >
+          {isFaculty ? (
+            <GraduationCap className="h-3.5 w-3.5 shrink-0" />
+          ) : (
+            <Building2 className="h-3.5 w-3.5 shrink-0" />
+          )}
+          <span>
+            {senderLabel}:{" "}
+            <span className="font-semibold">{senderName}</span>
+          </span>
         </div>
+      )}
 
-        {isOwn && (
-          <div className="flex shrink-0 items-center gap-1">
-            {!circular.is_published && onPublish && (
-              <button
-                onClick={onPublish}
-                disabled={loading}
-                className="rounded-lg p-1.5 text-success hover:bg-success/10 disabled:opacity-50"
-                title="نشر وارسال للطلاب"
-              >
-                <Eye className="h-4 w-4" />
-              </button>
-            )}
-            {onDelete && (
-              <button
-                onClick={() => {
-                  if (confirm("هل تريد حذف هذا التعميم؟")) onDelete();
-                }}
-                disabled={loading}
-                className="rounded-lg p-1.5 text-text-secondary hover:bg-danger/10 hover:text-danger disabled:opacity-50"
-                title="حذف"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            )}
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                circular.is_mandatory ? "bg-danger/10" : "bg-action-blue/10"
+              }`}
+            >
+              {circular.is_mandatory ? (
+                <AlertTriangle className="h-5 w-5 text-danger" />
+              ) : (
+                <Megaphone className="h-5 w-5 text-action-blue" />
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-bold text-text-primary">{circular.title}</h3>
+                {isOwn && (
+                  <>
+                    {circular.is_published ? (
+                      <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs text-success">
+                        منشور
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-warning/10 px-2 py-0.5 text-xs text-warning">
+                        مسودة
+                      </span>
+                    )}
+                  </>
+                )}
+                {circular.is_mandatory && (
+                  <span className="rounded-full bg-danger/10 px-2 py-0.5 text-xs text-danger">
+                    الزامي
+                  </span>
+                )}
+                {isExpired && (
+                  <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary">
+                    منتهي
+                  </span>
+                )}
+                <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary">
+                  {TARGET_LABELS[circular.target_type] ?? circular.target_type}
+                </span>
+              </div>
+              <p className="mt-1.5 text-sm leading-relaxed text-text-secondary">
+                {circular.body}
+              </p>
+              <p className="mt-1.5 text-xs text-text-secondary/60">
+                {new Date(circular.created_at).toLocaleString("ar-SA")}
+                {circular.expires_at && (
+                  <span className="mr-3 text-warning">
+                    {" • ينتهي: "}
+                    {new Date(circular.expires_at).toLocaleDateString("ar-SA")}
+                  </span>
+                )}
+              </p>
+            </div>
           </div>
-        )}
+
+          {isOwn && (
+            <div className="flex shrink-0 items-center gap-1">
+              {!circular.is_published && onPublish && (
+                <button
+                  onClick={onPublish}
+                  disabled={loading}
+                  className="rounded-lg p-1.5 text-success hover:bg-success/10 disabled:opacity-50"
+                  title="نشر وارسال للطلاب"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={() => {
+                    if (confirm("هل تريد حذف هذا التعميم؟")) onDelete();
+                  }}
+                  disabled={loading}
+                  className="rounded-lg p-1.5 text-text-secondary hover:bg-danger/10 hover:text-danger disabled:opacity-50"
+                  title="حذف"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

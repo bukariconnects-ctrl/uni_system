@@ -25,7 +25,7 @@ export default async function FacultyCircularsPage() {
   // Circulars RECEIVED by this faculty (published, from academic management)
   const { data: allPublished } = await supabase
     .from("circulars")
-    .select("*")
+    .select("*, sender:profiles!circulars_created_by_fkey(first_name, last_name, role)")
     .eq("tenant_id", profile.tenant_id)
     .eq("is_published", true)
     .neq("created_by", profile.id)   // not self-created
@@ -40,7 +40,7 @@ export default async function FacultyCircularsPage() {
   // Circulars SENT by this faculty (own circulars, any status)
   const { data: sentCirculars } = await supabase
     .from("circulars")
-    .select("*")
+    .select("*, sender:profiles!circulars_created_by_fkey(first_name, last_name, role)")
     .eq("tenant_id", profile.tenant_id)
     .eq("created_by", profile.id)
     .order("created_at", { ascending: false });

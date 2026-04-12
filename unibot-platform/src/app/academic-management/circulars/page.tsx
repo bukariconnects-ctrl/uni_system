@@ -9,7 +9,7 @@ export default async function CircularsPage() {
   const [circularsRes, sectionsRes, majorsRes, departmentsRes] = await Promise.all([
     supabase
       .from("circulars")
-      .select("*")
+      .select("*, sender:profiles!circulars_created_by_fkey(first_name, last_name, role)")
       .eq("tenant_id", profile.tenant_id)
       .order("created_at", { ascending: false }),
 

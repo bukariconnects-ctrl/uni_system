@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Megaphone, AlertTriangle, Bell } from "lucide-react";
+import { Megaphone, AlertTriangle, Bell, GraduationCap, Building2 } from "lucide-react";
+
+interface SenderProfile {
+  first_name: string;
+  last_name: string;
+  role: string;
+}
 
 interface Circular {
   id: string;
@@ -12,6 +18,7 @@ interface Circular {
   is_mandatory: boolean;
   created_at: string;
   expires_at: string | null;
+  sender?: SenderProfile | null;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -54,10 +61,10 @@ export function StudentCircularsClient({
           const n = payload.new as any;
           if (n.notification_type !== "circular" || !n.reference_id) return;
 
-          // Fetch the new circular
+          // Fetch the new circular with sender info
           const { data } = await supabase
             .from("circulars")
-            .select("*")
+            .select("*, sender:profiles!circulars_created_by_fkey(first_name, last_name, role)")
             .eq("id", n.reference_id)
             .single();
 
@@ -93,57 +100,86 @@ export function StudentCircularsClient({
       {circulars.map((circular) => {
         const isExpired =
           circular.expires_at && new Date(circular.expires_at) < new Date();
+        const sender = circular.sender;
+        const isFaculty = sender?.role === "faculty";
+        const senderName = sender
+          ? `${sender.first_name} ${sender.last_name}`
+          : null;
+        const senderLabel = isFaculty ? "المحاضر" : "الإدارة الأكاديمية";
 
         return (
           <div
             key={circular.id}
-            className={`rounded-2xl border bg-card-bg p-4 shadow-sm transition-all ${
+            className={`overflow-hidden rounded-2xl border bg-card-bg shadow-sm transition-all ${
               circular.is_mandatory
-                ? "border-danger/40 bg-danger/5"
+                ? "border-danger/40"
                 : "border-border"
             } ${isExpired ? "opacity-60" : ""}`}
           >
-            <div className="flex items-start gap-3">
+            {/* Sender Header */}
+            {senderName && (
               <div
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                  circular.is_mandatory ? "bg-danger/15" : "bg-action-blue/10"
+                className={`flex items-center gap-2 px-4 py-2 text-xs font-medium ${
+                  isFaculty
+                    ? "bg-action-blue/8 text-action-blue border-b border-action-blue/15"
+                    : "bg-success/8 text-success border-b border-success/15"
                 }`}
               >
-                {circular.is_mandatory ? (
-                  <AlertTriangle className="h-5 w-5 text-danger" />
+                {isFaculty ? (
+                  <GraduationCap className="h-3.5 w-3.5 shrink-0" />
                 ) : (
-                  <Megaphone className="h-5 w-5 text-action-blue" />
+                  <Building2 className="h-3.5 w-3.5 shrink-0" />
                 )}
+                <span>
+                  {senderLabel}:{" "}
+                  <span className="font-semibold">{senderName}</span>
+                </span>
               </div>
+            )}
 
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-bold text-text-primary">{circular.title}</h3>
-                  {circular.is_mandatory && (
-                    <span className="rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
-                      إلزامي
-                    </span>
+            <div className="p-4">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                    circular.is_mandatory ? "bg-danger/15" : "bg-action-blue/10"
+                  }`}
+                >
+                  {circular.is_mandatory ? (
+                    <AlertTriangle className="h-5 w-5 text-danger" />
+                  ) : (
+                    <Megaphone className="h-5 w-5 text-action-blue" />
                   )}
-                  {isExpired && (
-                    <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary">
-                      منتهي الصلاحية
-                    </span>
-                  )}
-                  <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary">
-                    {ROLE_LABELS[circular.target_type] || circular.target_type}
-                  </span>
                 </div>
-                <p className="mt-2 text-sm leading-relaxed text-text-secondary">
-                  {circular.body}
-                </p>
-                <p className="mt-2 text-xs text-text-secondary/70">
-                  {new Date(circular.created_at).toLocaleString("ar-SA")}
-                  {circular.expires_at && (
-                    <span className="mr-3 text-warning">
-                      • ينتهي: {new Date(circular.expires_at).toLocaleDateString("ar-SA")}
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-bold text-text-primary">{circular.title}</h3>
+                    {circular.is_mandatory && (
+                      <span className="rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
+                        إلزامي
+                      </span>
+                    )}
+                    {isExpired && (
+                      <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary">
+                        منتهي الصلاحية
+                      </span>
+                    )}
+                    <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary">
+                      {ROLE_LABELS[circular.target_type] || circular.target_type}
                     </span>
-                  )}
-                </p>
+                  </div>
+                  <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+                    {circular.body}
+                  </p>
+                  <p className="mt-2 text-xs text-text-secondary/70">
+                    {new Date(circular.created_at).toLocaleString("ar-SA")}
+                    {circular.expires_at && (
+                      <span className="mr-3 text-warning">
+                        • ينتهي: {new Date(circular.expires_at).toLocaleDateString("ar-SA")}
+                      </span>
+                    )}
+                  </p>
+                </div>
               </div>
             </div>
           </div>

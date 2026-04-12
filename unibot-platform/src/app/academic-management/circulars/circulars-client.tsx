@@ -17,6 +17,7 @@ import {
   BookOpen,
   Layers,
   Building2,
+  GraduationCap,
 } from "lucide-react";
 
 const TARGET_TYPES = [
@@ -320,80 +321,109 @@ export function CircularsClient({
         const targetLabel =
           TARGET_TYPES.find((t) => t.value === circular.target_type)?.label ||
           circular.target_type;
+        const sender = circular.sender;
+        const isFaculty = sender?.role === "faculty";
+        const senderName = sender
+          ? `${sender.first_name} ${sender.last_name}`
+          : null;
+        const senderLabel = isFaculty ? "المحاضر" : "الإدارة الأكاديمية";
 
         return (
           <div
             key={circular.id}
-            className={`rounded-2xl border bg-card-bg p-4 shadow-sm ${
+            className={`overflow-hidden rounded-2xl border bg-card-bg shadow-sm ${
               circular.is_mandatory && circular.is_published
                 ? "border-danger/30"
                 : "border-border"
             }`}
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                    circular.is_mandatory ? "bg-danger/10" : "bg-action-blue/10"
-                  }`}
-                >
-                  {circular.is_mandatory ? (
-                    <AlertTriangle className="h-5 w-5 text-danger" />
-                  ) : (
-                    <Megaphone className="h-5 w-5 text-action-blue" />
-                  )}
-                </div>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-bold text-text-primary">{circular.title}</span>
-                    {circular.is_published ? (
-                      <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs text-success">
-                        منشور
-                      </span>
+            {/* Sender Header */}
+            {senderName && (
+              <div
+                className={`flex items-center gap-2 px-4 py-2 text-xs font-medium ${
+                  isFaculty
+                    ? "bg-action-blue/8 text-action-blue border-b border-action-blue/15"
+                    : "bg-success/8 text-success border-b border-success/15"
+                }`}
+              >
+                {isFaculty ? (
+                  <GraduationCap className="h-3.5 w-3.5 shrink-0" />
+                ) : (
+                  <Building2 className="h-3.5 w-3.5 shrink-0" />
+                )}
+                <span>
+                  {senderLabel}:{" "}
+                  <span className="font-semibold">{senderName}</span>
+                </span>
+              </div>
+            )}
+
+            <div className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                      circular.is_mandatory ? "bg-danger/10" : "bg-action-blue/10"
+                    }`}
+                  >
+                    {circular.is_mandatory ? (
+                      <AlertTriangle className="h-5 w-5 text-danger" />
                     ) : (
-                      <span className="rounded-full bg-warning/10 px-2 py-0.5 text-xs text-warning">
-                        مسودة
-                      </span>
+                      <Megaphone className="h-5 w-5 text-action-blue" />
                     )}
-                    {circular.is_mandatory && (
-                      <span className="rounded-full bg-danger/10 px-2 py-0.5 text-xs text-danger">
-                        إلزامي
+                  </div>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-bold text-text-primary">{circular.title}</span>
+                      {circular.is_published ? (
+                        <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs text-success">
+                          منشور
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-warning/10 px-2 py-0.5 text-xs text-warning">
+                          مسودة
+                        </span>
+                      )}
+                      {circular.is_mandatory && (
+                        <span className="rounded-full bg-danger/10 px-2 py-0.5 text-xs text-danger">
+                          إلزامي
+                        </span>
+                      )}
+                      <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary">
+                        {targetLabel}
                       </span>
-                    )}
-                    <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary">
-                      {targetLabel}
+                    </div>
+                    <span className="text-xs text-text-secondary">
+                      {new Date(circular.created_at).toLocaleString("ar-SA")}
                     </span>
                   </div>
-                  <span className="text-xs text-text-secondary">
-                    {new Date(circular.created_at).toLocaleString("ar-SA")}
-                  </span>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-1">
+                  {!circular.is_published && (
+                    <button
+                      onClick={() =>
+                        handleAction(() => publishCircular(circular.id))
+                      }
+                      className="rounded-lg p-1.5 text-success hover:bg-success/10"
+                      title="نشر وإرسال إشعارات"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (confirm("حذف هذا التعميم؟"))
+                        handleAction(() => deleteCircular(circular.id));
+                    }}
+                    className="rounded-lg p-1.5 text-text-secondary hover:bg-danger/10 hover:text-danger"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
-
-              <div className="flex shrink-0 items-center gap-1">
-                {!circular.is_published && (
-                  <button
-                    onClick={() =>
-                      handleAction(() => publishCircular(circular.id))
-                    }
-                    className="rounded-lg p-1.5 text-success hover:bg-success/10"
-                    title="نشر وإرسال إشعارات"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    if (confirm("حذف هذا التعميم؟"))
-                      handleAction(() => deleteCircular(circular.id));
-                  }}
-                  className="rounded-lg p-1.5 text-text-secondary hover:bg-danger/10 hover:text-danger"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
+              <p className="mt-2 text-sm text-text-secondary">{circular.body}</p>
             </div>
-            <p className="mt-2 text-sm text-text-secondary">{circular.body}</p>
           </div>
         );
       })}

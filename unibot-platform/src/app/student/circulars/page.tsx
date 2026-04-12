@@ -15,11 +15,10 @@ export default async function StudentCircularsPage() {
 
   const enrolledSectionIds = (enrollments || []).map((e: any) => e.section_id);
 
-  // Fetch circulars that apply to this student
-  // Conditions: is_published = true AND (target_type = 'all' OR target_type = 'students' OR (target_type = 'section' AND target_id IN enrolled sections))
+  // Fetch circulars that apply to this student — include sender profile
   const { data: allCirculars } = await supabase
     .from("circulars")
-    .select("*")
+    .select("*, sender:profiles!circulars_created_by_fkey(first_name, last_name, role)")
     .eq("tenant_id", profile.tenant_id)
     .eq("is_published", true)
     .order("created_at", { ascending: false });
