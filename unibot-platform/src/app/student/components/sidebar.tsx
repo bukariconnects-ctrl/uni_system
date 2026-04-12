@@ -12,6 +12,7 @@ import {
   LogOut,
   Sparkles,
   Ticket as TicketIcon,
+  Megaphone,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types/database";
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/student/attendance", label: "حضوري", icon: ClipboardCheck },
   { href: "/student/grades", label: "درجاتي", icon: GraduationCap },
   { href: "/student/messages", label: "الرسائل", icon: MessageSquare },
+  { href: "/student/circulars", label: "التعاميم", icon: Megaphone },
   { href: "/student/unibot", label: "UniBot", icon: Sparkles },
   { href: "/student/tickets", label: "تذاكري", icon: TicketIcon },
 ];
