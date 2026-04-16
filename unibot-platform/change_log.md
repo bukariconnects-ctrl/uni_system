@@ -2,6 +2,80 @@
 
 ---
 
+## Bugfix + Refactor: إصلاح أنبوب التضمين (RAG Ingest Pipeline)
+**التاريخ:** 2026-04-16
+
+### المشكلة
+عند محاولة مدير الجامعة إعادة فهرسة وثيقة (Reindex) في صفحة `/tenant-admin/knowledge`، ظهر الخطأ:
+```
+Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+```
+وكان جدول الأجزاء يعرض 0 جزء لكل وثيقة.
+
+### تشخيص السبب الجذري (5 Whys)
+
+| لماذا؟ | الإجابة |
+|--------|---------|
+| لماذا يفشل `res.json()`؟ | لأن الاستجابة HTML وليست JSON |
+| لماذا HTML بدلاً من JSON؟ | `reindexDocument` تستدعي `fetch('/api/ai/ingest')` بدون إرسال cookies المصادقة |
+| لماذا لا تُرسَل الـ cookies؟ | Server Actions لا تُرسل session cookies تلقائياً عند استدعاء routes HTTP داخلية |
+| لماذا يعود HTML؟ | `requireRole()` داخل route تستدعي `redirect("/login")` → Next.js ترجع صفحة HTML |
+| **السبب الجذري** | **Server Action → HTTP loopback إلى `/api/ai/ingest` بدون مصادقة** |
+
+### الإصلاح
+استخراج منطق التضمين في دالة مشتركة وإلغاء HTTP loopback بالكامل:
+
+#### الملفات الجديدة
+
+| الملف | الوصف |
+|-------|-------|
+| `src/lib/ai/embedding.ts` | أداة التضمين المركزية — `embedText()` + إعدادات النموذج |
+| `src/lib/ai/ingest-service.ts` | خدمة الاستيعاب الأساسية — `performIngest()` بدون HTTP |
+| `scripts/test-ingest.ts` | سكريبت اختبار شامل للتحقق من صحة الإصلاح |
+
+#### الملفات المُعدَّلة
+
+| الملف | التغيير |
+|-------|---------|
+| `src/app/tenant-admin/knowledge/actions.ts` | `reindexDocument` تستدعي `performIngest()` مباشرة بدلاً من HTTP fetch |
+| `src/app/api/ai/ingest/route.ts` | تبسيط: مصادقة فقط ثم استدعاء `performIngest()` |
+| `src/app/api/ai/chat/route.ts` | استخدام `embedText()` المشتركة بدلاً من إنشاء النموذج داخلياً |
+| `next.config.ts` | إضافة `turbopack.root` لإصلاح خطأ `tailwindcss` في Turbopack |
+
+#### تغيير نموذج التضمين
+
+| الإعداد | القيمة |
+|---------|--------|
+| النموذج | `gemini-embedding-2-preview` |
+| الأبعاد | 768 (MRL scaling — متوافق مع `vector(768)` في Supabase) |
+| المزايا | جودة تضمين أعلى + دعم MRL لضبط الأبعاد مستقبلاً |
+
+> **ملاحظة:** `gemini-embedding-2-preview` يدعم Matryoshka Representation Learning (MRL) بأبعاد 256 / 512 / 768 / 3072. نستخدم 768 للتوافق مع المخطط الحالي (`vector(768)`) دون الحاجة لهجرة قاعدة البيانات.
+
+### نتائج الاختبار (`scripts/test-ingest.ts`)
+```
+✅ Short text → 1 chunk (7 words)
+✅ Long text (1000 words) → 2 chunks
+✅ Empty/whitespace text → 0 chunks
+✅ Embedding generated: 768 dimensions (gemini-embedding-2-preview)
+✅ ai_knowledge_documents — accessible
+✅ ai_document_chunks — accessible
+✅ match_chunks RPC function — accessible
+✅ Unauthenticated request → redirect to login (auth guard works correctly)
+```
+
+### توليد الأنواع
+تم تشغيل `npx supabase gen types typescript --project-id leduumxihcngowpaujkr` وحفظ النتائج في `src/lib/types/supabase.ts` (3786 سطر).
+
+### جداول قاعدة البيانات المتأثرة
+| الجدول | الوصف |
+|--------|-------|
+| `ai_knowledge_documents` | بيانات الوثيقة + `total_chunks` (يُحدَّث بعد كل reindex) |
+| `ai_document_chunks` | الأجزاء المُضمَّنة — `embedding` كـ JSON string |
+| `ai_token_usage` | سجل استهلاك tokens للمراقبة |
+
+---
+
 ## UX Enhancement: Global Navigation Progress Bar
 **التاريخ:** 2026-04-13
 

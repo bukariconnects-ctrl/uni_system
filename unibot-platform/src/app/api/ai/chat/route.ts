@@ -1,6 +1,7 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { embedText } from "@/lib/ai/embedding";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -127,9 +128,8 @@ export async function POST(request: NextRequest) {
       content: message,
     });
 
-    const embeddingModel = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
-    const embResult = await embeddingModel.embedContent(message);
-    const queryVector = embResult.embedding.values;
+    // Use shared embedText (gemini-embedding-2-preview, 768 dims) for query vectorization
+    const queryVector = await embedText(message);
 
     const adminClient = await createAdminClient();
 

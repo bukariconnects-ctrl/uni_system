@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
+import { performIngest } from "@/lib/ai/ingest-service";
 import type { AiDocumentType } from "@/lib/types/database";
 
 export async function getKnowledgeDocuments() {
@@ -58,15 +59,11 @@ export async function uploadKnowledgeDocument(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
+  // Call performIngest directly — avoids the HTTP loopback auth bug
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    await fetch(`${baseUrl}/api/ai/ingest`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ document_id: doc.id }),
-    });
+    await performIngest(doc.id, profile);
   } catch {
-    // pipeline will be retried
+    // Non-fatal: user can trigger reindex manually
   }
 
   revalidatePath("/tenant-admin/knowledge");
@@ -98,18 +95,22 @@ export async function deleteKnowledgeDocument(id: string) {
   revalidatePath("/tenant-admin/knowledge");
 }
 
+/**
+ * Re-indexes a document: regenerates all embedding chunks.
+ *
+ * FIX: Previously this called `fetch('/api/ai/ingest', ...)` from a Server
+ * Action, which is a server-to-server HTTP loopback. Next.js does not forward
+ * session cookies in those requests, so `requireRole` inside the route called
+ * `redirect("/login")`, returning an HTML page. `res.json()` then threw:
+ *   "Unexpected token '<', "<!DOCTYPE "... is not valid JSON"
+ *
+ * Solution: call `performIngest` directly — no HTTP, no auth problem.
+ */
 export async function reindexDocument(id: string) {
-  await requireRole(["tenant_admin"]);
+  const { profile } = await requireRole(["tenant_admin"]);
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/ai/ingest`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ document_id: id }),
-  });
+  const result = await performIngest(id, profile);
 
-  const result = await res.json();
-  if (!res.ok) throw new Error(result.error);
   revalidatePath("/tenant-admin/knowledge");
   return result;
 }
