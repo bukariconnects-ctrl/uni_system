@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import type { Components } from "react-markdown";
 import {
   Send,
   Bot,
@@ -14,6 +17,79 @@ import {
 } from "lucide-react";
 import type { ChatbotConversation } from "@/lib/types/database";
 import { getConversationMessages, endConversation } from "./actions";
+
+// ── Markdown renderer for AI responses ───────────────────────────────────────
+// Applies design-system classes to each Markdown token so the output
+// blends seamlessly with the existing chat bubble UI.
+const MD_COMPONENTS: Components = {
+  // Paragraphs — match existing plain-text style
+  p: ({ children }) => (
+    <p className="mb-2 text-sm leading-relaxed last:mb-0">{children}</p>
+  ),
+  // Bold
+  strong: ({ children }) => (
+    <strong className="font-semibold text-inherit">{children}</strong>
+  ),
+  // Italic
+  em: ({ children }) => <em className="italic">{children}</em>,
+  // Unordered list — RTL aware (pr instead of pl)
+  ul: ({ children }) => (
+    <ul className="mb-2 list-disc space-y-1 pr-5 text-sm last:mb-0">{children}</ul>
+  ),
+  // Ordered list
+  ol: ({ children }) => (
+    <ol className="mb-2 list-decimal space-y-1 pr-5 text-sm last:mb-0">{children}</ol>
+  ),
+  // List item
+  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+  // Headings
+  h1: ({ children }) => (
+    <h1 className="mb-2 text-base font-bold">{children}</h1>
+  ),
+  h2: ({ children }) => (
+    <h2 className="mb-1.5 text-sm font-bold">{children}</h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="mb-1 text-sm font-semibold">{children}</h3>
+  ),
+  // Inline code
+  code: ({ children, className }) =>
+    className ? (
+      // Fenced code block
+      <pre className="my-2 overflow-x-auto rounded-lg bg-black/10 p-3 text-xs">
+        <code>{children}</code>
+      </pre>
+    ) : (
+      <code className="rounded bg-black/10 px-1 py-0.5 text-xs">{children}</code>
+    ),
+  // Horizontal rule
+  hr: () => <hr className="my-3 border-border/40" />,
+  // Blockquote
+  blockquote: ({ children }) => (
+    <blockquote className="my-2 border-r-2 border-action-blue/50 pr-3 text-sm italic text-text-secondary">
+      {children}
+    </blockquote>
+  ),
+  // Links — open in new tab
+  a: ({ href, children }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-action-blue underline underline-offset-2 hover:text-action-blue/80"
+    >
+      {children}
+    </a>
+  ),
+};
+
+function MarkdownMessage({ content }: { content: string }) {
+  return (
+    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>
+      {content}
+    </ReactMarkdown>
+  );
+}
 
 interface ChatMessage {
   id: string;
@@ -255,7 +331,13 @@ export function UnibotClient({
                     : "border border-ai-lavender/50 bg-gradient-to-br from-ai-light/60 to-ai-lavender/30 text-text-primary"
                 }`}
               >
-                <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
+                <div className="text-sm leading-relaxed">
+                  {msg.role === "assistant" ? (
+                    <MarkdownMessage content={msg.content} />
+                  ) : (
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  )}
+                </div>
                 {msg.role === "assistant" &&
                   msg.source_chunk_ids.length > 0 &&
                   sources.length > 0 && (

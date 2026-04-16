@@ -824,6 +824,7 @@ export type Database = {
       }
       channels: {
         Row: {
+          allow_student_messages: boolean
           channel_type: Database["public"]["Enums"]["channel_type"]
           created_at: string
           created_by: string | null
@@ -831,10 +832,12 @@ export type Database = {
           is_readonly: boolean
           name: string
           section_id: string | null
+          settings: Json | null
           tenant_id: string
           updated_at: string
         }
         Insert: {
+          allow_student_messages?: boolean
           channel_type?: Database["public"]["Enums"]["channel_type"]
           created_at?: string
           created_by?: string | null
@@ -842,10 +845,12 @@ export type Database = {
           is_readonly?: boolean
           name: string
           section_id?: string | null
+          settings?: Json | null
           tenant_id: string
           updated_at?: string
         }
         Update: {
+          allow_student_messages?: boolean
           channel_type?: Database["public"]["Enums"]["channel_type"]
           created_at?: string
           created_by?: string | null
@@ -853,6 +858,7 @@ export type Database = {
           is_readonly?: boolean
           name?: string
           section_id?: string | null
+          settings?: Json | null
           tenant_id?: string
           updated_at?: string
         }
@@ -3384,7 +3390,6 @@ export type Database = {
         }
         Returns: {
           content: string
-          document_id: string
           id: string
           page_number: number
           similarity: number
