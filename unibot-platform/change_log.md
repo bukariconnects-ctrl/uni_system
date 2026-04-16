@@ -2,6 +2,203 @@
 
 ---
 
+## Enhancement: عرض Markdown في الدردشة الذكية (UniBot Chat)
+**التاريخ:** 2026-04-16
+
+### المشكلة
+ردود الذكاء الاصطناعي تحتوي على تنسيق Markdown (نص عريض `**bold**`، قوائم نقطية `* item`، عناوين `##`) لكنها تُعرض كنص عادي مع ظهور النجمات والرموز حرفياً بدون تفسير.
+
+### السبب الجذري
+```tsx
+// قبل الإصلاح — يعرض كل شيء كنص حرفي
+<p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
+```
+مكوّن `<p>` لا يُفسّر صياغة Markdown — يعرض `**نص**` كـ `**نص**` بدلاً من **نص**.
+
+### الإصلاح
+تثبيت `react-markdown` + `remark-gfm` وإنشاء مكوّن `MarkdownMessage` يُطبّق أصناف نظام التصميم على كل عنصر Markdown:
+
+| عنصر Markdown | التفسير | ملاحظة |\r
+|--------------|---------|--------|\r
+| `**نص**` | `<strong>` بخط سميك | يرث لون النص |\r
+| `* عنصر` / `- عنصر` | `<ul>` قائمة نقطية | `pr-5` (يمين) للـ RTL العربي |\r
+| `1. عنصر` | `<ol>` قائمة مرقمة | `pr-5` للـ RTL |\r
+| `# / ## / ###` | عناوين بتدرج حجمي | |\r
+| `` `كود` `` | كود مضمّن بخلفية `bg-black/10` | |\r
+| `` ```كود``` `` | كتلة كود كاملة | |\r
+| `> اقتباس` | `<blockquote>` بحد أيمن | `border-r-2` للـ RTL |\r
+| `[رابط](url)` | يفتح في تبويب جديد | بتسطير |\r
+
+> **لماذا `pr-5` بدلاً من `pl-5`؟** الواجهة عربية RTL — نقاط القوائم تظهر على اليمين فالحشوة يجب أن تكون يمينية (`pr`).
+
+**رسائل المستخدم** تبقى `whitespace-pre-wrap` عادية لأن المستخدمين لا يكتبون Markdown.
+
+### الحزم المُضافة
+- `react-markdown` — محلل Markdown لـ React
+- `remark-gfm` — دعم GitHub Flavored Markdown (جداول، strikethrough، task lists)
+
+### الملفات المُعدَّلة
+| الملف | التغيير |
+|-------|---------|\r
+| `src/app/student/unibot/unibot-client.tsx` | إضافة `MarkdownMessage` + استبدال `<p>` بـ `<MarkdownMessage>` لرسائل المساعد |
+
+---
+
+## Bugfix: إصلاح خطأ 429 (تجاوز الحصة) في نموذج التضمين
+**التاريخ:** 2026-04-16
+
+### المشكلة
+```
+[GoogleGenerativeAI Error]: 429 Too Many Requests — You exceeded your current quota
+```
+عند محاولة إعادة فهرسة وثيقة من `/tenant-admin/knowledge`، يفشل التضمين بعد 1-2 محاولة ويُرجع الخطأ 500 للمستخدم.
+
+### التشخيص (5 Whys)
+
+| لماذا؟ | الإجابة |
+|--------|---------|
+| لماذا 429؟ | مفتاح API الحالي `AQ.Ab8RN6LZ…` استُنفد حصته اليومية |
+| لماذا يستمر حتى مع الانتظار؟ | الحصة اليومية = 0 — لا ينفع الانتظار الجزئي |
+| لماذا يحدث بسرعة حتى مع المفتاح الجديد؟ | تأخير `MIN_CALL_DELAY_MS = 1100ms` يعني 54 RPM — أعلى بكثير من حد الطبقة المجانية **15 RPM** |
+| لماذا خطأ TypeScript أيضاً؟ | `outputDimensionality` غير موجودة في نوع `EmbedContentRequest` في SDK — أُضيفت لـ REST API لكن أنواع TypeScript لم تُحدَّث |
+
+### الإصلاحات المُطبَّقة
+
+#### 1. تحديث مفتاح API
+```diff
+- GEMINI_API_KEY=AQ.Ab8RN6LZS-4Rhzyz3lrcNKvfpXE9iS8703Sk37rrNgM6ldkw1Q
++ GEMINI_API_KEY=AIzaSyDXFsSTNoceCfBXetJxnJYjBMwo4vxZwRs
+```
+المفتاح القديم: صيغة `AQ.` غير صالحة لـ Gemini API (يجب أن يبدأ بـ `AIzaSy`).
+
+#### 2. إصلاح تأخير حد المعدل
+```diff
+- const MIN_CALL_DELAY_MS = 1100; // 54 RPM — أعلى من 15 RPM!
++ const MIN_CALL_DELAY_MS = parseInt(process.env.EMBEDDING_CALL_DELAY_MS ?? "4200", 10);
+// 4200ms = 14.3 RPM — أقل من حد الطبقة المجانية 15 RPM ✓
+```
+يمكن تخفيضه عبر `EMBEDDING_CALL_DELAY_MS` في `.env.local` للطبقات المدفوعة.
+
+#### 3. الانتقال إلى `fetch` مباشرة بدلاً من SDK
+```typescript
+// قبل: SDK — خطأ TypeScript في outputDimensionality
+const result = await model.embedContent({
+  content: { parts: [{ text }], role: "user" },
+  outputDimensionality: EMBEDDING_DIMENSIONS, // ❌ خطأ TypeScript
+});
+
+// بعد: fetch مباشر — تحكم كامل، لا خطأ TypeScript
+const res = await fetch(`${API_BASE}/${MODEL}:embedContent?key=${apiKey}`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    model: `models/${MODEL}`,
+    content: { parts: [{ text }] },
+    outputDimensionality: EMBEDDING_DIMENSIONS, // ✓ لا مشكلة
+  }),
+});
+```
+
+#### 4. إضافة Retry مع Exponential Backoff
+```
+محاولة 1 → فشل 429 → انتظار 5s
+محاولة 2 → فشل 429 → انتظار 15s
+محاولة 3 → فشل 429 → انتظار 45s
+محاولة 4 → فشل 429 → انتظار 135s
+محاولة 5 → رمي خطأ نهائي
+```
+
+### الملفات المُعدَّلة
+| الملف | التغيير |
+|-------|---------|
+| `src/lib/ai/embedding.ts` | إعادة كتابة كاملة: fetch مباشر + 4200ms تأخير + 4 محاولات retry |
+| `.env.local` | تحديث `GEMINI_API_KEY` إلى المفتاح الصحيح |
+
+### نتائج الاختبار
+```
+✅ GEMINI_API_KEY تنسيق صحيح (AIzaSy…)
+✅ Embedding generated: 768 dims في 701ms
+✅ لا خطأ TypeScript
+```
+
+---
+
+## Bugfix: إصلاح استخراج النص من ملفات PDF العربية
+**التاريخ:** 2026-04-16
+
+### المشكلة
+الوثائق المُفهرسة تحتوي على "أجزاء" (chunks) لكنها مليئة بـ PDF structure noise بدلاً من النص العربي الفعلي:
+```
+"%PDF-1.5 % 1 0 obj <<Type/Catalog... "
+"} 2 c HS k RSV )2 k ! k + ~ > Z& R e e N..."
+"833/Descent -188/CapHeight 613/AvgWidth..."
+```
+
+### السبب الجذري
+```typescript
+// الكود القديم — يقرأ bytes 32-126 فقط (ASCII)
+for (let i = 0; i < uint8.length; i++) {
+  if (uint8[i] >= 32 && uint8[i] <= 126) {  // ASCII فقط!
+    textContent += String.fromCharCode(uint8[i]);
+  }
+}
+```
+الحروف العربية في Unicode `U+0600–U+06FF` مُشفَّرة كـ UTF-8 متعدد البايتات — كل قيمة تقع **خارج** نطاق 32-126 تماماً. النتيجة: **صفر حروف عربية** تُستخرج، فقط أوامر PDF البنيوية.
+
+### الفرق بين الأسلوبين
+| المقياس | الكود القديم (ASCII) | الكود الجديد (pdf-parse) |
+|---------|---------------------|------------------------|
+| الأحرف المُستخرجة | 428,425 (ضوضاء PDF) | 1,493 (نص حقيقي) |
+| الأحرف العربية | **0** | **1,111** (74% من المحتوى) |
+| الصلاحية للـ RAG | ❌ بيانات مزيفة | ✅ نص قابل للبحث |
+
+### الإصلاح
+```typescript
+// بعد: pdf-parse — استخراج Unicode كامل
+const pdfParse = require("pdf-parse");
+const data = await pdfParse(Buffer.from(buffer));
+fullText = data.text; // نص عربي كامل ✓
+```
+
+### التثبيت والإعداد
+```bash
+npm install pdf-parse@1.1.1  # الإصدار 1.x فقط — الإصدار 3.x تغيّر API
+```
+```typescript
+// next.config.ts — منع webpack من bundling المكتبة
+serverExternalPackages: ["pdf-parse"],
+```
+
+### تدفق السكريبتات التشخيصية الجديدة
+```
+scripts/debug-document.ts   → فحص الوثائق في DB + مقارنة الاستخراجين + التحقق من API key
+scripts/simulate-ingest.ts  → محاكاة خطوة بخطوة (--dry-run افتراضي / --real للتنفيذ الحقيقي)
+scripts/test-rag.ts         → اختبار استرجاع RAG نهاية-لنهاية (تضمين → match_chunks → ردّ AI)
+```
+
+### نتائج التشخيص الكامل
+```
+✅ وثيقة "الخدمات الرقمية": 1 جزء مُدمَج بـ 768 أبعاد
+✅ match_chunks يُرجع similarity 0.76 لسؤال عربي ذي صلة
+✅ الأجزاء الضوضائية القديمة (40 جزء) حُذفت وأُعيد إنشاؤها
+✅ استرجاع RAG يعمل من النهاية للنهاية
+```
+
+### الملفات المُنشأة
+| الملف | الوصف |
+|-------|-------|
+| `scripts/debug-document.ts` | فحص الوثائق في DB + مقارنة استخراج النص + التحقق من API key |
+| `scripts/simulate-ingest.ts` | محاكاة كاملة للفهرسة (dry-run/real) |
+| `scripts/test-rag.ts` | اختبار استرجاع RAG نهاية-لنهاية |
+
+### الملفات المُعدَّلة
+| الملف | التغيير |
+|-------|---------|
+| `src/lib/ai/ingest-service.ts` | استبدال استخراج ASCII بـ `pdf-parse` للـ PDF |
+| `next.config.ts` | إضافة `serverExternalPackages: ["pdf-parse"]` |
+
+---
+
 ## Bugfix + Refactor: إصلاح أنبوب التضمين (RAG Ingest Pipeline)
 **التاريخ:** 2026-04-16
 
