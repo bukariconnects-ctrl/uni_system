@@ -143,6 +143,7 @@ export function UnibotClient({
     const userMessage = input.trim();
     setInput("");
     setLoading(true);
+    setSources([]);
 
     const optimisticMsg: ChatMessage = {
       id: `temp-${Date.now()}`,
@@ -242,7 +243,7 @@ export function UnibotClient({
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-sm font-bold text-text-primary">UniBot</h1>
-            <p className="truncate text-xs text-text-secondary">المساعد الذكي للمحتوى الأكاديمي</p>
+            <p className="truncate text-xs text-text-secondary">مساعدك الأكاديمي الشخصي</p>
           </div>
           <select
             value={activeConvId || ""}
@@ -280,14 +281,14 @@ export function UnibotClient({
               </div>
               <h2 className="mb-2 text-lg font-bold text-text-primary">مرحباً في UniBot</h2>
               <p className="mb-5 max-w-xs text-xs text-text-secondary">
-                اسألني عن اللوائح الأكاديمية والمقررات. سأستشهد بالمصادر تلقائياً وتظهر في اللوحة المجاورة.
+                اسألني عن بياناتك الشخصية أو عن اللوائح والسياسات الأكاديمية.
               </p>
               <div className="w-full space-y-2">
                 {[
-                  "ما هي شروط الإنذار الأكاديمي؟",
-                  "كم عدد ساعات التخرج؟",
-                  "ما هي سياسة الغياب؟",
-                  "ما هي التكاليف القادمة؟",
+                  "ما هي المقررات التي أنا مسجل بها حالياً؟",
+                  "ما هو سجل حضوري وغيابي؟",
+                  "ما هي التكاليف والأنشطة المسندة إليّ؟",
+                  "ما هي التعميمات الموجهة إليّ؟",
                 ].map((q) => (
                   <button
                     key={q}

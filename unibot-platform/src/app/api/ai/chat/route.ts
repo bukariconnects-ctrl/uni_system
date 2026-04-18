@@ -2,18 +2,36 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { embedText } from "@/lib/ai/embedding";
+import { getStudentPersonalSnapshot } from "@/lib/ai/personal-context-aggregator";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-const SYSTEM_PROMPT = `أنت UniBot، المساعد الذكي لمنصة UniBot الأكاديمية.
+function buildSystemPrompt(
+  ragContext: string,
+  personalSnapshot: string
+): string {
+  return `أنت UniBot، المساعد الذكي الشخصي للطالب في منصة UniBot الأكاديمية.
 
-قواعد صارمة:
-1. أجب فقط من السياق المُوفَّر أدناه. لا تستخدم معلومات من خارج السياق.
-2. إذا لم يكن السياق المُوفَّر كافياً للإجابة، قل بالضبط: "لم أجد معلومات كافية حول هذا الموضوع في قاعدة معرفتي. يُرجى التواصل مع المختص المعني."
-3. لا تُجب بمعلومات من خارج السياق أبداً.
-4. عند الاقتباس، اذكر رقم الصفحة أو المصدر إذا كان متوفراً.
-5. أجب باللغة العربية بشكل واضح ومختصر.
-6. لا تذكر أنك تستخدم "سياق" أو "chunks" — تصرف كأنك تعرف المعلومة مباشرة.`;
+لديك مصدران للمعلومات:
+
+---
+### 1. البيانات الشخصية الآنية للطالب (من قاعدة البيانات — أكثر أولوية للأسئلة الشخصية)
+${personalSnapshot || "لا توجد بيانات شخصية متاحة حالياً."}
+
+---
+### 2. قاعدة المعرفة الأكاديمية (لوائح الجامعة، السياسات، الأنظمة)
+${ragContext || "لا يوجد سياق من قاعدة المعرفة."}
+
+---
+### قواعد صارمة لا تُخالَف:
+1. **التسلسل الأولوي:** للأسئلة الشخصية (حضور الطالب، درجاته، تكاليفه، مقرراته) — استخدم البيانات الشخصية الآنية أولاً. للأسئلة حول الأنظمة واللوائح — استخدم قاعدة المعرفة.
+2. إذا أجبت من البيانات الشخصية، لا تحتاج لذكر مصدر أو صفحة. تصرّف كأنك تعرف الطالب شخصياً.
+3. إذا أجبت من قاعدة المعرفة، اذكر رقم الصفحة أو المصدر إذا توفَّر.
+4. إذا لم يكفِ أيٌّ من المصدرين للإجابة، قل بالضبط: "لم أجد معلومات كافية حول هذا الموضوع. يُرجى التواصل مع الجهة المختصة."
+5. لا تخترع أرقاماً أو معلومات غير موجودة في المصدرين.
+6. أجب باللغة العربية دائماً بأسلوب واضح ومباشر.
+7. لا تُشر إلى أنك "تُراجع بيانات" أو "تبحث في قاعدة بيانات" — تصرّف بطبيعية كمساعد يعرف الطالب.`;
+}
 
 async function generateConversationTitle(userMessage: string): Promise<string> {
   try {
@@ -29,26 +47,24 @@ async function generateConversationTitle(userMessage: string): Promise<string> {
 أمثلة:
 السؤال: "ما هي شروط التخرج؟" → شروط التخرج
 السؤال: "كم نسبة الغياب؟" → نسبة الغياب المسموحة
-السؤال: "ما المقررات المتاحة؟" → المقررات الدراسية
-السؤال: "هل يوجد تكاليف لم أسلمها؟" → التكاليف غير المسلمة
-السؤال: "ما هو الإنذار الأكاديمي؟" → الإنذار الأكاديمي`,
+السؤال: "ما هي التكاليف القادمة؟" → التكاليف غير المسلمة`,
     });
 
     const result = await titleModel.generateContent({
-      contents: [{
-        role: "user",
-        parts: [{ text: `السؤال: "${userMessage}"\nالعنوان:` }],
-      }],
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: `السؤال: "${userMessage}"\nالعنوان:` }],
+        },
+      ],
       generationConfig: {
         temperature: 0.1,
         maxOutputTokens: 50,
-        // Disable thinking to get direct output without CoT leakage
         thinkingConfig: { thinkingBudget: 0 },
       } as Record<string, unknown>,
     });
 
     const raw = result.response.text().trim();
-    console.log("[UniBot Title Raw]:", JSON.stringify(raw));
 
     const cleaned = raw
       .replace(/THOUGHT[\s\S]*/i, "")
@@ -59,19 +75,15 @@ async function generateConversationTitle(userMessage: string): Promise<string> {
       .replace(/\s{2,}/g, " ")
       .trim();
 
-    console.log("[UniBot Title Cleaned]:", JSON.stringify(cleaned));
-
     if (!cleaned || cleaned.length < 2 || cleaned.length > 60) {
       return "محادثة جديدة";
     }
 
     return cleaned;
-  } catch (err) {
-    console.error("[UniBot Title Error]:", err);
+  } catch {
     return "محادثة جديدة";
   }
 }
-
 
 export async function POST(request: NextRequest) {
   try {
@@ -92,7 +104,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!profile) {
-      return NextResponse.json({ error: "الملف الشخصي غير موجود" }, { status: 404 });
+      return NextResponse.json(
+        { error: "الملف الشخصي غير موجود" },
+        { status: 404 }
+      );
     }
 
     const body = await request.json();
@@ -128,8 +143,12 @@ export async function POST(request: NextRequest) {
       content: message,
     });
 
-    // Use shared embedText (gemini-embedding-2-preview, 768 dims) for query vectorization
-    const queryVector = await embedText(message);
+    const [queryVector, personalSnapshot] = await Promise.all([
+      embedText(message),
+      profile.role === "student"
+        ? getStudentPersonalSnapshot(profile.id, profile.tenant_id ?? "")
+        : Promise.resolve(""),
+    ]);
 
     const adminClient = await createAdminClient();
 
@@ -139,7 +158,7 @@ export async function POST(request: NextRequest) {
       match_count: 5,
     });
 
-    let context = "";
+    let ragContext = "";
     const sourceChunks: {
       id: string;
       page_number: number | null;
@@ -158,7 +177,7 @@ export async function POST(request: NextRequest) {
           },
           idx: number
         ) => {
-          context += `\n[مصدر ${idx + 1}${chunk.page_number ? ` - صفحة ${chunk.page_number}` : ""}]: ${chunk.content}\n`;
+          ragContext += `\n[مصدر ${idx + 1}${chunk.page_number ? ` - صفحة ${chunk.page_number}` : ""}]: ${chunk.content}\n`;
           sourceChunks.push({
             id: chunk.id,
             page_number: chunk.page_number,
@@ -169,30 +188,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: assignments } = await supabase
-      .from("assignments")
-      .select("title, due_date, sections(section_code, courses(name))")
-      .gt("due_date", new Date().toISOString())
-      .order("due_date", { ascending: true })
-      .limit(5);
-
-    let personalContext = "";
-    if (assignments && assignments.length > 0) {
-      personalContext = "\n\nمعلومات شخصية عن الطالب:\nالتكاليف القادمة:\n";
-      assignments.forEach((a: Record<string, unknown>) => {
-        const sections = a.sections as Record<string, unknown> | null;
-        const courses = sections?.courses as Record<string, unknown> | null;
-        personalContext += `- ${a.title} (${courses?.name || ""}) — تسليم: ${new Date(a.due_date as string).toLocaleDateString("ar-SA")}\n`;
-      });
-    }
+    const systemInstruction = buildSystemPrompt(ragContext, personalSnapshot);
 
     const chatModel = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
-      systemInstruction:
-        SYSTEM_PROMPT +
-        "\n\nالسياق المتاح:\n" +
-        (context || "لا يوجد سياق متاح.") +
-        personalContext,
+      systemInstruction,
     });
 
     const chatResult = await chatModel.generateContent({
@@ -208,8 +208,8 @@ export async function POST(request: NextRequest) {
       "لم أتمكن من توليد إجابة. يُرجى المحاولة مرة أخرى.";
 
     const usage = chatResult.response.usageMetadata;
-    const promptTokens = (usage?.promptTokenCount || 0);
-    const completionTokens = (usage?.candidatesTokenCount || 0);
+    const promptTokens = usage?.promptTokenCount || 0;
+    const completionTokens = usage?.candidatesTokenCount || 0;
     const totalTokens = promptTokens + completionTokens;
 
     const chunkIds = sourceChunks.map((c) => c.id);
@@ -233,7 +233,6 @@ export async function POST(request: NextRequest) {
       cost_usd: 0,
     });
 
-    // Generate and save a smart title only for the first message of a new conversation
     let conversationTitle: string | null = null;
     if (isFirstMessage) {
       conversationTitle = await generateConversationTitle(message);
