@@ -26,6 +26,26 @@ export async function createAssignment(formData: FormData) {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
+  let attachmentUrl: string | null = null;
+
+  const file = formData.get("attachment") as File | null;
+  if (file && file.size > 0) {
+    const ext = file.name.split(".").pop();
+    const filePath = `${profile.tenant_id}/assignments/${profile.id}/${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("course-materials")
+      .upload(filePath, file);
+
+    if (uploadError) throw new Error("فشل رفع الملف: " + uploadError.message);
+
+    const { data: urlData } = supabase.storage
+      .from("course-materials")
+      .getPublicUrl(filePath);
+
+    attachmentUrl = urlData.publicUrl;
+  }
+
   const { error } = await supabase.from("assignments").insert({
     tenant_id: profile.tenant_id,
     section_id: formData.get("section_id") as string,
@@ -37,6 +57,7 @@ export async function createAssignment(formData: FormData) {
     allow_late: formData.get("allow_late") === "true",
     is_published: false,
     week_number: parseInt(formData.get("week_number") as string) || null,
+    attachment_url: attachmentUrl,
   });
 
   if (error) throw new Error(error.message);

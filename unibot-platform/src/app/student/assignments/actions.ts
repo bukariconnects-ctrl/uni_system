@@ -94,19 +94,53 @@ export async function submitAssignment(formData: FormData) {
     throw new Error("يجب رفع ملف أو كتابة نص التسليم");
   }
 
-  const { error } = await supabase.from("submissions").insert({
-    tenant_id: profile.tenant_id,
-    assignment_id: assignmentId,
-    student_id: profile.id,
-    file_url: fileUrl,
-    text_content: textContent,
-    status: isLate ? "late" : "submitted",
-  });
+  // Check if a previous submission exists (duplicate resubmission case)
+  const { data: existing } = await supabase
+    .from("submissions")
+    .select("id, status")
+    .eq("assignment_id", assignmentId)
+    .eq("student_id", profile.id)
+    .maybeSingle();
 
-  if (error) {
-    if (error.message.includes("unique") || error.message.includes("duplicate"))
-      throw new Error("لقد قمت بتسليم هذا التكليف مسبقاً");
-    throw new Error(error.message);
+  if (existing) {
+    // Allow update only when faculty explicitly requested resubmission
+    if (existing.status !== "resubmit_requested") {
+      throw new Error("لقد قمت بتسليم هذا التكليف مسبقاً ولا يمكن التعديل عليه");
+    }
+
+    // UPDATE the existing submission record
+    const { error } = await supabase
+      .from("submissions")
+      .update({
+        file_url: fileUrl,
+        text_content: textContent,
+        status: isLate ? "late" : "submitted",
+        submitted_at: new Date().toISOString(),
+        // Reset grading fields
+        grade: null,
+        feedback: null,
+        graded_at: null,
+        graded_by: null,
+      })
+      .eq("id", existing.id);
+
+    if (error) throw new Error(error.message);
+  } else {
+    // First-time submission — INSERT
+    const { error } = await supabase.from("submissions").insert({
+      tenant_id: profile.tenant_id,
+      assignment_id: assignmentId,
+      student_id: profile.id,
+      file_url: fileUrl,
+      text_content: textContent,
+      status: isLate ? "late" : "submitted",
+    });
+
+    if (error) {
+      if (error.message.includes("unique") || error.message.includes("duplicate"))
+        throw new Error("لقد قمت بتسليم هذا التكليف مسبقاً");
+      throw new Error(error.message);
+    }
   }
 
   revalidatePath("/student/assignments");

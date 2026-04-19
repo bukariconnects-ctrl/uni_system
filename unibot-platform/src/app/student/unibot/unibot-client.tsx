@@ -236,7 +236,7 @@ export function UnibotClient({
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden flex-col lg:flex-row">
-      <div className="flex w-full flex-col lg:w-[40%] border-l border-border bg-card-bg">
+      <div className="flex min-h-0 w-full flex-1 flex-col lg:w-[40%] lg:flex-none border-l border-border bg-card-bg">
         <div className="flex items-center gap-2 border-b border-border bg-gradient-to-l from-ai-light to-ai-lavender px-4 py-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 shadow-sm">
             <Sparkles className="h-4 w-4 text-purple" />

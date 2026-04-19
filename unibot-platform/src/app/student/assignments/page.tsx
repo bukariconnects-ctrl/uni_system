@@ -21,7 +21,7 @@ export default async function StudentAssignmentsPage() {
     const [aRes, sRes] = await Promise.all([
       supabase
         .from("assignments")
-        .select("*, sections(section_code, courses(code, name))")
+        .select("*, attachment_url, sections(section_code, courses(code, name))")
         .in("section_id", sectionIds)
         .eq("is_published", true)
         .order("due_date", { ascending: true }),

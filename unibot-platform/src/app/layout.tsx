@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Suspense } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ActionProgressEnhancer } from "@/components/action-progress-enhancer";
 import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 
@@ -33,6 +35,9 @@ export default function RootLayout({
           shadow="0 0 10px #3182CE,0 0 5px #3182CE"
         />
         <ThemeProvider>
+          <Suspense fallback={null}>
+            <ActionProgressEnhancer />
+          </Suspense>
           {children}
         </ThemeProvider>
       </body>

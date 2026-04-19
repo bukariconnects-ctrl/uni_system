@@ -10,6 +10,8 @@ import {
   Upload,
   X,
   RotateCcw,
+  Download,
+  Loader2,
 } from "lucide-react";
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
@@ -122,9 +124,22 @@ export function StudentAssignmentsClient({
               </div>
             </div>
 
-            {assignment.description && (
-              <div className="border-t border-border px-4 py-3">
-                <p className="text-sm text-text-secondary">{assignment.description}</p>
+            {(assignment.description || assignment.attachment_url) && (
+              <div className="border-t border-border px-4 py-3 space-y-2">
+                {assignment.description && (
+                  <p className="text-sm text-text-secondary">{assignment.description}</p>
+                )}
+                {assignment.attachment_url && (
+                  <a
+                    href={assignment.attachment_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg border border-action-blue/30 bg-action-blue/5 px-3 py-1.5 text-xs font-medium text-action-blue hover:bg-action-blue/10"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    تحميل ملف التكليف
+                  </a>
+                )}
               </div>
             )}
 
@@ -152,9 +167,16 @@ export function StudentAssignmentsClient({
                     <label className="mb-1 block text-xs font-medium text-text-primary">أو اكتب نص التسليم</label>
                     <textarea name="text_content" rows={3} className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue" />
                   </div>
-                  <button type="submit" disabled={loading} className="flex items-center gap-2 rounded-lg bg-action-blue px-6 py-2.5 text-sm font-medium text-white hover:bg-action-blue/90 disabled:opacity-50">
-                    <Upload className="h-4 w-4" />
-                    {loading ? "جاري التسليم..." : "تسليم"}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex items-center gap-2 rounded-lg bg-action-blue px-6 py-2.5 text-sm font-medium text-white hover:bg-action-blue/90 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+                  >
+                    {loading ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" /> جاري الرفع...</>
+                    ) : (
+                      <><Upload className="h-4 w-4" /> تسليم</>
+                    )}
                   </button>
                 </form>
               </div>

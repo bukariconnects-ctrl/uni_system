@@ -18,6 +18,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types/database";
 import { NotificationBell } from "@/components/notification-bell";
 import { SidebarShell } from "@/components/sidebar-shell";
+import { RealtimePageRefresher } from "@/components/realtime-page-refresher";
 
 const navItems = [
   { href: "/faculty", label: "لوحة التحكم", icon: LayoutDashboard },
@@ -54,6 +55,7 @@ export function FacultySidebar({ profile, tenantName }: { profile: Profile; tena
         </div>
         <NotificationBell userId={profile.id} tenantId={profile.tenant_id!} userRole="faculty" />
       </div>
+      <RealtimePageRefresher userId={profile.id} tenantId={profile.tenant_id!} userRole="faculty" />
 
       <nav className="flex-1 space-y-1 p-3">
         {navItems.map((item) => {

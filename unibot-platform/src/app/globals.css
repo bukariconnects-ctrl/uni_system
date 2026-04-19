@@ -103,3 +103,9 @@ input, select, textarea {
 .dark input, .dark select, .dark textarea {
   color-scheme: dark;
 }
+
+/* ─── Action progress bar shimmer ──────────────── */
+@keyframes action-progress-slide {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
