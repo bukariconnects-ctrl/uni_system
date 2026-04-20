@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { batchEnroll, updateEnrollmentStatus } from "./actions";
 import {
   Users,
@@ -60,6 +60,16 @@ export function EnrollmentsClient({
   enrollments: EnrollmentRow[];
 }) {
   const [tab, setTab] = useState<"batch" | "list">("batch");
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("tab");
+    if (p === "batch" || p === "list") setTab(p);
+  }, []);
+
+  function changeTab(t: "batch" | "list") {
+    setTab(t);
+    window.history.replaceState(null, "", `?tab=${t}`);
+  }
   const [selectedSection, setSelectedSection] = useState("");
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -127,14 +137,14 @@ export function EnrollmentsClient({
 
       <div className="flex gap-1 rounded-xl bg-app-bg p-1">
         <button
-          onClick={() => { setTab("batch"); setResult(null); }}
+          onClick={() => { changeTab("batch"); setResult(null); }}
           className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${tab === "batch" ? "bg-card-bg text-action-blue shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
         >
           <UserPlus className="h-4 w-4" />
           تسجيل جماعي
         </button>
         <button
-          onClick={() => setTab("list")}
+          onClick={() => changeTab("list")}
           className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${tab === "list" ? "bg-card-bg text-action-blue shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
         >
           <Users className="h-4 w-4" />

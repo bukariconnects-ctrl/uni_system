@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   createCourse,
   updateCourse,
@@ -99,6 +99,16 @@ export function CoursesClient({
   prerequisites: PrereqRow[];
 }) {
   const [tab, setTab] = useState<"catalog" | "plan" | "prereq">("catalog");
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("tab");
+    if (p === "catalog" || p === "plan" || p === "prereq") setTab(p as "catalog" | "plan" | "prereq");
+  }, []);
+
+  function changeTab(t: "catalog" | "plan" | "prereq") {
+    setTab(t);
+    window.history.replaceState(null, "", `?tab=${t}`);
+  }
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -135,7 +145,7 @@ export function CoursesClient({
         {tabs.map((t) => (
           <button
             key={t.key}
-            onClick={() => { setTab(t.key); setShowForm(false); setEditId(null); }}
+            onClick={() => { changeTab(t.key); setShowForm(false); setEditId(null); }}
             className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
               tab === t.key
                 ? "bg-card-bg text-action-blue shadow-sm"

@@ -1,10 +1,94 @@
 ﻿import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import {
+  GoogleGenerativeAI,
+  type GenerateContentRequest,
+  type GenerateContentResult,
+} from "@google/generative-ai";
 import { embedText } from "@/lib/ai/embedding";
 import { getStudentPersonalSnapshot } from "@/lib/ai/personal-context-aggregator";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
+// ── Model configuration ─────────────────────────────────────────────────────
+// Primary = highest quality; fallback = lighter variant used when primary is
+// overloaded (503) or rate-limited (429). Both share the same API surface.
+const PRIMARY_MODEL = "gemini-2.5-flash";
+const FALLBACK_MODEL = "gemini-2.5-flash-lite";
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Extracts HTTP status from a GoogleGenerativeAI error.
+ * The SDK embeds the status in the error message when the `status` prop is
+ * undefined (common for upstream 503s from the REST endpoint).
+ */
+function extractStatus(err: unknown): number | undefined {
+  if (!err || typeof err !== "object") return undefined;
+  const e = err as { status?: number; message?: string };
+  if (typeof e.status === "number") return e.status;
+  const m = e.message?.match(/\[(\d{3})\s/);
+  return m ? parseInt(m[1], 10) : undefined;
+}
+
+/** Transient errors worth retrying: 429 (rate limit), 500/502/503/504. */
+function isTransient(status: number | undefined): boolean {
+  return status === 429 || (status !== undefined && status >= 500 && status < 600);
+}
+
+/**
+ * Calls `generateContent` with:
+ *   - Exponential backoff on 429/5xx (3 attempts: 1s, 3s, 9s)
+ *   - Automatic fallback to a lighter model if the primary stays overloaded
+ */
+async function generateWithRetry(
+  modelName: string,
+  systemInstruction: string,
+  request: GenerateContentRequest,
+  opts: { allowFallback?: boolean } = {}
+): Promise<GenerateContentResult> {
+  const maxAttempts = 3;
+  let lastErr: unknown;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName, systemInstruction });
+      return await model.generateContent(request);
+    } catch (err) {
+      lastErr = err;
+      const status = extractStatus(err);
+      if (!isTransient(status)) throw err;
+
+      if (attempt < maxAttempts - 1) {
+        const waitMs = 1000 * Math.pow(3, attempt);
+        console.warn(
+          `[UniBot] ${modelName} returned ${status ?? "network"} — ` +
+            `retry ${attempt + 1}/${maxAttempts - 1} in ${waitMs / 1000}s`
+        );
+        await sleep(waitMs);
+      }
+    }
+  }
+
+  // Primary exhausted retries → try fallback model once.
+  if (opts.allowFallback && modelName !== FALLBACK_MODEL) {
+    console.warn(`[UniBot] ${modelName} exhausted retries — falling back to ${FALLBACK_MODEL}`);
+    try {
+      const model = genAI.getGenerativeModel({
+        model: FALLBACK_MODEL,
+        systemInstruction,
+      });
+      return await model.generateContent(request);
+    } catch (fallbackErr) {
+      console.error("[UniBot] Fallback model also failed:", fallbackErr);
+      throw fallbackErr;
+    }
+  }
+
+  throw lastErr;
+}
 
 function buildSystemPrompt(
   ragContext: string,
@@ -38,9 +122,7 @@ ${hasRagContext ? ragContext : "ظ„ط§ طھظˆط¬ط¯ ظˆط«ط§ط¦ظ‚
 
 async function generateConversationTitle(userMessage: string): Promise<string> {
   try {
-    const titleModel = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      systemInstruction: `ط£ظ†طھ ظ…ط³ط§ط¹ط¯ ظ…طھط®طµطµ ظپظٹ ط¥ظ†ط´ط§ط، ط¹ظ†ط§ظˆظٹظ† ظ‚طµظٹط±ط© ط¨ط§ظ„ظ„ط؛ط© ط§ظ„ط¹ط±ط¨ظٹط©.
+    const titleSystemInstruction = `ط£ظ†طھ ظ…ط³ط§ط¹ط¯ ظ…طھط®طµطµ ظپظٹ ط¥ظ†ط´ط§ط، ط¹ظ†ط§ظˆظٹظ† ظ‚طµظٹط±ط© ط¨ط§ظ„ظ„ط؛ط© ط§ظ„ط¹ط±ط¨ظٹط©.
 ظ‚ظˆط§ط¹ط¯ طµط§ط±ظ…ط©:
 - ط§ظƒطھط¨ ط§ظ„ط¹ظ†ظˆط§ظ† ط¨ط§ظ„ط¹ط±ط¨ظٹط© ظپظ‚ط·. ظ…ظ…ظ†ظˆط¹ ط£ظٹ ظƒظ„ظ…ط© ط¥ظ†ط¬ظ„ظٹط²ظٹط©.
 - ظ…ظ† 2 ط¥ظ„ظ‰ 4 ظƒظ„ظ…ط§طھ ظپظ‚ط·.
@@ -50,21 +132,26 @@ async function generateConversationTitle(userMessage: string): Promise<string> {
 ط£ظ…ط«ظ„ط©:
 ط§ظ„ط³ط¤ط§ظ„: "ظ…ط§ ظ‡ظٹ ط´ط±ظˆط· ط§ظ„طھط®ط±ط¬طں" â†’ ط´ط±ظˆط· ط§ظ„طھط®ط±ط¬
 ط§ظ„ط³ط¤ط§ظ„: "ظƒظ… ظ†ط³ط¨ط© ط§ظ„ط؛ظٹط§ط¨طں" â†’ ظ†ط³ط¨ط© ط§ظ„ط؛ظٹط§ط¨ ط§ظ„ظ…ط³ظ…ظˆط­ط©
-ط§ظ„ط³ط¤ط§ظ„: "ظ…ط§ ظ‡ظٹ ط§ظ„طھظƒط§ظ„ظٹظپ ط§ظ„ظ‚ط§ط¯ظ…ط©طں" â†’ ط§ظ„طھظƒط§ظ„ظٹظپ ط؛ظٹط± ط§ظ„ظ…ط³ظ„ظ…ط©`,
-    });
+ط§ظ„ط³ط¤ط§ظ„: "ظ…ط§ ظ‡ظٹ ط§ظ„طھظƒط§ظ„ظٹظپ ط§ظ„ظ‚ط§ط¯ظ…ط©طں" â†’ ط§ظ„طھظƒط§ظ„ظٹظپ ط؛ظٹط± ط§ظ„ظ…ط³ظ„ظ…ط©`;
 
-    const result = await titleModel.generateContent({
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: `ط§ظ„ط³ط¤ط§ظ„: "${userMessage}"\nط§ظ„ط¹ظ†ظˆط§ظ†:` }],
+    // Titles are non-critical: use fallback model directly to avoid piling
+    // extra load on the primary model; if it fails we just return a default.
+    const result = await generateWithRetry(
+      FALLBACK_MODEL,
+      titleSystemInstruction,
+      {
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: `ط§ظ„ط³ط¤ط§ظ„: "${userMessage}"\nط§ظ„ط¹ظ†ظˆط§ظ†:` }],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 50,
         },
-      ],
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 50,
-      },
-    });
+      }
+    );
 
     const raw = result.response.text().trim();
 
@@ -247,18 +334,18 @@ export async function POST(request: NextRequest) {
 
     const systemInstruction = buildSystemPrompt(ragContext, personalSnapshot);
 
-    const chatModel = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+    const chatResult = await generateWithRetry(
+      PRIMARY_MODEL,
       systemInstruction,
-    });
-
-    const chatResult = await chatModel.generateContent({
-      contents: [{ role: "user", parts: [{ text: message }] }],
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: 2048,
+      {
+        contents: [{ role: "user", parts: [{ text: message }] }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 2048,
+        },
       },
-    });
+      { allowFallback: true }
+    );
 
     // response.text() throws if finishReason is SAFETY or MAX_TOKENS â€” guard it.
     let assistantMessage: string;
@@ -294,7 +381,7 @@ export async function POST(request: NextRequest) {
     await adminClient.from("ai_token_usage").insert({
       tenant_id: profile.tenant_id,
       user_id: profile.id,
-      model: "gemini-2.5-flash",
+      model: PRIMARY_MODEL,
       prompt_tokens: promptTokens,
       completion_tokens: completionTokens,
       total_tokens: totalTokens,

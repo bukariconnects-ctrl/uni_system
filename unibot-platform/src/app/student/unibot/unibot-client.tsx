@@ -14,6 +14,10 @@ import {
   Sparkles,
   X,
   BookOpen,
+  ChevronDown,
+  Trash2,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import type { ChatbotConversation } from "@/lib/types/database";
 import { getConversationMessages, endConversation } from "./actions";
@@ -124,10 +128,30 @@ export function UnibotClient({
   const [selectedSource, setSelectedSource] = useState<SourceChunk | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const convDropdownRef = useRef<HTMLDivElement>(null);
+  const [docPanelOpen, setDocPanelOpen] = useState(true);
+  const [convDropdownOpen, setConvDropdownOpen] = useState(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    const ta = inputRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
+  }, [input]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (convDropdownRef.current && !convDropdownRef.current.contains(e.target as Node)) {
+        setConvDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   async function loadConversation(convId: string) {
     setActiveConvId(convId);
@@ -236,7 +260,7 @@ export function UnibotClient({
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden flex-col lg:flex-row">
-      <div className="flex min-h-0 w-full flex-1 flex-col lg:w-[40%] lg:flex-none border-l border-border bg-card-bg">
+      <div className={`flex min-h-0 w-full flex-1 flex-col border-l border-border bg-card-bg ${docPanelOpen ? "lg:w-[40%] lg:flex-none" : ""}`}>
         <div className="flex items-center gap-2 border-b border-border bg-gradient-to-l from-ai-light to-ai-lavender px-4 py-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 shadow-sm">
             <Sparkles className="h-4 w-4 text-purple" />
@@ -245,31 +269,74 @@ export function UnibotClient({
             <h1 className="text-sm font-bold text-text-primary">UniBot</h1>
             <p className="truncate text-xs text-text-secondary">مساعدك الأكاديمي الشخصي</p>
           </div>
-          <select
-            value={activeConvId || ""}
-            onChange={(e) => {
-              if (!e.target.value) handleNewConversation();
-              else loadConversation(e.target.value);
-            }}
-            className="max-w-[110px] truncate rounded-lg border border-white/40 bg-white/30 px-2 py-1 text-xs text-text-primary outline-none backdrop-blur-sm"
-          >
-            <option value="">+ جديد</option>
-            {conversations.map((conv) => (
-              <option key={conv.id} value={conv.id}>
-                {conv.title ||
-                  new Date(conv.created_at).toLocaleDateString("ar-SA", {
-                    month: "short",
-                    day: "numeric",
-                  })}
-              </option>
-            ))}
-          </select>
+          <div className="relative" ref={convDropdownRef}>
+            <button
+              onClick={() => setConvDropdownOpen(!convDropdownOpen)}
+              className="flex items-center gap-1 max-w-[130px] rounded-lg border border-white/40 bg-white/30 px-2 py-1 text-xs text-text-primary outline-none backdrop-blur-sm"
+            >
+              <span className="min-w-0 flex-1 truncate text-right">
+                {activeConvId
+                  ? conversations.find((c) => c.id === activeConvId)?.title ||
+                    new Date(
+                      conversations.find((c) => c.id === activeConvId)?.created_at || ""
+                    ).toLocaleDateString("ar-SA", { month: "short", day: "numeric" })
+                  : "+ جديد"}
+              </span>
+              <ChevronDown className="h-3 w-3 shrink-0" />
+            </button>
+
+            {convDropdownOpen && (
+              <div className="absolute left-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-xl border border-border bg-card-bg shadow-lg">
+                <button
+                  onClick={() => { handleNewConversation(); setConvDropdownOpen(false); }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-action-blue hover:bg-action-blue/10"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  محادثة جديدة
+                </button>
+                {conversations.length > 0 && (
+                  <div className="max-h-52 divide-y divide-border/40 overflow-y-auto border-t border-border/40">
+                    {conversations.map((conv) => (
+                      <div
+                        key={conv.id}
+                        className={`flex items-center gap-1 px-3 py-1.5 hover:bg-app-bg ${
+                          activeConvId === conv.id ? "bg-action-blue/5" : ""
+                        }`}
+                      >
+                        <button
+                          onClick={() => { loadConversation(conv.id); setConvDropdownOpen(false); }}
+                          className="min-w-0 flex-1 truncate text-right text-xs text-text-primary"
+                        >
+                          {conv.title ||
+                            new Date(conv.created_at).toLocaleDateString("ar-SA", {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleEndConversation(conv.id); }}
+                          className="shrink-0 rounded p-0.5 text-text-secondary/40 transition-colors hover:bg-danger/10 hover:text-danger"
+                          title="حذف المحادثة"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <button
-            onClick={handleNewConversation}
+            onClick={() => setDocPanelOpen(!docPanelOpen)}
             className="rounded-lg p-1.5 text-text-secondary/80 transition-colors hover:bg-white/30"
-            title="محادثة جديدة"
+            title={docPanelOpen ? "إخفاء المستندات" : "إظهار المستندات"}
           >
-            <Plus className="h-4 w-4" />
+            {docPanelOpen ? (
+              <PanelLeftClose className="h-4 w-4" />
+            ) : (
+              <PanelLeftOpen className="h-4 w-4" />
+            )}
           </button>
         </div>
 
@@ -398,7 +465,7 @@ export function UnibotClient({
         </div>
 
         <div className="border-t border-border bg-card-bg px-4 py-3">
-          <form onSubmit={handleSend} className="flex gap-2">
+          <form onSubmit={handleSend} className="flex items-end gap-2">
             <textarea
               ref={inputRef}
               value={input}
@@ -411,7 +478,8 @@ export function UnibotClient({
               }}
               placeholder="اكتب سؤالك هنا..."
               rows={1}
-              className="flex-1 resize-none rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors placeholder:text-text-secondary focus:border-action-blue"
+              className="flex-1 resize-none overflow-hidden rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors placeholder:text-text-secondary focus:border-action-blue"
+              style={{ maxHeight: "10rem" }}
             />
             <button
               type="submit"
@@ -424,7 +492,7 @@ export function UnibotClient({
         </div>
       </div>
 
-      <div className="hidden flex-col lg:flex lg:w-[60%] bg-gray-50/30">
+      <div className={`flex-col bg-gray-50/30 ${docPanelOpen ? "hidden lg:flex lg:w-[60%]" : "hidden"}`}>
         <div className="flex items-center gap-3 border-b border-border bg-card-bg px-5 py-3">
           <BookOpen className="h-4 w-4 text-text-secondary" />
           <span className="text-sm font-medium text-text-primary">

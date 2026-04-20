@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   uploadMaterial,
   togglePublish,
@@ -53,6 +53,16 @@ export function MaterialsClient({
   syllabi: any[];
 }) {
   const [tab, setTab] = useState<"materials" | "syllabi">("materials");
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("tab");
+    if (p === "materials" || p === "syllabi") setTab(p);
+  }, []);
+
+  function changeTab(t: "materials" | "syllabi") {
+    setTab(t);
+    window.history.replaceState(null, "", `?tab=${t}`);
+  }
   const [showUpload, setShowUpload] = useState(false);
   const [showSyllabus, setShowSyllabus] = useState(false);
   const [filterSection, setFilterSection] = useState("");
@@ -103,14 +113,14 @@ export function MaterialsClient({
 
       <div className="flex gap-1 rounded-xl bg-app-bg p-1">
         <button
-          onClick={() => setTab("materials")}
+          onClick={() => changeTab("materials")}
           className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${tab === "materials" ? "bg-card-bg text-action-blue shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
         >
           <BookOpen className="h-4 w-4" />
           المواد التعليمية
         </button>
         <button
-          onClick={() => setTab("syllabi")}
+          onClick={() => changeTab("syllabi")}
           className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${tab === "syllabi" ? "bg-card-bg text-action-blue shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
         >
           <FileText className="h-4 w-4" />

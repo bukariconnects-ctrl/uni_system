@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   bulkImportUsers,
   updateUserStatus,
@@ -165,6 +165,16 @@ export function UsersClient({
   academicLevels: LevelOption[];
 }) {
   const [tab, setTab] = useState<UserTab>("all");
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("tab");
+    if (p === "all" || p === "students" || p === "faculty" || p === "management") setTab(p as UserTab);
+  }, []);
+
+  function changeTab(t: UserTab) {
+    setTab(t);
+    window.history.replaceState(null, "", `?tab=${t}`);
+  }
   const [modal, setModal] = useState<ModalState>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -291,7 +301,7 @@ export function UsersClient({
           {tabs.map((t) => (
             <button
               key={t.key}
-              onClick={() => setTab(t.key)}
+              onClick={() => changeTab(t.key)}
               className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                 tab === t.key
                   ? "bg-card-bg text-action-blue shadow-sm"

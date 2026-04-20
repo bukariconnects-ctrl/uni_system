@@ -43,6 +43,16 @@ export function StudentAttendanceClient({
   studentId: string;
 }) {
   const [tab, setTab] = useState<"scan" | "summary" | "details">("scan");
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("tab");
+    if (p === "scan" || p === "summary" || p === "details") setTab(p);
+  }, []);
+
+  function changeTab(t: "scan" | "summary" | "details") {
+    setTab(t);
+    window.history.replaceState(null, "", `?tab=${t}`);
+  }
   const [filterSection, setFilterSection] = useState("");
   const [qrInput, setQrInput] = useState("");
   const [cameraActive, setCameraActive] = useState(false);
@@ -166,21 +176,21 @@ export function StudentAttendanceClient({
     <div className="space-y-4">
       <div className="flex gap-1 rounded-xl bg-app-bg p-1">
         <button
-          onClick={() => setTab("scan")}
+          onClick={() => changeTab("scan")}
           className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${tab === "scan" ? "bg-card-bg text-action-blue shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
         >
           <QrCode className="h-4 w-4" />
           تسجيل الحضور
         </button>
         <button
-          onClick={() => setTab("summary")}
+          onClick={() => changeTab("summary")}
           className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${tab === "summary" ? "bg-card-bg text-action-blue shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
         >
           <ClipboardCheck className="h-4 w-4" />
           الملخص
         </button>
         <button
-          onClick={() => setTab("details")}
+          onClick={() => changeTab("details")}
           className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${tab === "details" ? "bg-card-bg text-action-blue shadow-sm" : "text-text-secondary hover:text-text-primary"}`}
         >
           <Clock className="h-4 w-4" />

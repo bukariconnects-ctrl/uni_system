@@ -83,6 +83,16 @@ export function FacultyCircularsClient({
   const supabase = createClient();
 
   useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("tab");
+    if (p === "received" || p === "sent") setActiveTab(p);
+  }, []);
+
+  function changeTab(t: "received" | "sent") {
+    setActiveTab(t);
+    window.history.replaceState(null, "", `?tab=${t}`);
+  }
+
+  useEffect(() => {
     const channel = supabase
       .channel(`faculty-circulars-${userId}`)
       .on(
@@ -144,7 +154,7 @@ export function FacultyCircularsClient({
       <div className="flex items-center justify-between gap-4">
         <div className="flex gap-1 rounded-xl bg-app-bg p-1">
           <button
-            onClick={() => setActiveTab("received")}
+            onClick={() => changeTab("received")}
             className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === "received"
                 ? "bg-card-bg text-text-primary shadow-sm"
@@ -160,7 +170,7 @@ export function FacultyCircularsClient({
             )}
           </button>
           <button
-            onClick={() => setActiveTab("sent")}
+            onClick={() => changeTab("sent")}
             className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === "sent"
                 ? "bg-card-bg text-text-primary shadow-sm"

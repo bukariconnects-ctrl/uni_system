@@ -17,6 +17,8 @@ import {
   Users,
   X,
   MessageCircleOff,
+  PanelRightClose,
+  PanelRightOpen,
 } from "lucide-react";
 
 type ChatTarget = {
@@ -38,6 +40,7 @@ export function StudentMessagesClient({
   tenantId: string;
 }) {
   const [target, setTarget] = useState<ChatTarget | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -148,7 +151,7 @@ export function StudentMessagesClient({
     setLoading(true);
     try {
       const convId = await startConversation(userId);
-      setTarget({ type: "conversation", id: convId, name: userName });
+      selectTarget({ type: "conversation", id: convId, name: userName });
       setShowNewChat(false);
       setSearchQuery("");
       setSearchResults([]);
@@ -159,16 +162,28 @@ export function StudentMessagesClient({
     }
   }
 
+  function selectTarget(t: ChatTarget) {
+    setTarget(t);
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setSidebarOpen(false);
+    }
+  }
+
   const ROLE_LABELS: Record<string, string> = { faculty: "محاضر", student: "طالب" };
 
   return (
     <div className="flex h-[calc(100vh-12rem)] overflow-hidden rounded-2xl border border-border bg-card-bg shadow-sm">
-      <div className="flex w-72 flex-col border-l border-border">
+      <div className={`shrink-0 flex-col border-l border-border md:flex md:w-64 lg:w-72 ${sidebarOpen ? "flex w-full" : "hidden"}`}>
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h3 className="text-sm font-bold text-text-primary">المحادثات</h3>
-          <button onClick={() => setShowNewChat(!showNewChat)} className="rounded-lg p-1.5 text-action-blue hover:bg-action-blue/10">
-            <Plus className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setShowNewChat(!showNewChat)} className="rounded-lg p-1.5 text-action-blue hover:bg-action-blue/10">
+              <Plus className="h-4 w-4" />
+            </button>
+            <button onClick={() => setSidebarOpen(false)} className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg" title="إخفاء">
+              <PanelRightClose className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {showNewChat && (
@@ -212,7 +227,7 @@ export function StudentMessagesClient({
               {channels.map((ch: any) => (
                 <button
                   key={ch.id}
-                  onClick={() => setTarget({ type: "channel", id: ch.id, name: ch.sections?.courses?.code ? `${ch.sections.courses.code} (${ch.sections.section_code})` : ch.name, can_send: ch.can_send })}
+                  onClick={() => selectTarget({ type: "channel", id: ch.id, name: ch.sections?.courses?.code ? `${ch.sections.courses.code} (${ch.sections.section_code})` : ch.name, can_send: ch.can_send })}
                   className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-right text-sm transition-colors ${target?.id === ch.id ? "bg-action-blue/10 text-action-blue" : "text-text-secondary hover:bg-app-bg hover:text-text-primary"}`}
                 >
                   <Hash className="h-4 w-4" />
@@ -229,7 +244,7 @@ export function StudentMessagesClient({
               {conversations.map((conv: any) => (
                 <button
                   key={conv.id}
-                  onClick={() => setTarget({ type: "conversation", id: conv.id, name: `${conv.other_user?.first_name} ${conv.other_user?.last_name}` })}
+                  onClick={() => selectTarget({ type: "conversation", id: conv.id, name: `${conv.other_user?.first_name} ${conv.other_user?.last_name}` })}
                   className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-right text-sm transition-colors ${target?.id === conv.id ? "bg-action-blue/10 text-action-blue" : "text-text-secondary hover:bg-app-bg hover:text-text-primary"}`}
                 >
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-academic-navy text-xs font-bold text-white">
@@ -252,17 +267,35 @@ export function StudentMessagesClient({
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col">
+      <div className={`flex-1 flex-col ${sidebarOpen ? "hidden md:flex" : "flex"}`}>
         {!target ? (
-          <div className="flex flex-1 items-center justify-center">
-            <div className="text-center">
-              <MessageSquare className="mx-auto mb-3 h-12 w-12 text-text-secondary" />
-              <p className="text-sm text-text-secondary">اختر محادثة للبدء</p>
+          <div className="flex flex-1 flex-col">
+            <div className="flex items-center border-b border-border px-4 py-2.5">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg"
+                title={sidebarOpen ? "إخفاء المحادثات" : "إظهار المحادثات"}
+              >
+                {sidebarOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+              </button>
+            </div>
+            <div className="flex flex-1 items-center justify-center">
+              <div className="text-center">
+                <MessageSquare className="mx-auto mb-3 h-12 w-12 text-text-secondary" />
+                <p className="text-sm text-text-secondary">اختر محادثة للبدء</p>
+              </div>
             </div>
           </div>
         ) : (
           <>
             <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg"
+                title={sidebarOpen ? "إخفاء المحادثات" : "إظهار المحادثات"}
+              >
+                {sidebarOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+              </button>
               {target.type === "channel" ? <Hash className="h-5 w-5 text-action-blue" /> : <Users className="h-5 w-5 text-action-blue" />}
               <span className="font-bold text-text-primary">{target.name}</span>
             </div>
