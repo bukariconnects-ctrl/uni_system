@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 import type { ContentType } from "@/lib/types/database";
 import { validateFile } from "@/lib/security/file-validator";
+import { performIngest } from "@/lib/ai/ingest-service";
 
 export async function getFacultySections() {
   const { profile } = await requireRole(["faculty"]);
@@ -120,29 +121,25 @@ export async function toggleAiApproved(id: string, approved: boolean) {
       .single();
 
     if (material) {
+      // Check if an ai_knowledge_documents record already exists for this material
       const { data: existingDoc } = await supabase
         .from("ai_knowledge_documents")
         .select("id")
         .eq("material_id", id)
-        .single();
+        .maybeSingle();
+
+      let docId: string;
 
       if (existingDoc) {
+        // Reactivate & re-index existing record
         await supabase
           .from("ai_knowledge_documents")
           .update({ is_active: true })
           .eq("id", existingDoc.id);
-
-        try {
-          const baseUrl =
-            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-          await fetch(`${baseUrl}/api/ai/ingest`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ document_id: existingDoc.id }),
-          });
-        } catch {}
+        docId = existingDoc.id;
       } else {
-        const { data: newDoc } = await supabase
+        // Create new knowledge document record
+        const { data: newDoc, error: docError } = await supabase
           .from("ai_knowledge_documents")
           .insert({
             tenant_id: profile.tenant_id,
@@ -157,20 +154,17 @@ export async function toggleAiApproved(id: string, approved: boolean) {
           .select("id")
           .single();
 
-        if (newDoc) {
-          try {
-            const baseUrl =
-              process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-            await fetch(`${baseUrl}/api/ai/ingest`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ document_id: newDoc.id }),
-            });
-          } catch {}
+        if (docError || !newDoc) {
+          throw new Error("فشل إنشاء سجل المعرفة: " + (docError?.message ?? "unknown"));
         }
+        docId = newDoc.id;
       }
+
+      // ✅ Call performIngest directly (no HTTP loopback — avoids auth failure)
+      await performIngest(docId, profile);
     }
   } else {
+    // Deactivate knowledge document without deleting chunks
     await supabase
       .from("ai_knowledge_documents")
       .update({ is_active: false })

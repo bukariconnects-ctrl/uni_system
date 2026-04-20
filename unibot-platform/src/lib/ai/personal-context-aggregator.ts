@@ -29,6 +29,7 @@ export async function getStudentPersonalSnapshot(
     schedulesRes,
     circularsRes,
     notificationsRes,
+    materialsRes,
   ] = await Promise.all([
     db
       .from("student_profiles")
@@ -97,6 +98,16 @@ export async function getStudentPersonalSnapshot(
       .eq("tenant_id", tenantId)
       .order("created_at", { ascending: false })
       .limit(5),
+
+    // Course materials visible to the student
+    sectionIds.length > 0
+      ? db
+          .from("course_materials")
+          .select("id, title, content_type, week_number, description, section_id, sections(section_code, courses(code, name))")
+          .in("section_id", sectionIds)
+          .eq("is_published", true)
+          .order("week_number", { ascending: true })
+      : Promise.resolve({ data: [] }),
   ]);
 
   const parts: string[] = [];
@@ -256,6 +267,42 @@ export async function getStudentPersonalSnapshot(
       const date = new Date(n.created_at).toLocaleDateString("ar-SA");
       parts.push(`- [${date}${!n.is_read ? " — غير مقروء" : ""}] ${n.title}: ${n.body ?? ""}`);
     }
+    parts.push("");
+  }
+
+  // ── Course Materials ──────────────────────────────────
+  const materials = materialsRes.data ?? [];
+  if (materials.length > 0) {
+    // Group by course
+    const byCourse: Record<string, { courseName: string; items: any[] }> = {};
+    for (const m of materials) {
+      const sec = m.sections as any;
+      const courseKey = `${sec?.courses?.code ?? "unknown"}`;
+      if (!byCourse[courseKey]) {
+        byCourse[courseKey] = { courseName: `${sec?.courses?.code ?? ""} — ${sec?.courses?.name ?? ""}`, items: [] };
+      }
+      byCourse[courseKey].items.push(m);
+    }
+
+    parts.push("## المحتوى التعليمي المتاح لك (المحاضرات والمواد)");
+    for (const [, course] of Object.entries(byCourse)) {
+      parts.push(`### مقرر: ${course.courseName}`);
+      for (const m of course.items) {
+        const typeLabel =
+          m.content_type === "pdf" ? "PDF — محاضرة" :
+          m.content_type === "video" ? "فيديو" :
+          m.content_type === "link" ? "رابط" :
+          m.content_type === "lab" ? "تجربة عملية" :
+          m.content_type ?? "مادة";
+        const week = m.week_number ? ` | الأسبوع ${m.week_number}` : "";
+        const desc = m.description ? ` | ${m.description.slice(0, 120)}` : "";
+        parts.push(`  - [${typeLabel}${week}] ${m.title}${desc}`);
+      }
+    }
+    parts.push("");
+  } else {
+    parts.push("## المحتوى التعليمي المتاح");
+    parts.push("- لم يُرفع محتوى تعليمي بعد لمقرراتك الحالية.");
     parts.push("");
   }
 
