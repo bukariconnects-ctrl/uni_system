@@ -3231,4 +3231,3 @@ if (!scopedCourseIds || scopedCourseIds.length === 0) {
 ### ملاحظة
 يجب تشغيل الـ migration في Supabase Dashboard لتفعيل الميزة.
 
----
