@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   createSection,
+  createLabSection,
   updateSectionStatus,
   updateSectionInstructor,
   mergeSection,
@@ -20,6 +21,7 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
+  FlaskConical,
 } from "lucide-react";
 
 interface SectionRow {
@@ -32,6 +34,8 @@ interface SectionRow {
   course_id: string;
   semester_id: string;
   merged_into_id: string | null;
+  section_type: string | null;
+  parent_section_id: string | null;
   courses: { code: string; name: string; credit_hours: number } | null;
   semesters: { name: string; status: string } | null;
   profiles: { first_name: string; last_name: string } | null;
@@ -43,6 +47,7 @@ interface FacultyOption { id: string; first_name: string; last_name: string }
 
 type ModalState =
   | { type: "add" }
+  | { type: "add-lab"; parentSectionId: string; parentCourseId: string; parentSemesterId: string }
   | { type: "assign"; sectionId: string }
   | { type: "merge"; sectionId: string; courseId: string }
   | null;
@@ -91,7 +96,22 @@ export function SectionsClient({
     }
   }
 
-  const filteredSections = initialSections.filter((s) => {
+  const SECTION_TYPE_LABELS: Record<string, string> = {
+    lecture: "نظري",
+    lab: "معمل",
+    tutorial: "تطبيقي",
+  };
+
+  // Separate parent sections (no parent_section_id) and child lab sections
+  const parentSections = initialSections.filter((s) => !s.parent_section_id);
+  const childSections = initialSections.filter((s) => !!s.parent_section_id);
+  const childrenByParent = childSections.reduce<Record<string, SectionRow[]>>((acc, s) => {
+    if (!acc[s.parent_section_id!]) acc[s.parent_section_id!] = [];
+    acc[s.parent_section_id!].push(s);
+    return acc;
+  }, {});
+
+  const filteredSections = parentSections.filter((s) => {
     const matchesSearch =
       s.courses?.code?.toLowerCase().includes(search.toLowerCase()) ||
       s.courses?.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -100,7 +120,7 @@ export function SectionsClient({
     return matchesSearch && matchesStatus;
   });
 
-  const groupedByCourse = filteredSections.reduce<Record<string, { course: CourseOption; sections: SectionRow[] }>>((acc, section) => {
+  const groupedByCourse = filteredSections.reduce<Record<string, { course: CourseOption; sections: SectionRow[] }>>((acc, section) => {  // eslint-disable-line
     const courseId = section.course_id;
     if (!acc[courseId]) {
       const course = courses.find((c) => c.id === courseId);
@@ -275,16 +295,18 @@ export function SectionsClient({
 
                 {isExpanded && (
                   <div className="border-t border-border bg-app-bg/30 p-4">
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="space-y-3">
                       {sections.map((section) => {
                         const status = STATUS_MAP[section.status] || STATUS_MAP.open;
                         const fillPct = section.max_capacity > 0 ? Math.round((section.enrolled_count / section.max_capacity) * 100) : 0;
                         const isFull = fillPct >= 100;
                         const isNearFull = fillPct >= 80;
 
+                        const sectionChildren = childrenByParent[section.id] || [];
+
                         return (
+                          <div key={section.id} className="space-y-2">
                           <div
-                            key={section.id}
                             className={`rounded-xl border bg-card-bg p-4 shadow-sm transition-all ${
                               section.status === "open" ? "border-success/30" : "border-border"
                             }`}
@@ -297,6 +319,11 @@ export function SectionsClient({
                                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.bg} ${status.color}`}>
                                   {status.label}
                                 </span>
+                                {section.section_type && section.section_type !== "lecture" && (
+                                  <span className="rounded-full bg-purple/10 px-2 py-0.5 text-xs font-medium text-purple">
+                                    {SECTION_TYPE_LABELS[section.section_type] || section.section_type}
+                                  </span>
+                                )}
                               </div>
                               <div className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
                                 isFull ? "bg-danger/10 text-danger" : isNearFull ? "bg-warning/10 text-warning" : "bg-success/10 text-success"
@@ -336,18 +363,30 @@ export function SectionsClient({
                                   <button
                                     onClick={() => setModal({ type: "assign", sectionId: section.id })}
                                     className="flex-1 rounded-lg border border-action-blue/30 py-1.5 text-xs font-medium text-action-blue transition-colors hover:bg-action-blue/5"
+                                    title="تعيين محاضر"
                                   >
                                     <UserPlus className="mx-auto h-4 w-4" />
                                   </button>
+                                  {(!section.section_type || section.section_type === "lecture") && (
+                                    <button
+                                      onClick={() => setModal({ type: "add-lab", parentSectionId: section.id, parentCourseId: section.course_id, parentSemesterId: section.semester_id })}
+                                      className="flex-1 rounded-lg border border-purple/30 py-1.5 text-xs font-medium text-purple transition-colors hover:bg-purple/5"
+                                      title="إضافة شعبة معمل"
+                                    >
+                                      <FlaskConical className="mx-auto h-4 w-4" />
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => run(() => updateSectionStatus(section.id, "closed"))}
                                     className="flex-1 rounded-lg border border-danger/30 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/5"
+                                    title="إغلاق الشعبة"
                                   >
                                     <Lock className="mx-auto h-4 w-4" />
                                   </button>
                                   <button
                                     onClick={() => setModal({ type: "merge", sectionId: section.id, courseId: section.course_id })}
                                     className="flex-1 rounded-lg border border-warning/30 py-1.5 text-xs font-medium text-warning transition-colors hover:bg-warning/5"
+                                    title="دمج الشعبة"
                                   >
                                     <Merge className="mx-auto h-4 w-4" />
                                   </button>
@@ -377,6 +416,40 @@ export function SectionsClient({
                               )}
                             </div>
                           </div>
+
+                          {/* Child lab sections rendered indented below their parent */}
+                          {sectionChildren.map((child) => {
+                            const childStatus = STATUS_MAP[child.status] || STATUS_MAP.open;
+                            const childFill = child.max_capacity > 0 ? Math.round((child.enrolled_count / child.max_capacity) * 100) : 0;
+                            return (
+                              <div key={child.id} className="mr-6 rounded-xl border border-purple/20 bg-purple/5 p-3 shadow-sm">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <FlaskConical className="h-4 w-4 text-purple" />
+                                    <span className="rounded-lg bg-purple/20 px-2 py-0.5 text-xs font-bold text-purple" dir="ltr">
+                                      {child.section_code}
+                                    </span>
+                                    <span className="rounded-full bg-purple/10 px-2 py-0.5 text-xs font-medium text-purple">
+                                      {SECTION_TYPE_LABELS[child.section_type || "lab"] || "معمل"}
+                                    </span>
+                                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${childStatus.bg} ${childStatus.color}`}>
+                                      {childStatus.label}
+                                    </span>
+                                  </div>
+                                  <div className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                                    childFill >= 100 ? "bg-danger/10 text-danger" : childFill >= 80 ? "bg-warning/10 text-warning" : "bg-success/10 text-success"
+                                  }`}>
+                                    <Users className="h-3 w-3" />
+                                    {child.enrolled_count}/{child.max_capacity}
+                                  </div>
+                                </div>
+                                <div className="mt-2 text-xs text-text-secondary">
+                                  {child.profiles ? `${child.profiles.first_name} ${child.profiles.last_name}` : <span className="text-warning">بدون محاضر</span>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                          </div>
                         );
                       })}
                     </div>
@@ -397,6 +470,17 @@ export function SectionsClient({
           error={error}
           onClose={closeModal}
           onSubmit={(fd) => run(() => createSection(fd))}
+        />
+      )}
+
+      {modal?.type === "add-lab" && (
+        <AddLabSectionModal
+          parentSectionId={modal.parentSectionId}
+          faculty={faculty}
+          loading={loading}
+          error={error}
+          onClose={closeModal}
+          onSubmit={(fd) => run(() => createLabSection(fd))}
         />
       )}
 
@@ -486,6 +570,82 @@ function Modal({
         <div className="p-6">{children}</div>
       </div>
     </div>
+  );
+}
+
+function AddLabSectionModal({
+  parentSectionId,
+  faculty,
+  loading,
+  error,
+  onClose,
+  onSubmit,
+}: {
+  parentSectionId: string;
+  faculty: FacultyOption[];
+  loading: boolean;
+  error: string;
+  onClose: () => void;
+  onSubmit: (fd: FormData) => void;
+}) {
+  return (
+    <Modal title="إضافة شعبة معمل" onClose={onClose} error={error}>
+      <form
+        action={(fd) => {
+          fd.append("parent_section_id", parentSectionId);
+          onSubmit(fd);
+        }}
+        className="space-y-4"
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-text-primary">كود الشعبة</label>
+            <input
+              type="text"
+              name="section_code"
+              required
+              placeholder="L1"
+              dir="ltr"
+              className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-purple focus:bg-card-bg focus:ring-2 focus:ring-purple/20"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-text-primary">السعة القصوى</label>
+            <input
+              type="number"
+              name="max_capacity"
+              defaultValue={20}
+              min={1}
+              dir="ltr"
+              className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-purple focus:bg-card-bg focus:ring-2 focus:ring-purple/20"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-text-primary">المحاضر (اختياري)</label>
+          <select
+            name="instructor_id"
+            className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-purple focus:bg-card-bg focus:ring-2 focus:ring-purple/20"
+          >
+            <option value="">— بدون محاضر —</option>
+            {faculty.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.first_name} {f.last_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-xl bg-purple py-2.5 text-sm font-semibold text-white transition-colors hover:bg-purple/90 disabled:opacity-50"
+        >
+          {loading ? "جاري الإنشاء..." : "إنشاء شعبة المعمل"}
+        </button>
+      </form>
+    </Modal>
   );
 }
 

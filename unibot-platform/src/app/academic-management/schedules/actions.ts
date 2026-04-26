@@ -10,6 +10,7 @@ const CONFLICT_MESSAGES: Record<string, string> = {
   FACULTY_CONFLICT: "تعارض المحاضر: المحاضر لديه محاضرة أخرى في نفس الوقت",
   STUDENT_CONFLICT: "تعارض طلابي: مقرر إجباري في نفس المستوى الأكاديمي مجدول في نفس الوقت",
   INVALID_STATE_TRANSITION: "انتقال الحالة غير صالح للفصل الدراسي",
+  PUBLISHED_SCHEDULE_LOCKED: "لا يمكن تعديل جدول منشور — أعده إلى مسودة أولاً لتتمكن من التعديل",
 };
 
 function parseConflictError(message: string): string {
@@ -121,6 +122,17 @@ export async function deleteSchedule(id: string) {
 export async function updateSchedule(id: string, formData: FormData) {
   const { profile } = await requireRole(["academic_management"]);
   const supabase = await createClient();
+
+  // Block edits on published schedules — they are locked once published
+  const { data: existing } = await supabase
+    .from("schedules")
+    .select("status")
+    .eq("id", id)
+    .single();
+
+  if (existing?.status === "published") {
+    throw new Error("PUBLISHED_SCHEDULE_LOCKED: لا يمكن تعديل جدول منشور — أعده إلى مسودة أولاً لتتمكن من التعديل");
+  }
 
   const venue_id = (formData.get("venue_id") as string) || null;
   const day_of_week = formData.get("day_of_week") as ScheduleDay;

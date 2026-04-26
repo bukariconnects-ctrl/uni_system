@@ -65,7 +65,7 @@ export default async function SectionsPage() {
 
   const sectionsQuery = supabase
     .from("sections")
-    .select("*, courses(code, name, credit_hours), semesters(name, status), profiles!sections_instructor_id_fkey(first_name, last_name)")
+    .select("id, section_code, status, max_capacity, enrolled_count, instructor_id, course_id, semester_id, merged_into_id, section_type, parent_section_id, courses(code, name, credit_hours), semesters(name, status), profiles!sections_instructor_id_fkey(first_name, last_name)")
     .eq("tenant_id", profile.tenant_id)
     .order("created_at", { ascending: false });
   if (scopedCourseIds !== null && scopedCourseIds.length > 0) {
@@ -80,7 +80,7 @@ export default async function SectionsPage() {
       .from("semesters")
       .select("id, name, status")
       .eq("tenant_id", profile.tenant_id)
-      .in("status", ["planning", "active"])
+      .in("status", ["planning", "registration", "active"])
       .order("created_at", { ascending: false }),
     supabase
       .from("profiles")

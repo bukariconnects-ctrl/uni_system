@@ -8,17 +8,25 @@ export default async function AcademicPage() {
 
   const { data: colleges } = await supabase
     .from("colleges")
-    .select("*, departments(*, majors(*, academic_levels(*)))")
+    .select("id, name, code, dean_id, absence_threshold, campus_id, campuses(name), departments(id, name, code, head_id, college_id, majors(id, name, code, total_credits, duration_years, department_id, academic_levels(id, major_id, level_number, name)))")
     .eq("tenant_id", profile.tenant_id)
     .order("created_at", { ascending: true });
 
-  const { data: faculty } = await supabase
-    .from("profiles")
-    .select("id, first_name, last_name")
-    .eq("tenant_id", profile.tenant_id)
-    .in("role", ["faculty", "academic_management"])
-    .eq("account_status", "active")
-    .order("first_name");
+  const [facultyRes, campusesRes] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, first_name, last_name")
+      .eq("tenant_id", profile.tenant_id)
+      .in("role", ["faculty", "academic_management"])
+      .eq("account_status", "active")
+      .order("first_name"),
+    supabase
+      .from("campuses")
+      .select("id, name")
+      .eq("tenant_id", profile.tenant_id)
+      .eq("is_active", true)
+      .order("name"),
+  ]);
 
   return (
     <div>
@@ -30,7 +38,8 @@ export default async function AcademicPage() {
       </div>
       <AcademicClient
         initialColleges={colleges || []}
-        faculty={faculty || []}
+        faculty={facultyRes.data || []}
+        campuses={campusesRes.data || []}
       />
     </div>
   );

@@ -34,6 +34,11 @@ interface FacultyOption {
   last_name: string;
 }
 
+interface CampusOption {
+  id: string;
+  name: string;
+}
+
 interface LevelNode {
   id: string;
   major_id: string;
@@ -65,6 +70,9 @@ interface CollegeNode {
   name: string;
   code: string | null;
   dean_id: string | null;
+  campus_id: string | null;
+  absence_threshold: number | null;
+  campuses: { name: string }[] | null;
   departments: DeptNode[];
 }
 
@@ -82,9 +90,11 @@ type ModalState =
 export function AcademicClient({
   initialColleges,
   faculty,
+  campuses,
 }: {
   initialColleges: CollegeNode[];
   faculty: FacultyOption[];
+  campuses: CampusOption[];
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [modal, setModal] = useState<ModalState>(null);
@@ -207,6 +217,14 @@ export function AcademicClient({
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-text-secondary">
                       {resolveName(college.dean_id) && <span>العميد: {resolveName(college.dean_id)}</span>}
+                      {college.campuses && college.campuses[0]?.name && (
+                        <span>الفرع: {college.campuses[0].name}</span>
+                      )}
+                      {college.absence_threshold != null && (
+                        <span className="rounded-full bg-warning/10 px-2 py-0.5 text-warning">
+                          غياب {college.absence_threshold}%
+                        </span>
+                      )}
                       <span>{college.departments.length} أقسام</span>
                       <span>{collegeMajors} تخصصات</span>
                     </div>
@@ -441,10 +459,10 @@ export function AcademicClient({
       {modal && (
         <Modal title={modalTitle()} onClose={closeModal} error={error}>
           {modal.type === "add-college" && (
-            <CollegeForm faculty={faculty} loading={loading} onSubmit={(fd) => run(() => createCollege(fd))} />
+            <CollegeForm faculty={faculty} campuses={campuses} loading={loading} onSubmit={(fd) => run(() => createCollege(fd))} />
           )}
           {modal.type === "edit-college" && (
-            <CollegeForm faculty={faculty} loading={loading} defaults={modal.college} onSubmit={(fd) => run(() => updateCollege(modal.college.id, fd))} />
+            <CollegeForm faculty={faculty} campuses={campuses} loading={loading} defaults={modal.college} onSubmit={(fd) => run(() => updateCollege(modal.college.id, fd))} />
           )}
           {modal.type === "add-dept" && (
             <DeptForm faculty={faculty} loading={loading} collegeId={modal.collegeId} onSubmit={(fd) => run(() => createDepartment(fd))} />
@@ -513,11 +531,25 @@ function Modal({ title, onClose, error, children }: { title: string; onClose: ()
 
 // ─── College Form ─────────────────────────────────────────────────────────────
 
-function CollegeForm({ faculty, loading, defaults, onSubmit }: { faculty: FacultyOption[]; loading: boolean; defaults?: CollegeNode; onSubmit: (fd: FormData) => void }) {
+function CollegeForm({ faculty, campuses, loading, defaults, onSubmit }: { faculty: FacultyOption[]; campuses: CampusOption[]; loading: boolean; defaults?: CollegeNode; onSubmit: (fd: FormData) => void }) {
   return (
     <form action={onSubmit} className="grid gap-4 sm:grid-cols-2">
       <Input label="اسم الكلية" name="name" required defaultValue={defaults?.name} />
       <Input label="كود الكلية" name="code" placeholder="ENG" dir="ltr" defaultValue={defaults?.code ?? ""} />
+      <div>
+        <label className="mb-1.5 block text-xs font-semibold text-text-primary">الفرع (اختياري)</label>
+        <select
+          name="campus_id"
+          defaultValue={defaults?.campus_id ?? ""}
+          className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
+        >
+          <option value="">— بدون فرع —</option>
+          {campuses.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </div>
+      <Input label="نسبة الغياب % (اختياري)" name="absence_threshold" type="number" placeholder="25" defaultValue={defaults?.absence_threshold != null ? String(defaults.absence_threshold) : ""} />
       <div className="sm:col-span-2">
         <FacultySelect label="العميد (اختياري)" name="dean_id" faculty={faculty} defaultValue={defaults?.dean_id ?? ""} />
       </div>

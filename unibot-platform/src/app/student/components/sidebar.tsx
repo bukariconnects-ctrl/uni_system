@@ -13,6 +13,7 @@ import {
   Sparkles,
   Ticket as TicketIcon,
   Megaphone,
+  ClipboardList,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types/database";
@@ -22,6 +23,7 @@ import { RealtimePageRefresher } from "@/components/realtime-page-refresher";
 
 const navItems = [
   { href: "/student", label: "لوحة التحكم", icon: LayoutDashboard },
+  { href: "/student/register", label: "التسجيل الذاتي", icon: ClipboardList },
   { href: "/student/materials", label: "محتوى المقررات", icon: BookOpen },
   { href: "/student/assignments", label: "التكاليف", icon: FileText },
   { href: "/student/attendance", label: "حضوري", icon: ClipboardCheck },

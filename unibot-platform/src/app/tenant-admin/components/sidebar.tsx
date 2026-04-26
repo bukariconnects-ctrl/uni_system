@@ -25,6 +25,7 @@ import { SidebarShell } from "@/components/sidebar-shell";
 const topNavItems = [
   { href: "/tenant-admin", label: "لوحة المعلومات", icon: LayoutDashboard, exact: true },
   { href: "/tenant-admin/settings", label: "إعدادات الجامعة", icon: Settings },
+  { href: "/tenant-admin/campuses", label: "الفروع والأحرم", icon: Building2 },
   { href: "/tenant-admin/venues", label: "القاعات والمباني", icon: MapPin },
   { href: "/tenant-admin/academic", label: "الهيكل التنظيمي", icon: GitBranch },
 ];

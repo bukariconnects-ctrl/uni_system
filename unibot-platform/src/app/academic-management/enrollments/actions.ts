@@ -87,7 +87,68 @@ export async function batchEnroll(
     errors: [],
   };
 
+  // Fetch prerequisites for the target course once (shared across all students)
+  const { data: sectionCourseRow } = await serviceClient
+    .from("sections")
+    .select("course_id")
+    .eq("id", sectionId)
+    .single();
+
+  const targetCourseId = sectionCourseRow?.course_id;
+
+  type PrerequisiteRow = { prerequisite_id: string; min_grade: number | null; courses: { code: string }[] };
+  let prerequisites: PrerequisiteRow[] = [];
+  if (targetCourseId) {
+    const { data: prereqRows } = await serviceClient
+      .from("course_prerequisites")
+      .select("prerequisite_id, min_grade, courses!course_prerequisites_prerequisite_id_fkey(code)")
+      .eq("course_id", targetCourseId);
+    prerequisites = (prereqRows || []) as unknown as PrerequisiteRow[];
+  }
+
+  // Pre-fetch student names for meaningful error messages
+  const { data: studentProfiles } = await serviceClient
+    .from("profiles")
+    .select("id, first_name, last_name")
+    .in("id", studentIds);
+  const studentNameMap = (studentProfiles || []).reduce<Record<string, string>>((acc, p) => {
+    acc[p.id] = `${p.first_name} ${p.last_name}`;
+    return acc;
+  }, {});
+
   for (const studentId of studentIds) {
+    const studentName = studentNameMap[studentId] || studentId;
+
+    // Check prerequisites before enrolling
+    let prereqBlocked = false;
+    if (prerequisites.length > 0) {
+      for (const prereq of prerequisites) {
+        const minGrade = prereq.min_grade ?? 60;
+
+        // Check by course_id across any completed section for this student
+        const { data: passedByCourse } = await serviceClient
+          .from("enrollments")
+          .select("id, final_grade, sections!enrollments_section_id_fkey(course_id)")
+          .eq("student_id", studentId)
+          .eq("status", "completed")
+          .gte("final_grade", minGrade);
+
+        const metByCourse = (passedByCourse || []).some(
+          (e: any) => e.sections?.course_id === prereq.prerequisite_id
+        );
+
+        if (!metByCourse) {
+          const courseCode = prereq.courses?.[0]?.code || prereq.prerequisite_id;
+          results.errors.push(
+            `${studentName}: لم يجتز المتطلب السابق (${courseCode}) بدرجة ${minGrade} على الأقل`
+          );
+          prereqBlocked = true;
+          break;
+        }
+      }
+    }
+    if (prereqBlocked) continue;
+
     // تسجيل في شعبة النظري
     const { error: lectureError } = await serviceClient.from("enrollments").insert({
       tenant_id: tenantId,

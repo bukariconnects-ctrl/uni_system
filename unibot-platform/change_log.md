@@ -2,6 +2,207 @@
 
 ---
 
+## Academic Workflow: سد الفجوات الأكاديمية وإصلاح الأخطاء المنطقية
+**التاريخ:** 2026-04-26
+
+### ملخص
+مراجعة شاملة لسير العمل الأكاديمي مقارنةً بوثيقتَي `accadimic_opreational_workflow.md` و `academic_structure_workflow.md`، وتحديد 7 فجوات وإصلاحها بالكامل عبر 3 مراحل: هجرة قاعدة البيانات، إصلاح Server Actions، وتحسينات الواجهة.
+
+---
+
+### المرحلة 1 — هجرات قاعدة البيانات
+
+#### 1.1 إصلاح عتبة الغياب على مستوى الكلية
+**الملف:** `supabase/migrations/20260426000001_fix_college_absence_threshold.sql`
+
+**المشكلة:** دالة `recalculate_attendance_summary()` كانت تقرأ `absence_threshold` دائماً من جدول `tenants` فقط، متجاهلةً العتبة المخصصة على مستوى الكلية (`colleges.absence_threshold`).
+
+**الوثيقة تقول:** "يبحث الـ Trigger عن نسبة كليته أولاً ثم يرجع للافتراضي"
+
+**الإصلاح:** إضافة مسار الحل: `section → course → department → college.absence_threshold` مع fallback لقيمة `tenants.absence_threshold`:
+```sql
+v_threshold := COALESCE(v_college_threshold, v_tenant_threshold);
+```
+
+---
+
+#### 1.2 إغلاق الشعبة تلقائياً عند الامتلاء
+**الملف:** `supabase/migrations/20260426000002_section_auto_close_when_full.sql`
+
+**المشكلة:** دالة `sync_section_enrolled_count()` كانت تحدّث العداد فقط دون تغيير حالة الشعبة.
+
+**الوثيقة تقول:** "إذا وصل العداد إلى `max_capacity`، تُغلق الشعبة تلقائياً"
+
+**الإصلاح:** إضافة منطق auto-close/reopen بعد كل تحديث للعداد:
+```sql
+-- إغلاق تلقائي عند الامتلاء
+IF v_new_count >= v_max_capacity AND v_status = 'open' THEN
+    UPDATE sections SET status = 'closed' WHERE id = v_section_id;
+END IF;
+-- إعادة فتح عند توفر مقعد
+IF v_new_count < v_max_capacity AND v_status = 'closed' THEN
+    UPDATE sections SET status = 'open' WHERE id = v_section_id;
+END IF;
+```
+
+---
+
+#### 1.3 إصلاح منطق استعادة الطالب من الحرمان (Bugfix)
+**الملف:** `supabase/migrations/20260426000003_fix_dismissal_restore_logic.sql`
+
+**المشكلة (خطأ منطقي):** كان شرط الاستعادة يعتمد على `v_enrollment_status` الذي يُلتقط في بداية الـ Trigger قبل أي تحديث، مما يجعله قيمة قديمة (stale) لا تعكس الحالة الفعلية.
+
+**الإصلاح:** استبدال الاعتماد على `v_enrollment_status` بـ `v_is_dismissed` المقروء من `attendance_summaries` والذي يعكس الحالة المحفوظة فعلياً:
+```sql
+-- قبل: ELSIF v_pct < v_threshold AND v_enrollment_status = 'dismissed'
+-- بعد: ELSIF v_pct < v_threshold AND COALESCE(v_is_dismissed, FALSE) = TRUE
+```
+كما تم حذف متغير `v_enrollment_status` غير المستخدم لتنظيف الكود.
+
+---
+
+### المرحلة 2 — إصلاح Server Actions
+
+#### 2.1 التحقق من المتطلبات السابقة في `batchEnroll()`
+**الملف:** `src/app/academic-management/enrollments/actions.ts`
+
+**المشكلة:** `batchEnroll()` كانت تُسجّل الطلاب دون التحقق من اجتياز المتطلبات السابقة (`course_prerequisites`).
+
+**الإصلاح:**
+- جلب `course_prerequisites` للمقرر المستهدف مرة واحدة قبل الحلقة
+- لكل طالب: التحقق من وجود تسجيل مكتمل (`status = completed`) بدرجة ≥ `min_grade` في المقرر الشرط
+- تسجيل اسم الطالب الكامل في رسالة الخطأ (بدلاً من UUID فقط) باستخدام pre-fetch للأسماء
+
+**Bugfix مدمج:** رسائل الخطأ السابقة لم تحدد الطالب المتأثر — أُصلح بإضافة اسم الطالب في كل رسالة خطأ.
+
+---
+
+#### 2.2 حارس نطاق القسم في `createSection()` و `createLabSection()`
+**الملف:** `src/app/academic-management/sections/actions.ts`
+
+**المشكلة:** مسؤول الإدارة الأكاديمية كان يستطيع إنشاء شعب لمقررات خارج نطاق قسمه.
+
+**الإصلاح:** إضافة دالة `assertDepartmentScope()` تُستدعى قبل كل INSERT:
+- تقرأ القسم المسموح به من `academic_management_departments`
+- إذا لم تُوجد سجل → لا قيود (صلاحية كاملة للمستأجر)
+- إذا وُجد سجل → تتحقق من أن `course.department_id` يطابق القسم المسموح
+
+**Bugfix مدمج:** استخدام `.single()` بدلاً من `.maybeSingle()` كان يُرجع خطأ عند غياب السجل، أُصلح بـ `.maybeSingle()`.
+
+---
+
+#### 2.3 قفل الجدول المنشور في `updateSchedule()`
+**الملف:** `src/app/academic-management/schedules/actions.ts`
+
+**المشكلة:** `updateSchedule()` كانت تسمح بتعديل الجداول المنشورة مباشرةً.
+
+**الإصلاح:**
+- قراءة `status` الحالي قبل أي تعديل
+- رفع خطأ `PUBLISHED_SCHEDULE_LOCKED` إذا كانت الحالة `published`
+- إضافة المفتاح للقاموس `CONFLICT_MESSAGES` لترجمته عربياً
+
+---
+
+### المرحلة 3 — تحسينات الواجهة
+
+#### 3.1 مودال إضافة شعبة معمل
+**الملف:** `src/app/academic-management/sections/sections-client.tsx`
+
+**الإضافات:**
+- زر `FlaskConical` على كل شعبة نظرية مفتوحة لفتح مودال إنشاء معمل
+- مكوّن `AddLabSectionModal` مستقل (كود الشعبة، السعة، المحاضر)
+- عرض شعب المعامل الفرعية مُبادَّرة أسفل الشعبة الأم بتصميم بنفسجي مُميَّز
+- شارة نوع الشعبة (`نظري` / `معمل` / `تطبيقي`) على كل بطاقة
+
+**Bugfix مدمج:** استعلام `sections` في `page.tsx` لم يكن يُرجع `section_type` و `parent_section_id` — أُصلح بتحديد الأعمدة صراحةً بدلاً من `*`.
+
+---
+
+#### 3.2 إصلاح فلتر الفصول الدراسية
+**الملف:** `src/app/academic-management/sections/page.tsx`
+
+**المشكلة:** الفلتر كان يُظهر فقط فصولاً بحالة `planning` أو `active`، متجاهلاً `registration`.
+
+**الإصلاح:**
+```ts
+.in("status", ["planning", "registration", "active"])
+```
+
+---
+
+#### 3.3 شارة قفل الجدول المنشور
+**الملف:** `src/app/academic-management/schedules/schedules-client.tsx`
+
+**الإضافات:**
+- بانر تحذيري برتقالي داخل `EditLectureModal` عند فتح جدول منشور
+- تعطيل زر "تحديث الموعد" مع تغيير نصه إلى `🔒 الجدول منشور`
+- استيراد أيقونة `Lock` من `lucide-react`
+
+---
+
+### المرحلة 4 — ميزة التسجيل الذاتي للطلاب
+
+#### 4.1 Server Actions
+**الملف:** `src/app/student/register/actions.ts`
+
+| الدالة | الوصف |
+|--------|-------|
+| `getAvailableSections()` | جلب الشعب المتاحة للفصل المفعّل للتسجيل الذاتي، مع استثناء المقررات المسجَّل فيها مسبقاً |
+| `checkPrerequisites(courseId)` | التحقق من اجتياز المتطلبات السابقة لمقرر محدد |
+| `selfEnroll(sectionId, labSectionId?)` | تسجيل الطالب مع التحقق من: `self_reg_enabled`، حالة الفصل، المتطلبات السابقة، ومتطلبات المعمل للمقررات الهجينة |
+
+**Bugfix مدمج:** بيانات `semesters` و `courses` من join تُرجع مصفوفة أحياناً — أُصلح باستخدام `Array.isArray()` للتطبيع.
+
+---
+
+#### 4.2 صفحة وواجهة التسجيل الذاتي
+**الملفات الجديدة:**
+- `src/app/student/register/page.tsx` — Server Component
+- `src/app/student/register/register-client.tsx` — Client Component
+
+**مميزات الواجهة:**
+- بانر حالة الفصل (مفتوح / مغلق للتسجيل)
+- تجميع الشعب حسب المقرر
+- زر "التحقق من المتطلبات" per-course مع عرض المتطلبات الناقصة
+- شريط امتلاء الشعبة مع ألوان (أخضر / تحذيري / أحمر)
+- اختيار شعبة المعمل بـ radio buttons للمقررات الهجينة
+- تعطيل التسجيل عند الامتلاء أو عدم اجتياز المتطلبات
+- رسائل خطأ per-section وتأكيد النجاح
+
+---
+
+#### 4.3 إضافة الرابط في الشريط الجانبي
+**الملف:** `src/app/student/components/sidebar.tsx`
+
+إضافة رابط "التسجيل الذاتي" بأيقونة `ClipboardList` في قائمة التنقل مباشرةً بعد لوحة التحكم.
+
+---
+
+### ملخص الملفات المُنشأة والمُعدَّلة
+
+#### الملفات الجديدة
+| الملف | النوع |
+|-------|-------|
+| `supabase/migrations/20260426000001_fix_college_absence_threshold.sql` | Migration |
+| `supabase/migrations/20260426000002_section_auto_close_when_full.sql` | Migration |
+| `supabase/migrations/20260426000003_fix_dismissal_restore_logic.sql` | Migration |
+| `src/app/student/register/actions.ts` | Server Actions |
+| `src/app/student/register/page.tsx` | Page |
+| `src/app/student/register/register-client.tsx` | Client Component |
+
+#### الملفات المُعدَّلة
+| الملف | التغييرات |
+|-------|-----------|
+| `src/app/academic-management/enrollments/actions.ts` | Prerequisites check + student name in errors |
+| `src/app/academic-management/sections/actions.ts` | `assertDepartmentScope()` + `.maybeSingle()` bugfix |
+| `src/app/academic-management/sections/page.tsx` | Explicit column select + `registration` in semester filter |
+| `src/app/academic-management/schedules/actions.ts` | Published schedule lock guard + `CONFLICT_MESSAGES` entry |
+| `src/app/academic-management/sections/sections-client.tsx` | Lab modal + child display + type badge |
+| `src/app/academic-management/schedules/schedules-client.tsx` | Lock banner + disabled submit button |
+| `src/app/student/components/sidebar.tsx` | Self-registration nav link |
+
+---
+
 ## Feature: Personal AI Context Integration — UniBot يعرف طالبه شخصياً
 **التاريخ:** 2026-04-18
 

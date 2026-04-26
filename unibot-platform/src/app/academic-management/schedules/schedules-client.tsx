@@ -21,6 +21,7 @@ import {
   Clock,
   Filter,
   RotateCcw,
+  Lock,
 } from "lucide-react";
 
 interface ScheduleRow {
@@ -660,6 +661,15 @@ function EditLectureModal({
           </div>
         </div>
 
+        {schedule.status === "published" && (
+          <div className="flex items-center gap-3 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3">
+            <Lock className="h-4 w-4 shrink-0 text-warning" />
+            <p className="text-xs text-warning">
+              هذا الجدول منشور — لا يمكن تعديله مباشرة. حوّله إلى مسودة أولاً ثم أجرِ التعديلات.
+            </p>
+          </div>
+        )}
+
         <form action={onUpdate} className="space-y-4">
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-text-primary">القاعة</label>
@@ -717,10 +727,10 @@ function EditLectureModal({
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-action-blue py-2.5 text-sm font-semibold text-white transition-colors hover:bg-action-blue/90 disabled:opacity-50"
+            disabled={loading || schedule.status === "published"}
+            className="w-full rounded-xl bg-action-blue py-2.5 text-sm font-semibold text-white transition-colors hover:bg-action-blue/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "جاري التحديث..." : "تحديث الموعد"}
+            {loading ? "جاري التحديث..." : schedule.status === "published" ? "🔒 الجدول منشور" : "تحديث الموعد"}
           </button>
         </form>
 

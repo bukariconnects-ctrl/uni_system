@@ -62,13 +62,36 @@ export async function getFacultyForSections() {
   return data || [];
 }
 
+async function assertDepartmentScope(supabase: Awaited<ReturnType<typeof createClient>>, profileId: string, courseId: string) {
+  const { data: amdRow } = await supabase
+    .from("academic_management_departments")
+    .select("department_id")
+    .eq("profile_id", profileId)
+    .maybeSingle();
+
+  if (!amdRow) return; // No department restriction — full tenant access
+
+  const { data: course } = await supabase
+    .from("courses")
+    .select("department_id")
+    .eq("id", courseId)
+    .single();
+
+  if (course && course.department_id !== amdRow.department_id) {
+    throw new Error("ليس لديك صلاحية إنشاء شعبة لهذا المقرر — المقرر ينتمي لقسم آخر");
+  }
+}
+
 export async function createSection(formData: FormData) {
   const { profile } = await requireRole(["academic_management"]);
   const supabase = await createClient();
 
+  const courseId = formData.get("course_id") as string;
+  await assertDepartmentScope(supabase, profile.id, courseId);
+
   const { error } = await supabase.from("sections").insert({
     tenant_id: profile.tenant_id,
-    course_id: formData.get("course_id") as string,
+    course_id: courseId,
     semester_id: formData.get("semester_id") as string,
     section_code: formData.get("section_code") as string,
     instructor_id: (formData.get("instructor_id") as string) || null,
@@ -100,6 +123,8 @@ export async function createLabSection(formData: FormData) {
   if (parentError || !parentSection) throw new Error("الشعبة الأم غير موجودة");
   if (parentSection.section_type !== "lecture")
     throw new Error("لا يمكن إنشاء شعبة معمل تابعة لشعبة معمل أخرى");
+
+  await assertDepartmentScope(supabase, profile.id, parentSection.course_id);
 
   const { error } = await supabase.from("sections").insert({
     tenant_id: profile.tenant_id,

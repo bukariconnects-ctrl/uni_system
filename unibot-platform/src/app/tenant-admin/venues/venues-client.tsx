@@ -15,6 +15,13 @@ interface VenueRow {
   has_projector: boolean;
   has_ac: boolean;
   is_active: boolean;
+  campus_id: string | null;
+  campuses?: { name: string }[] | null;
+}
+
+interface CampusOption {
+  id: string;
+  name: string;
 }
 
 const VENUE_TYPES = [
@@ -24,7 +31,7 @@ const VENUE_TYPES = [
   { value: "other", label: "أخرى" },
 ];
 
-export function VenuesClient({ initialVenues }: { initialVenues: VenueRow[] }) {
+export function VenuesClient({ initialVenues, campuses }: { initialVenues: VenueRow[]; campuses: CampusOption[] }) {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -64,7 +71,7 @@ export function VenuesClient({ initialVenues }: { initialVenues: VenueRow[] }) {
             <h3 className="text-lg font-bold text-text-primary">قاعة جديدة</h3>
             <button onClick={() => setShowForm(false)} className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg"><X className="h-5 w-5" /></button>
           </div>
-          <VenueForm loading={loading} onSubmit={(fd) => handleAction(() => createVenue(fd))} />
+          <VenueForm loading={loading} campuses={campuses} onSubmit={(fd) => handleAction(() => createVenue(fd))} />
         </div>
       )}
 
@@ -84,7 +91,7 @@ export function VenuesClient({ initialVenues }: { initialVenues: VenueRow[] }) {
                   <h3 className="font-bold text-text-primary">تعديل القاعة</h3>
                   <button onClick={() => setEditId(null)} className="rounded-lg p-1 text-text-secondary hover:bg-app-bg"><X className="h-4 w-4" /></button>
                 </div>
-                <VenueForm loading={loading} defaultValues={venue} onSubmit={(fd) => handleAction(() => updateVenue(venue.id, fd))} />
+                <VenueForm loading={loading} campuses={campuses} defaultValues={venue} onSubmit={(fd) => handleAction(() => updateVenue(venue.id, fd))} />
               </div>
             ) : (
               <>
@@ -125,6 +132,14 @@ export function VenuesClient({ initialVenues }: { initialVenues: VenueRow[] }) {
                       <span className="font-medium text-text-primary">{venue.floor}</span>
                     </div>
                   )}
+                  {venue.campuses && (
+                    <div className="flex items-center justify-between">
+                      <span>الفرع</span>
+                      <span className="font-medium text-text-primary">
+                        {Array.isArray(venue.campuses) ? venue.campuses[0]?.name : (venue.campuses as any)?.name}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-3 pt-1">
                     <span className={`flex items-center gap-1 ${venue.has_projector ? "text-success" : "text-text-secondary/50"}`}>
                       <Projector className="h-3.5 w-3.5" /> بروجكتور
@@ -149,10 +164,12 @@ export function VenuesClient({ initialVenues }: { initialVenues: VenueRow[] }) {
 function VenueForm({
   loading,
   defaultValues,
+  campuses,
   onSubmit,
 }: {
   loading: boolean;
   defaultValues?: VenueRow;
+  campuses: CampusOption[];
   onSubmit: (fd: FormData) => void;
 }) {
   return (
@@ -174,6 +191,15 @@ function VenueForm({
       <div>
         <label className="mb-1 block text-xs font-medium text-text-primary">السعة</label>
         <input type="number" name="capacity" min="1" defaultValue={defaultValues?.capacity || 30} className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue" dir="ltr" />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium text-text-primary">الفرع</label>
+        <select name="campus_id" defaultValue={defaultValues?.campus_id || ""} className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
+          <option value="">-- بدون فرع --</option>
+          {campuses.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
       </div>
       <div>
         <label className="mb-1 block text-xs font-medium text-text-primary">المبنى</label>
