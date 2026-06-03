@@ -4,27 +4,27 @@
 The UniBot platform adopts a **"Modern Enterprise SaaS"** design language tailored for the academic sector. The interface is clean, minimalist, and highly structured to reduce cognitive load. It utilizes a "Bento Box" grid layout for dashboards, ample whitespace, and soft UI elements to create a trustworthy, focused, and futuristic educational environment.
 
 ## **2. Color Palette**
-The color system is designed to convey trust (Academic Blues), clarity (Neutrals), and immediate context (Semantic Colors).
+The color system is designed to convey trust (Royal Blue), warmth (Peach), clarity (Neutrals), and immediate context (Semantic Colors).
 
 ### **A. Primary & Brand Colors**
-*   **Academic Navy (Header/Brand):** `#2A4365` (Used for top navigation bars and primary branding).
-*   **Action Blue (Primary Buttons/Active States):** `#3182CE` (Used for primary buttons, active sidebar links, and progress bars).
-*   **AI Gradient (UniBot Identity):** A soft gradient from Light Blue `#EBF8FF` to Soft Lavender `#E9D8FD` (Used for AI chat bubbles, AI-Approved badges, and UniBot UI elements).
+*   **Royal Blue (Primary / Header / Brand):** `#00539C` — `hsl(208 100% 30%)` (Used for top navigation bars, primary branding, and AI identity elements).
+*   **Peach (Secondary / Accent / Action):** `#EEA47F` — `hsl(20 78% 71%)` (Used for primary buttons, active sidebar links, progress bars, and accent highlights).
+*   **AI Gradient (UniBot Identity):** A smooth gradient from Royal Blue `#00539C` to Peach `#EEA47F` (Used for AI chat avatars, AI-Approved badges, UniBot header, and all AI-related UI elements).
 
 ### **B. Backgrounds & Neutrals**
-*   **App Background:** `#F7FAFC` (A very light, cool gray to separate content cards from the background and reduce eye strain).
-*   **Card Background:** `#FFFFFF` (Pure white for all content containers, widgets, and modals).
+*   **App Background:** `#F7FAFC` — `hsl(210 33% 98%)` (A very light, cool gray to separate content cards from the background and reduce eye strain).
+*   **Card Background:** `#FFFFFF` — `hsl(0 0% 100%)` (Pure white for all content containers, widgets, and modals).
 *   **Text Colors:**
-    *   Primary Text (Headings): `#1A202C` (Dark Slate).
-    *   Secondary Text (Subtitles/Meta): `#718096` (Medium Gray).
-    *   Borders & Dividers: `#E2E8F0` (Light Gray).
+    *   Primary Text (Headings): `#1A202C` — `hsl(218 23% 14%)` (Dark Slate).
+    *   Secondary Text (Subtitles/Meta): `#718096` — `hsl(215 16% 47%)` (Medium Gray).
+    *   Borders & Dividers: `#E2E8F0` — `hsl(214 32% 91%)` (Light Gray).
 
 ### **C. Semantic & Data Visualization Colors**
 Used for the Analytics Dashboard, Risk Zones, and Schedule Calendar:
-*   **Critical/Danger (High Risk):** `#E53E3E` (Red)
-*   **Warning (Moderate Risk):** `#DD6B20` (Orange/Yellow)
-*   **Success/Safe:** `#38A169` (Green)
-*   **Calendar/Chart Accents:** Teal (`#319795`), Purple (`#805AD5`), Orange (`#ED8936`).
+*   **Critical/Danger (High Risk):** `#E53E3E` — `hsl(0 72% 51%)` (Red)
+*   **Warning (Moderate Risk):** `#EEA47F` — `hsl(20 78% 71%)` (Peach, shared with accent)
+*   **Success/Safe:** `#38A169` — `hsl(142 43% 44%)` (Green)
+*   **Calendar/Chart Accents:** Teal (`#319795` — `hsl(174 48% 40%)`), Purple (`#805AD5` — `hsl(263 54% 58%)`), Orange (`#EEA47F` — `hsl(20 78% 71%)`).
 
 ## **3. Typography**
 *   **Font Family:** A modern, highly legible Sans-Serif font (e.g., *Inter, SF Pro Display, or Roboto*).
@@ -40,13 +40,13 @@ Used for the Analytics Dashboard, Risk Zones, and Schedule Calendar:
 *   **Shadows:** Soft, diffused drop shadows (e.g., `box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05)`) to lift content off the light gray background.
 
 ### **B. Buttons & Tags**
-*   **Primary Buttons:** Solid Action Blue background, white text, fully rounded (`border-radius: 8px`).
+*   **Primary Buttons:** Solid Royal Blue background, white text, fully rounded (`border-radius: 8px`).
 *   **Pill Tags:** Used for GPA, Majors, and Risk Levels. Fully rounded (`border-radius: 9999px`) with a light background and darker text of the same color family (e.g., Light Red background with Dark Red text for "High Risk").
 *   **AI-Approved Toggle:** A distinct UI component featuring a sparkle icon `✨`, a blue active state, and a checkmark, emphasizing the AI data-feeding requirement.
 
 ### **C. Navigation**
-*   **Top Navbar:** Solid Academic Navy background, white text, containing global search, notifications, and user profile avatar.
-*   **Left Sidebar (Student View):** White background, gray inactive icons, with the active tab highlighted by a light blue background and Action Blue text/icon.
+*   **Top Navbar:** Solid Royal Blue background, white text, containing global search, notifications, and user profile avatar.
+*   **Left Sidebar (Student View):** White background, gray inactive icons, with the active tab highlighted by a light blue background and Royal Blue text/icon.
 
 ## **5. Specific Screen Layout Rules**
 
