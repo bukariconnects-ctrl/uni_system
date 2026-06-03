@@ -168,7 +168,7 @@ export function StudyPlanClient({
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-action-blue/10">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-action-blue/20">
             <GraduationCap className="h-5 w-5 text-action-blue" />
           </div>
           <div className="relative min-w-[280px]">
@@ -218,7 +218,7 @@ export function StudyPlanClient({
 
       {!selectedMajor && (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card-bg py-20 text-center">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-action-blue/10">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-action-blue/20">
             <GraduationCap className="h-8 w-8 text-action-blue" />
           </div>
           <p className="text-base font-semibold text-text-primary">اختر تخصصاً لعرض الخطة الدراسية</p>
@@ -372,7 +372,7 @@ function StatBadge({
   color: "blue" | "green" | "purple";
 }) {
   const colors = {
-    blue: "bg-action-blue/10 text-action-blue",
+    blue: "bg-action-blue/20 text-action-blue",
     green: "bg-success/10 text-success",
     purple: "bg-purple/10 text-purple",
   };
@@ -571,7 +571,7 @@ function AddCourseModal({
                   onClick={() => setSelectedCourse(c.id)}
                   className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-right transition-colors ${
                     selectedCourse === c.id
-                      ? "bg-action-blue/10 text-action-blue"
+                      ? "bg-action-blue/20 text-action-blue"
                       : "hover:bg-card-bg"
                   }`}
                 >

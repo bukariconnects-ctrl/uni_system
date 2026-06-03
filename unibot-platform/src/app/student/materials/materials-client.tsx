@@ -81,7 +81,7 @@ export function StudentMaterialsClient({
                   <div key={material.id} className="rounded-2xl border border-border bg-card-bg p-4 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue/10">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue/20">
                           <TypeIcon className="h-5 w-5 text-action-blue" />
                         </div>
                         <div>
@@ -89,7 +89,7 @@ export function StudentMaterialsClient({
                             <span className="font-bold text-text-primary">{material.title}</span>
                             <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary">{typeInfo.label}</span>
                             {material.is_ai_approved && (
-                              <span className="flex items-center gap-1 rounded-full bg-gradient-to-r from-ai-light to-ai-lavender px-2 py-0.5 text-xs text-action-blue">
+                              <span className="flex items-center gap-1 rounded-full bg-gradient-to-r from-ai-light to-ai-lavender px-2 py-0.5 text-xs text-white">
                                 <Sparkles className="h-3 w-3" />
                                 AI
                               </span>

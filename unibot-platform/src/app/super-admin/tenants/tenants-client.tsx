@@ -42,7 +42,7 @@ const STATUS_MAP: Record<
 > = {
   active: { label: "نشطة", color: "text-success bg-success/10", icon: CircleDot },
   suspended: { label: "معلّقة", color: "text-warning bg-warning/10", icon: Ban },
-  trial: { label: "تجريبية", color: "text-action-blue bg-action-blue/10", icon: CircleDot },
+  trial: { label: "تجريبية", color: "text-action-blue bg-action-blue/20", icon: CircleDot },
   deleted: { label: "محذوفة", color: "text-danger bg-danger/10", icon: Trash2 },
 };
 
@@ -129,7 +129,7 @@ export function TenantsClient({
               <div className="flex items-center gap-4">
                 <div
                   className="flex h-12 w-12 items-center justify-center rounded-xl text-white font-bold"
-                  style={{ backgroundColor: tenant.primary_color || "#2A4365" }}
+                  style={{ backgroundColor: tenant.primary_color || "#00539C" }}
                 >
                   <Building2 className="h-6 w-6" />
                 </div>

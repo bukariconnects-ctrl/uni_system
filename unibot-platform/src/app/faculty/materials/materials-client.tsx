@@ -38,7 +38,7 @@ const CONTENT_TYPES = [
 
 const SYLLABUS_STATUS: Record<string, { label: string; color: string }> = {
   draft: { label: "مسودة", color: "bg-warning/10 text-warning" },
-  submitted: { label: "مُقدَّمة", color: "bg-action-blue/10 text-action-blue" },
+  submitted: { label: "مُقدَّمة", color: "bg-action-blue/20 text-action-blue" },
   approved: { label: "معتمدة", color: "bg-success/10 text-success" },
   rejected: { label: "مرفوضة", color: "bg-danger/10 text-danger" },
 };
@@ -234,7 +234,7 @@ export function MaterialsClient({
                     className="flex w-full items-center justify-between px-5 py-3.5 text-right transition-colors hover:bg-app-bg/60"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-action-blue/10 text-sm font-bold text-action-blue">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-action-blue/20 text-sm font-bold text-action-blue">
                         {Number(week) === 0 ? "—" : week}
                       </span>
                       <span className="text-sm font-bold text-text-primary">
@@ -261,7 +261,7 @@ export function MaterialsClient({
                             <div key={material.id} className="rounded-xl border border-border bg-card-bg p-4 shadow-sm">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue/10">
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue/20">
                                     <TypeIcon className="h-5 w-5 text-action-blue" />
                                   </div>
                                   <div>

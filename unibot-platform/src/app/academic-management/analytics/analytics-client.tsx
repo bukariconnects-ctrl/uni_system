@@ -402,7 +402,7 @@ export function AnalyticsClient({
                         );
                         setRecSectionId(score.section_id);
                       }}
-                      className="flex items-center gap-1 rounded-lg bg-action-blue/10 px-3 py-1.5 text-xs font-medium text-action-blue transition-colors hover:bg-action-blue/20"
+                      className="flex items-center gap-1 rounded-lg bg-action-blue/20 px-3 py-1.5 text-xs font-medium text-action-blue transition-colors hover:bg-action-blue/20"
                     >
                       <Send className="h-3 w-3" />
                       توصية

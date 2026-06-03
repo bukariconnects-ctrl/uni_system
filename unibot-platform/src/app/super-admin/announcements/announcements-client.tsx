@@ -157,7 +157,7 @@ export function AnnouncementsClient({
                   <div
                     className={`mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl ${
                       announcement.is_active && !expired
-                        ? "bg-action-blue/10"
+                        ? "bg-action-blue/20"
                         : "bg-app-bg"
                     }`}
                   >

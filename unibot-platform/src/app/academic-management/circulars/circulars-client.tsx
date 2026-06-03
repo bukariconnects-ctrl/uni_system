@@ -363,7 +363,7 @@ export function CircularsClient({
                 <div className="flex items-start gap-3">
                   <div
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                      circular.is_mandatory ? "bg-danger/10" : "bg-action-blue/10"
+                      circular.is_mandatory ? "bg-danger/10" : "bg-action-blue/20"
                     }`}
                   >
                     {circular.is_mandatory ? (

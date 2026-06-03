@@ -137,7 +137,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  student: "bg-action-blue/10 text-action-blue",
+  student: "bg-action-blue/20 text-action-blue",
   faculty: "bg-success/10 text-success",
   academic_management: "bg-purple/10 text-purple",
   tenant_admin: "bg-academic-navy/10 text-academic-navy",
@@ -281,7 +281,7 @@ export function UsersClient({
         <div className="flex items-center gap-2">
           <button
             onClick={() => setModal({ type: "bulk-import" })}
-            className="flex items-center gap-2 rounded-xl border border-action-blue/30 bg-action-blue/5 px-4 py-2.5 text-sm font-medium text-action-blue transition-colors hover:bg-action-blue/10"
+            className="flex items-center gap-2 rounded-xl border border-action-blue/30 bg-action-blue/5 px-4 py-2.5 text-sm font-medium text-action-blue transition-colors hover:bg-action-blue/20"
           >
             <Upload className="h-4 w-4" />
             استيراد CSV
@@ -310,7 +310,7 @@ export function UsersClient({
             >
               <t.icon className="h-4 w-4" />
               {t.label}
-              <span className={`rounded-full px-1.5 py-0.5 text-xs ${tab === t.key ? "bg-action-blue/10" : "bg-app-bg"}`}>
+              <span className={`rounded-full px-1.5 py-0.5 text-xs ${tab === t.key ? "bg-action-blue/20" : "bg-app-bg"}`}>
                 {counts[t.key]}
               </span>
             </button>
@@ -330,7 +330,7 @@ export function UsersClient({
 
       {filteredUsers.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card-bg py-16 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-action-blue/10">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-action-blue/20">
             <Users className="h-7 w-7 text-action-blue" />
           </div>
           <p className="text-base font-semibold text-text-primary">
@@ -431,7 +431,7 @@ export function UsersClient({
                         {/* Edit */}
                         <button
                           onClick={() => setModal({ type: "edit-user", user })}
-                          className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-action-blue/10 hover:text-action-blue"
+                          className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-action-blue/20 hover:text-action-blue"
                           title="تعديل"
                         >
                           <Pencil className="h-4 w-4" />
@@ -627,7 +627,7 @@ function StatBadge({
   color: "blue" | "green" | "purple";
 }) {
   const colors = {
-    blue: "bg-action-blue/10 text-action-blue",
+    blue: "bg-action-blue/20 text-action-blue",
     green: "bg-success/10 text-success",
     purple: "bg-purple/10 text-purple",
   };
@@ -1000,7 +1000,7 @@ function BulkImportModal({
             ref={fileRef}
             type="file"
             accept=".csv"
-            className="flex-1 rounded-xl border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary file:ml-3 file:rounded-lg file:border-0 file:bg-action-blue/10 file:px-3 file:py-1 file:text-sm file:font-medium file:text-action-blue"
+            className="flex-1 rounded-xl border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary file:ml-3 file:rounded-lg file:border-0 file:bg-action-blue/20 file:px-3 file:py-1 file:text-sm file:font-medium file:text-action-blue"
           />
           <button
             onClick={onUpload}

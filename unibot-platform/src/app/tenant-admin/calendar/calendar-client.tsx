@@ -25,7 +25,7 @@ const SEMESTER_TYPES = [
 
 const STATUS_MAP: Record<SemesterStatus, { label: string; color: string }> = {
   planning: { label: "تخطيط", color: "bg-warning/10 text-warning" },
-  registration: { label: "تسجيل", color: "bg-action-blue/10 text-action-blue" },
+  registration: { label: "تسجيل", color: "bg-action-blue/20 text-action-blue" },
   active: { label: "نشط", color: "bg-success/10 text-success" },
   grade_freeze: { label: "تجميد الدرجات", color: "bg-purple/10 text-purple" },
   archived: { label: "مؤرشف", color: "bg-text-secondary/10 text-text-secondary" },

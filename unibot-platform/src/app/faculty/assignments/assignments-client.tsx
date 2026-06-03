@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  submitted: { label: "مُسلَّم", color: "bg-action-blue/10 text-action-blue" },
+  submitted: { label: "مُسلَّم", color: "bg-action-blue/20 text-action-blue" },
   late: { label: "متأخر", color: "bg-warning/10 text-warning" },
   graded: { label: "مُصحَّح", color: "bg-success/10 text-success" },
   resubmit_requested: { label: "مطلوب إعادة", color: "bg-danger/10 text-danger" },
@@ -142,7 +142,7 @@ export function AssignmentsClient({
                 type="file"
                 name="attachment"
                 accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.zip"
-                className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm text-text-secondary outline-none focus:border-action-blue file:ml-3 file:rounded-md file:border-0 file:bg-action-blue/10 file:px-3 file:py-1 file:text-xs file:font-medium file:text-action-blue hover:file:bg-action-blue/20"
+                className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm text-text-secondary outline-none focus:border-action-blue file:ml-3 file:rounded-md file:border-0 file:bg-action-blue/20 file:px-3 file:py-1 file:text-xs file:font-medium file:text-action-blue hover:file:bg-action-blue/20"
               />
             </div>
             <div className="sm:col-span-2">
@@ -173,7 +173,7 @@ export function AssignmentsClient({
           <div key={assignment.id} className="rounded-2xl border border-border bg-card-bg shadow-sm">
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isPast ? "bg-text-secondary/10" : "bg-action-blue/10"}`}>
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isPast ? "bg-text-secondary/10" : "bg-action-blue/20"}`}>
                   <FileText className={`h-5 w-5 ${isPast ? "text-text-secondary" : "text-action-blue"}`} />
                 </div>
                 <div>

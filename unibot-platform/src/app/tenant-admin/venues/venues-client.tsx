@@ -97,7 +97,7 @@ export function VenuesClient({ initialVenues, campuses }: { initialVenues: Venue
               <>
                 <div className="mb-3 flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${venue.venue_type === "lab" ? "bg-success/10" : venue.venue_type === "auditorium" ? "bg-purple/10" : "bg-action-blue/10"}`}>
+                    <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${venue.venue_type === "lab" ? "bg-success/10" : venue.venue_type === "auditorium" ? "bg-purple/10" : "bg-action-blue/20"}`}>
                       <MapPin className={`h-4 w-4 ${venue.venue_type === "lab" ? "text-success" : venue.venue_type === "auditorium" ? "text-purple" : "text-action-blue"}`} />
                     </div>
                     <div>

@@ -1,6 +1,6 @@
 import { requireRole } from "@/lib/auth/get-user";
 import { createClient } from "@/lib/supabase/server";
-import { BookCopy, Users, CalendarClock, GraduationCap } from "lucide-react";
+import { AcademicManagementDashboardClient } from "./academic-management-client";
 
 export default async function AcademicManagementDashboard() {
   const { profile } = await requireRole(["academic_management"]);
@@ -8,62 +8,93 @@ export default async function AcademicManagementDashboard() {
 
   const { data: activeSemester } = await supabase
     .from("semesters")
-    .select("*")
+    .select("id, name")
     .eq("tenant_id", profile.tenant_id)
     .eq("status", "active")
     .single();
 
   const semesterId = activeSemester?.id;
 
-  const [sectionsRes, enrollmentsRes, schedulesRes] = await Promise.all([
-    semesterId
-      ? supabase.from("sections").select("*", { count: "exact", head: true }).eq("tenant_id", profile.tenant_id).eq("semester_id", semesterId)
-      : Promise.resolve({ count: 0 }),
-    semesterId
-      ? supabase.from("enrollments").select("*", { count: "exact", head: true }).eq("tenant_id", profile.tenant_id).eq("semester_id", semesterId).eq("status", "enrolled")
-      : Promise.resolve({ count: 0 }),
-    semesterId
-      ? supabase.from("schedules").select("*", { count: "exact", head: true }).eq("tenant_id", profile.tenant_id)
-      : Promise.resolve({ count: 0 }),
-  ]);
+  // Get departments managed by this academic manager
+  const { data: managedDepts } = await supabase
+    .from("academic_management_departments")
+    .select("department_id")
+    .eq("profile_id", profile.id)
+    .eq("tenant_id", profile.tenant_id);
 
-  const stats = [
-    { label: "الشعب المفتوحة", value: sectionsRes.count || 0, icon: BookCopy, color: "bg-action-blue/10 text-action-blue" },
-    { label: "الطلاب المسجلون", value: enrollmentsRes.count || 0, icon: Users, color: "bg-success/10 text-success" },
-    { label: "المحاضرات المجدولة", value: schedulesRes.count || 0, icon: CalendarClock, color: "bg-purple/10 text-purple" },
-  ];
+  const deptIds = managedDepts?.map((d) => d.department_id) || [];
+
+  // Get course IDs in managed departments
+  let courseIds: string[] = [];
+  if (deptIds.length > 0) {
+    const { data: courses } = await supabase
+      .from("courses")
+      .select("id")
+      .in("department_id", deptIds)
+      .eq("tenant_id", profile.tenant_id);
+    courseIds = (courses || []).map((c) => c.id);
+  }
+
+  // Fetch sections in managed departments for active semester
+  const { data: sections } =
+    semesterId && courseIds.length > 0
+      ? await supabase
+          .from("sections")
+          .select("id, section_code, status, course_id, semester_id, enrolled_count, courses(code, name)")
+          .eq("tenant_id", profile.tenant_id)
+          .eq("semester_id", semesterId)
+          .in("course_id", courseIds)
+      : { data: [] };
+
+  const sectionIds = (sections || []).map((s: any) => s.id);
+
+  // Fetch enrollments for these sections
+  const { data: enrollments } =
+    sectionIds.length > 0
+      ? await supabase
+          .from("enrollments")
+          .select("id, student_id, section_id, status")
+          .in("section_id", sectionIds)
+          .eq("status", "enrolled")
+      : { data: [] };
+
+  // Fetch attendance summaries for these sections
+  const { data: attendanceSummaries } =
+    sectionIds.length > 0
+      ? await supabase
+          .from("attendance_summaries")
+          .select("student_id, section_id, absence_percentage, attended_sessions, total_sessions, is_dismissed")
+          .in("section_id", sectionIds)
+      : { data: [] };
+
+  // Fetch risk zone students
+  const studentIds = (enrollments || []).map((e: any) => e.student_id);
+  const { data: riskStudents } =
+    studentIds.length > 0
+      ? await supabase
+          .from("student_profiles")
+          .select("profile_id, risk_level, risk_score, cumulative_gpa, student_number, profiles(first_name, last_name)")
+          .in("profile_id", studentIds)
+          .in("risk_level", ["high", "critical"])
+      : { data: [] };
 
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text-primary">مرحبا، {profile.first_name}</h1>
+        <h1 className="text-2xl font-bold text-text-primary">مرحباً، {profile.first_name}</h1>
         <p className="mt-1 text-sm text-text-secondary">
           {activeSemester ? `الفصل الحالي: ${activeSemester.name}` : "لا يوجد فصل دراسي نشط"}
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        {stats.map((stat) => (
-          <div key={stat.label} className="rounded-2xl border border-border bg-card-bg p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-text-secondary">{stat.label}</p>
-                <p className="mt-1 text-3xl font-bold text-text-primary">{stat.value}</p>
-              </div>
-              <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${stat.color.split(" ")[0]}`}>
-                <stat.icon className={`h-5 w-5 ${stat.color.split(" ")[1]}`} />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {!activeSemester && (
-        <div className="mt-6 rounded-2xl border border-dashed border-warning/50 bg-warning/5 p-6 text-center">
-          <GraduationCap className="mx-auto mb-3 h-10 w-10 text-warning" />
-          <p className="text-sm font-medium text-warning">لا يوجد فصل دراسي نشط — يرجى التواصل مع مدير الجامعة لتفعيل الفصل</p>
-        </div>
-      )}
+      <AcademicManagementDashboardClient
+        data={{
+          sections: (sections || []) as any,
+          enrollments: (enrollments || []) as any,
+          attendanceSummaries: (attendanceSummaries || []) as any,
+          riskStudents: (riskStudents || []) as any,
+        }}
+      />
     </div>
   );
 }

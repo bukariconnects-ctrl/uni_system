@@ -289,7 +289,7 @@ export function UnibotClient({
               <div className="absolute left-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-xl border border-border bg-card-bg shadow-lg">
                 <button
                   onClick={() => { handleNewConversation(); setConvDropdownOpen(false); }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-action-blue hover:bg-action-blue/10"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-action-blue hover:bg-action-blue/20"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   محادثة جديدة
@@ -344,7 +344,7 @@ export function UnibotClient({
           {messages.length === 0 && (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-ai-light to-ai-lavender">
-                <Bot className="h-8 w-8 text-purple" />
+                <Bot className="h-8 w-8 text-white" />
               </div>
               <h2 className="mb-2 text-lg font-bold text-text-primary">مرحباً في UniBot</h2>
               <p className="mb-5 max-w-xs text-xs text-text-secondary">
@@ -381,7 +381,7 @@ export function UnibotClient({
                 className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
                   msg.role === "user"
                     ? "bg-action-blue text-white"
-                    : "bg-gradient-to-br from-ai-light to-ai-lavender text-purple"
+                    : "bg-gradient-to-br from-ai-light to-ai-lavender text-white"
                 }`}
               >
                 {msg.role === "user" ? (
@@ -396,7 +396,7 @@ export function UnibotClient({
                     ? "bg-action-blue text-white"
                     : msg.content.includes(noAnswerPattern)
                     ? "border border-border bg-app-bg text-text-secondary"
-                    : "border border-ai-lavender/50 bg-gradient-to-br from-ai-light/60 to-ai-lavender/30 text-text-primary"
+                    : "border border-ai-lavender/30 bg-gradient-to-br from-ai-light/10 to-ai-lavender/10 text-text-primary"
                 }`}
               >
                 <div className="text-sm leading-relaxed">
@@ -419,7 +419,7 @@ export function UnibotClient({
                             className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${
                               selectedSource?.id === source.id
                                 ? "bg-action-blue text-white"
-                                : "bg-action-blue/10 text-action-blue hover:bg-action-blue/20"
+                                : "bg-action-blue/20 text-action-blue hover:bg-action-blue/20"
                             }`}
                           >
                             {source.page_number ? (
@@ -448,10 +448,10 @@ export function UnibotClient({
 
           {loading && (
             <div className="mb-4 flex gap-2.5">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-ai-light to-ai-lavender text-purple">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-ai-light to-ai-lavender text-white">
                 <Bot className="h-3.5 w-3.5" />
               </div>
-              <div className="rounded-2xl border border-ai-lavender/50 bg-gradient-to-br from-ai-light/60 to-ai-lavender/30 px-4 py-3">
+              <div className="rounded-2xl border border-ai-lavender/30 bg-gradient-to-br from-ai-light/10 to-ai-lavender/10 px-4 py-3">
                 <div className="flex items-center gap-1.5">
                   <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-purple/60 [animation-delay:0ms]" />
                   <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-purple/60 [animation-delay:150ms]" />
@@ -517,7 +517,7 @@ export function UnibotClient({
         <div className="flex-1 overflow-y-auto p-8">
           {selectedSource ? (
             <div className="mx-auto max-w-2xl">
-              <div className="mb-4 flex items-center gap-2 rounded-xl bg-action-blue/10 px-4 py-2.5">
+              <div className="mb-4 flex items-center gap-2 rounded-xl bg-action-blue/20 px-4 py-2.5">
                 <FileText className="h-4 w-4 text-action-blue" />
                 <span className="text-xs font-semibold text-action-blue">
                   {selectedSource.page_number
@@ -543,7 +543,7 @@ export function UnibotClient({
                 عندما يستشهد UniBot بمصدر من المحتوى التعليمي، اضغط على شريحة المصدر في فقاعة الرسالة لعرض المقتطف هنا.
               </p>
               <div className="mt-6 flex items-center gap-2 rounded-xl border border-border bg-card-bg px-4 py-2.5">
-                <span className="rounded-full bg-action-blue/10 px-2 py-0.5 text-xs font-medium text-action-blue">
+                <span className="rounded-full bg-action-blue/20 px-2 py-0.5 text-xs font-medium text-action-blue">
                   📄 ص. 15
                 </span>
                 <span className="text-xs text-text-secondary">مثال على شريحة مصدر</span>

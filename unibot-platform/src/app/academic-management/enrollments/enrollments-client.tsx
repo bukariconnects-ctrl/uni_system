@@ -44,7 +44,7 @@ interface EnrollmentRow {
 const ENROLLMENT_STATUS: Record<string, { label: string; color: string }> = {
   enrolled: { label: "مسجل", color: "bg-success/10 text-success" },
   dropped: { label: "منسحب", color: "bg-danger/10 text-danger" },
-  completed: { label: "مكتمل", color: "bg-action-blue/10 text-action-blue" },
+  completed: { label: "مكتمل", color: "bg-action-blue/20 text-action-blue" },
   failed: { label: "راسب", color: "bg-danger/10 text-danger" },
   dismissed: { label: "مفصول", color: "bg-text-secondary/10 text-text-secondary" },
   withdrawn: { label: "منسحب كلياً", color: "bg-warning/10 text-warning" },

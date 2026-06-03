@@ -58,7 +58,7 @@ export function SettingsClient({ tenant }: { tenant: Tenant }) {
 
       <div className="rounded-2xl border border-border bg-card-bg p-6 shadow-sm">
         <div className="mb-5 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue/10">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue/20">
             <Palette className="h-5 w-5 text-action-blue" />
           </div>
           <div>

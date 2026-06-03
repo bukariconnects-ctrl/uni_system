@@ -268,7 +268,7 @@ export function SchedulesClient({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-xl bg-action-blue/10 px-3 py-2 text-action-blue">
+          <div className="flex items-center gap-2 rounded-xl bg-action-blue/20 px-3 py-2 text-action-blue">
             <CalendarClock className="h-4 w-4" />
             <span className="text-base font-bold">{totalLectures}</span>
             <span className="text-xs font-medium">محاضرة</span>

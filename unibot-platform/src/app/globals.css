@@ -2,44 +2,61 @@
 
 /* ─── Light Mode Design Tokens ──────────────────────── */
 :root {
-  --color-academic-navy: #2A4365;
-  --color-action-blue: #3182CE;
-  --color-ai-light: #EBF8FF;
-  --color-ai-lavender: #E9D8FD;
-  --color-app-bg: #F7FAFC;
-  --color-card-bg: #FFFFFF;
-  --color-text-primary: #1A202C;
-  --color-text-secondary: #718096;
-  --color-border: #E2E8F0;
-  --color-danger: #E53E3E;
-  --color-warning: #DD6B20;
-  --color-success: #38A169;
-  --color-teal: #319795;
-  --color-purple: #805AD5;
-  --color-orange: #ED8936;
+  /* Primary — Royal Blue */
+  --color-primary: hsl(208 100% 30%);
+  --color-primary-foreground: hsl(0 0% 100%);
+
+  /* Secondary — Peach */
+  --color-secondary: hsl(20 78% 71%);
+  --color-secondary-foreground: hsl(208 30% 20%);
+
+  --color-academic-navy: hsl(208 100% 30%);
+  --color-action-blue: hsl(20 78% 71%);
+  --color-ai-light: hsl(208 100% 30%);
+  --color-ai-lavender: hsl(20 78% 71%);
+  --color-app-bg: hsl(210 33% 98%);
+  --color-card-bg: hsl(0 0% 100%);
+  --color-text-primary: hsl(218 23% 14%);
+  --color-text-secondary: hsl(215 16% 47%);
+  --color-border: hsl(214 32% 91%);
+  --color-danger: hsl(0 72% 51%);
+  --color-warning: hsl(20 78% 71%);
+  --color-success: hsl(142 43% 44%);
+  --color-teal: hsl(174 48% 40%);
+  --color-purple: hsl(263 54% 58%);
+  --color-orange: hsl(20 78% 71%);
 }
 
 /* ─── Dark Mode Design Tokens (applied via .dark class by next-themes) ── */
 .dark {
-  --color-academic-navy: #1A365D;
-  --color-action-blue: #63B3ED;
-  --color-ai-light: #1A202C;
-  --color-ai-lavender: #2D2640;
-  --color-app-bg: #0F1117;
-  --color-card-bg: #1A1D2E;
-  --color-text-primary: #E2E8F0;
-  --color-text-secondary: #A0AEC0;
-  --color-border: #2D3748;
-  --color-danger: #FC8181;
-  --color-warning: #F6AD55;
-  --color-success: #68D391;
-  --color-teal: #4FD1C5;
-  --color-purple: #B794F4;
-  --color-orange: #FBD38D;
+  --color-primary: hsl(208 100% 45%);
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-secondary: hsl(20 78% 65%);
+  --color-secondary-foreground: hsl(208 30% 14%);
+
+  --color-academic-navy: hsl(208 100% 45%);
+  --color-action-blue: hsl(20 78% 65%);
+  --color-ai-light: hsl(208 100% 45%);
+  --color-ai-lavender: hsl(20 78% 65%);
+  --color-app-bg: hsl(214 45% 9%);
+  --color-card-bg: hsl(214 40% 12%);
+  --color-text-primary: hsl(214 32% 91%);
+  --color-text-secondary: hsl(212 25% 60%);
+  --color-border: hsl(210 50% 23%);
+  --color-danger: hsl(0 80% 74%);
+  --color-warning: hsl(20 78% 65%);
+  --color-success: hsl(142 55% 62%);
+  --color-teal: hsl(174 60% 56%);
+  --color-purple: hsl(263 80% 77%);
+  --color-orange: hsl(20 78% 65%);
 }
 
 /* ─── Tailwind v4: register tokens so utility classes work ─── */
 @theme inline {
+  --color-primary: var(--color-primary);
+  --color-primary-foreground: var(--color-primary-foreground);
+  --color-secondary: var(--color-secondary);
+  --color-secondary-foreground: var(--color-secondary-foreground);
   --color-academic-navy: var(--color-academic-navy);
   --color-action-blue: var(--color-action-blue);
   --color-ai-light: var(--color-ai-light);

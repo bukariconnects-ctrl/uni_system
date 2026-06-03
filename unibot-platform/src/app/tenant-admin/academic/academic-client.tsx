@@ -258,7 +258,7 @@ export function AcademicClient({
                     <h4 className="text-sm font-bold text-text-primary">الأقسام الأكاديمية</h4>
                     <button
                       onClick={() => setModal({ type: "add-dept", collegeId: college.id })}
-                      className="flex items-center gap-1.5 rounded-lg border border-action-blue/30 bg-action-blue/5 px-3 py-1.5 text-xs font-medium text-action-blue transition-colors hover:bg-action-blue/10"
+                      className="flex items-center gap-1.5 rounded-lg border border-action-blue/30 bg-action-blue/5 px-3 py-1.5 text-xs font-medium text-action-blue transition-colors hover:bg-action-blue/20"
                     >
                       <Plus className="h-3.5 w-3.5" />
                       قسم جديد
@@ -282,14 +282,14 @@ export function AcademicClient({
                                 onClick={() => toggle(`d-${dept.id}`)}
                                 className="flex flex-1 items-center gap-3 text-right"
                               >
-                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-action-blue/10">
+                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-action-blue/20">
                                   <FolderTree className="h-4 w-4 text-action-blue" />
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <div className="flex flex-wrap items-center gap-2">
                                     <span className="text-sm font-bold text-text-primary">{dept.name}</span>
                                     {dept.code && (
-                                      <span className="rounded-full bg-action-blue/10 px-2 py-0.5 text-xs font-medium text-action-blue">
+                                      <span className="rounded-full bg-action-blue/20 px-2 py-0.5 text-xs font-medium text-action-blue">
                                         {dept.code}
                                       </span>
                                     )}
@@ -493,7 +493,7 @@ export function AcademicClient({
 function StatBadge({ icon, label, count, color }: { icon: React.ReactNode; label: string; count: number; color: "navy" | "blue" | "green" }) {
   const colors = {
     navy: "bg-academic-navy/10 text-academic-navy",
-    blue: "bg-action-blue/10 text-action-blue",
+    blue: "bg-action-blue/20 text-action-blue",
     green: "bg-success/10 text-success",
   };
   return (

@@ -266,14 +266,14 @@ function CatalogTab({
             ) : (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${course.is_active ? "bg-action-blue/10" : "bg-app-bg"}`}>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${course.is_active ? "bg-action-blue/20" : "bg-app-bg"}`}>
                     <BookOpen className={`h-5 w-5 ${course.is_active ? "text-action-blue" : "text-text-secondary"}`} />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-text-primary">{course.name}</span>
                       <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary" dir="ltr">{course.code}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs ${course.course_type === "theoretical" ? "bg-action-blue/10 text-action-blue" : course.course_type === "practical" ? "bg-success/10 text-success" : "bg-purple/10 text-purple"}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-xs ${course.course_type === "theoretical" ? "bg-action-blue/20 text-action-blue" : course.course_type === "practical" ? "bg-success/10 text-success" : "bg-purple/10 text-purple"}`}>
                         {COURSE_TYPES.find((t) => t.value === course.course_type)?.label}
                       </span>
                       {!course.is_active && (

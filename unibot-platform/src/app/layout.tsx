@@ -25,14 +25,14 @@ export default function RootLayout({
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body className={`${inter.variable} antialiased bg-app-bg text-text-primary`}>
         <NextTopLoader
-          color="#3182CE"
+          color="#00539C"
           initialPosition={0.08}
           crawlSpeed={200}
           height={3}
           showSpinner={false}
           easing="ease"
           speed={200}
-          shadow="0 0 10px #3182CE,0 0 5px #3182CE"
+          shadow="0 0 10px #00539C,0 0 5px #00539C"
         />
         <ThemeProvider>
           <Suspense fallback={null}>

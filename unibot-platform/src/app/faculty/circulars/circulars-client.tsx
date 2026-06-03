@@ -164,7 +164,7 @@ export function FacultyCircularsClient({
             <Inbox className="h-4 w-4" />
             المستلمة
             {received.length > 0 && (
-              <span className="rounded-full bg-action-blue/10 px-1.5 py-0.5 text-xs text-action-blue">
+              <span className="rounded-full bg-action-blue/20 px-1.5 py-0.5 text-xs text-action-blue">
                 {received.length}
               </span>
             )}
@@ -410,7 +410,7 @@ function CircularCard({
           <div className="flex items-start gap-3">
             <div
               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                circular.is_mandatory ? "bg-danger/10" : "bg-action-blue/10"
+                circular.is_mandatory ? "bg-danger/10" : "bg-action-blue/20"
               }`}
             >
               {circular.is_mandatory ? (

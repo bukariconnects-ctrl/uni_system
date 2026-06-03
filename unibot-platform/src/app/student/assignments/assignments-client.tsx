@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  submitted: { label: "مُسلَّم", color: "bg-action-blue/10 text-action-blue" },
+  submitted: { label: "مُسلَّم", color: "bg-action-blue/20 text-action-blue" },
   late: { label: "متأخر", color: "bg-warning/10 text-warning" },
   graded: { label: "مُصحَّح", color: "bg-success/10 text-success" },
   resubmit_requested: { label: "مطلوب إعادة", color: "bg-danger/10 text-danger" },
@@ -72,7 +72,7 @@ export function StudentAssignmentsClient({
           <div key={assignment.id} className="rounded-2xl border border-border bg-card-bg shadow-sm">
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isPast && !sub ? "bg-danger/10" : sub?.status === "graded" ? "bg-success/10" : "bg-action-blue/10"}`}>
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isPast && !sub ? "bg-danger/10" : sub?.status === "graded" ? "bg-success/10" : "bg-action-blue/20"}`}>
                   {sub?.status === "graded" ? (
                     <CheckCircle className="h-5 w-5 text-success" />
                   ) : isPast && !sub ? (
@@ -134,7 +134,7 @@ export function StudentAssignmentsClient({
                     href={assignment.attachment_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-lg border border-action-blue/30 bg-action-blue/5 px-3 py-1.5 text-xs font-medium text-action-blue hover:bg-action-blue/10"
+                    className="inline-flex items-center gap-2 rounded-lg border border-action-blue/30 bg-action-blue/5 px-3 py-1.5 text-xs font-medium text-action-blue hover:bg-action-blue/20"
                   >
                     <Download className="h-3.5 w-3.5" />
                     تحميل ملف التكليف

@@ -32,7 +32,7 @@ const statusConfig: Record<
   TicketStatus,
   { bg: string; text: string; label: string; icon: typeof Clock }
 > = {
-  open: { bg: "bg-action-blue/10", text: "text-action-blue", label: "مفتوحة", icon: AlertCircle },
+  open: { bg: "bg-action-blue/20", text: "text-action-blue", label: "مفتوحة", icon: AlertCircle },
   in_progress: { bg: "bg-warning/10", text: "text-warning", label: "قيد المعالجة", icon: Clock },
   pending_info: { bg: "bg-purple/10", text: "text-purple", label: "بانتظار معلومات", icon: Clock },
   resolved: { bg: "bg-success/10", text: "text-success", label: "تم الحل", icon: CheckCircle },

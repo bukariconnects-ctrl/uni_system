@@ -177,7 +177,7 @@ export function StudentMessagesClient({
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h3 className="text-sm font-bold text-text-primary">المحادثات</h3>
           <div className="flex items-center gap-1">
-            <button onClick={() => setShowNewChat(!showNewChat)} className="rounded-lg p-1.5 text-action-blue hover:bg-action-blue/10">
+            <button onClick={() => setShowNewChat(!showNewChat)} className="rounded-lg p-1.5 text-action-blue hover:bg-action-blue/20">
               <Plus className="h-4 w-4" />
             </button>
             <button onClick={() => setSidebarOpen(false)} className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg" title="إخفاء">
@@ -228,7 +228,7 @@ export function StudentMessagesClient({
                 <button
                   key={ch.id}
                   onClick={() => selectTarget({ type: "channel", id: ch.id, name: ch.sections?.courses?.code ? `${ch.sections.courses.code} (${ch.sections.section_code})` : ch.name, can_send: ch.can_send })}
-                  className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-right text-sm transition-colors ${target?.id === ch.id ? "bg-action-blue/10 text-action-blue" : "text-text-secondary hover:bg-app-bg hover:text-text-primary"}`}
+                  className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-right text-sm transition-colors ${target?.id === ch.id ? "bg-action-blue/20 text-action-blue" : "text-text-secondary hover:bg-app-bg hover:text-text-primary"}`}
                 >
                   <Hash className="h-4 w-4" />
                   <span className="truncate">{ch.sections?.courses?.code ? `${ch.sections.courses.code} (${ch.sections.section_code})` : ch.name}</span>
@@ -245,7 +245,7 @@ export function StudentMessagesClient({
                 <button
                   key={conv.id}
                   onClick={() => selectTarget({ type: "conversation", id: conv.id, name: `${conv.other_user?.first_name} ${conv.other_user?.last_name}` })}
-                  className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-right text-sm transition-colors ${target?.id === conv.id ? "bg-action-blue/10 text-action-blue" : "text-text-secondary hover:bg-app-bg hover:text-text-primary"}`}
+                  className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-right text-sm transition-colors ${target?.id === conv.id ? "bg-action-blue/20 text-action-blue" : "text-text-secondary hover:bg-app-bg hover:text-text-primary"}`}
                 >
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-academic-navy text-xs font-bold text-white">
                     {conv.other_user?.first_name?.[0]}

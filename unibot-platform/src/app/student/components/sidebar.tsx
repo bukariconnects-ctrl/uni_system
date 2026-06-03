@@ -71,7 +71,7 @@ export function StudentSidebar({ profile, tenantName }: { profile: Profile; tena
               href={item.href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-action-blue/10 text-action-blue"
+                  ? "bg-action-blue/20 text-action-blue"
                   : "text-text-secondary hover:bg-app-bg hover:text-text-primary"
               }`}
             >

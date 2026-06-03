@@ -54,7 +54,7 @@ export default async function StudentGradesPage() {
                   <tr key={entry.id} className="border-b border-border last:border-0">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-action-blue/10">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-action-blue/20">
                           <GraduationCap className="h-4 w-4 text-action-blue" />
                         </div>
                         <div>

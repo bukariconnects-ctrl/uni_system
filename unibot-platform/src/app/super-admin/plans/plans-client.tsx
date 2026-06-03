@@ -129,7 +129,7 @@ export function PlansClient({
                         plan.name === "enterprise"
                           ? "bg-purple/10 text-purple"
                           : plan.name === "pro"
-                          ? "bg-action-blue/10 text-action-blue"
+                          ? "bg-action-blue/20 text-action-blue"
                           : "bg-teal/10 text-teal"
                       }`}
                     >

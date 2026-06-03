@@ -8,7 +8,7 @@ export default async function StudentRegisterPage() {
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-action-blue/10">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-action-blue/20">
           <BookOpen className="h-6 w-6 text-action-blue" />
         </div>
         <div>

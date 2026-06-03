@@ -65,12 +65,12 @@ export function ActionProgressEnhancer() {
         left: 0,
         right: 0,
         height: "3px",
-        background: "linear-gradient(90deg, #3182CE, #63B3ED)",
+        background: "linear-gradient(90deg, #00539C, #EEA47F)",
         zIndex: 9999,
         opacity: 0,
         transition: "opacity 0.2s ease",
         animation: "action-progress-slide 1.5s ease-in-out infinite",
-        boxShadow: "0 0 8px #3182CE",
+        boxShadow: "0 0 8px #00539C",
       }}
     />
   );

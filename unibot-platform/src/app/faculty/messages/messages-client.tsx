@@ -222,7 +222,7 @@ export function MessagesClient({
       <div className="flex w-72 flex-col border-l border-border">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h3 className="text-sm font-bold text-text-primary">المحادثات</h3>
-          <button onClick={() => setShowNewChat(!showNewChat)} className="rounded-lg p-1.5 text-action-blue hover:bg-action-blue/10">
+          <button onClick={() => setShowNewChat(!showNewChat)} className="rounded-lg p-1.5 text-action-blue hover:bg-action-blue/20">
             <Plus className="h-4 w-4" />
           </button>
         </div>
@@ -269,7 +269,7 @@ export function MessagesClient({
                 <button
                   key={ch.id}
                   onClick={() => setTarget({ type: "channel", id: ch.id, name: ch.sections?.courses?.code ? `${ch.sections.courses.code} (${ch.sections.section_code})` : ch.name })}
-                  className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-right text-sm transition-colors ${target?.id === ch.id ? "bg-action-blue/10 text-action-blue" : "text-text-secondary hover:bg-app-bg hover:text-text-primary"}`}
+                  className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-right text-sm transition-colors ${target?.id === ch.id ? "bg-action-blue/20 text-action-blue" : "text-text-secondary hover:bg-app-bg hover:text-text-primary"}`}
                 >
                   <Hash className="h-4 w-4" />
                   <span className="truncate">{ch.sections?.courses?.code ? `${ch.sections.courses.code} (${ch.sections.section_code})` : ch.name}</span>
@@ -285,7 +285,7 @@ export function MessagesClient({
                 <button
                   key={conv.id}
                   onClick={() => setTarget({ type: "conversation", id: conv.id, name: `${conv.other_user?.first_name} ${conv.other_user?.last_name}` })}
-                  className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-right text-sm transition-colors ${target?.id === conv.id ? "bg-action-blue/10 text-action-blue" : "text-text-secondary hover:bg-app-bg hover:text-text-primary"}`}
+                  className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-right text-sm transition-colors ${target?.id === conv.id ? "bg-action-blue/20 text-action-blue" : "text-text-secondary hover:bg-app-bg hover:text-text-primary"}`}
                 >
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-academic-navy text-xs font-bold text-white">
                     {conv.other_user?.first_name?.[0]}
@@ -387,7 +387,7 @@ export function MessagesClient({
                                     {member.profiles?.first_name} {member.profiles?.last_name}
                                   </span>
                                   {isAdmin && (
-                                    <span className="rounded bg-action-blue/10 px-1.5 py-0.5 text-xs text-action-blue">مدير</span>
+                                    <span className="rounded bg-action-blue/20 px-1.5 py-0.5 text-xs text-action-blue">مدير</span>
                                   )}
                                   {isMuted && (
                                     <span className="rounded bg-danger/10 px-1.5 py-0.5 text-xs text-danger">صامت</span>

@@ -201,7 +201,7 @@ export function StudentAttendanceClient({
       {tab === "scan" && (
         <div className="rounded-2xl border border-border bg-card-bg p-6 shadow-sm">
           <div className="mb-6 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-action-blue/10">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-action-blue/20">
               <QrCode className="h-8 w-8 text-action-blue" />
             </div>
             <h2 className="text-lg font-bold text-text-primary">تسجيل الحضور بـ QR</h2>
@@ -230,7 +230,7 @@ export function StudentAttendanceClient({
               className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
                 cameraActive 
                   ? "bg-danger/10 text-danger hover:bg-danger/20" 
-                  : "bg-action-blue/10 text-action-blue hover:bg-action-blue/20"
+                  : "bg-action-blue/20 text-action-blue hover:bg-action-blue/20"
               }`}
             >
               {cameraActive ? (
@@ -360,7 +360,7 @@ export function StudentAttendanceClient({
                       <p className="font-bold text-danger">{summary.unexcused_absences}</p>
                       <p className="text-text-secondary">غياب</p>
                     </div>
-                    <div className="rounded-lg bg-action-blue/10 p-2">
+                    <div className="rounded-lg bg-action-blue/20 p-2">
                       <p className="font-bold text-action-blue">{summary.excused_absences}</p>
                       <p className="text-text-secondary">أعذار</p>
                     </div>
@@ -414,7 +414,7 @@ export function StudentAttendanceClient({
                       </div>
                     </div>
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${cfg.color === "text-success" ? "bg-success/10 text-success" : cfg.color === "text-danger" ? "bg-danger/10 text-danger" : cfg.color === "text-warning" ? "bg-warning/10 text-warning" : "bg-action-blue/10 text-action-blue"}`}>
+                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${cfg.color === "text-success" ? "bg-success/10 text-success" : cfg.color === "text-danger" ? "bg-danger/10 text-danger" : cfg.color === "text-warning" ? "bg-warning/10 text-warning" : "bg-action-blue/20 text-action-blue"}`}>
                     {cfg.label}
                   </span>
                 </div>

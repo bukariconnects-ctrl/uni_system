@@ -186,7 +186,7 @@ export function ProfileClient({
               {profile.first_name} {profile.last_name}
             </h2>
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-action-blue/10 px-3 py-1 text-xs font-medium text-action-blue">
+              <span className="rounded-full bg-action-blue/20 px-3 py-1 text-xs font-medium text-action-blue">
                 {ROLE_LABELS[profile.role] || profile.role}
               </span>
               {tenantName && (

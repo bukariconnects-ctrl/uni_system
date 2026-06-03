@@ -27,7 +27,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
   present: { label: "حاضر", color: "bg-success/10 text-success", icon: UserCheck },
   absent: { label: "غائب", color: "bg-danger/10 text-danger", icon: UserX },
   late: { label: "متأخر", color: "bg-warning/10 text-warning", icon: Clock },
-  excused: { label: "معذور", color: "bg-action-blue/10 text-action-blue", icon: ShieldCheck },
+  excused: { label: "معذور", color: "bg-action-blue/20 text-action-blue", icon: ShieldCheck },
 };
 
 export function AttendanceClient({
@@ -209,7 +209,7 @@ export function AttendanceClient({
                   </button>
                 )}
                 {!session.is_open && (
-                  <button onClick={() => handleGenerateQr(session.id)} className="rounded-lg p-1.5 text-action-blue hover:bg-action-blue/10" title="توليد QR">
+                  <button onClick={() => handleGenerateQr(session.id)} className="rounded-lg p-1.5 text-action-blue hover:bg-action-blue/20" title="توليد QR">
                     <QrCode className="h-4 w-4" />
                   </button>
                 )}

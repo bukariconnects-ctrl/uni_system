@@ -238,7 +238,7 @@ export function KnowledgeClient({
               <div
                 className={`flex h-12 w-12 items-center justify-center rounded-xl ${
                   doc.is_active
-                    ? "bg-action-blue/10 text-action-blue"
+                    ? "bg-action-blue/20 text-action-blue"
                     : "bg-app-bg text-text-secondary"
                 }`}
               >

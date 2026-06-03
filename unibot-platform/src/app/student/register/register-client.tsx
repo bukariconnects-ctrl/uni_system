@@ -141,7 +141,7 @@ export function RegisterClient({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-lg font-bold text-text-primary">{course?.code}</span>
-                        <span className="rounded-full bg-action-blue/10 px-2 py-0.5 text-xs text-action-blue">
+                        <span className="rounded-full bg-action-blue/20 px-2 py-0.5 text-xs text-action-blue">
                           {course?.credit_hours} ساعة
                         </span>
                         {course?.course_type === "hybrid" && (
@@ -195,7 +195,7 @@ export function RegisterClient({
                       <div key={section.id} className="p-5">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue/10">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue/20">
                               <BookOpen className="h-5 w-5 text-action-blue" />
                             </div>
                             <div>

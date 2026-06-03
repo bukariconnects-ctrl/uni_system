@@ -2,6 +2,198 @@
 
 ---
 
+## UI/UX Rebranding: Royal Blue & Peach Theme
+**التاريخ:** 2026-06-03
+
+### ملخص
+تحديث كامل لنظام الألوان والهوية البصرية للمنصة بالتزامن مع طلب العميل. تم الانتقال من لوحة الألوان القديمة (Academic Navy / Action Blue) إلى مجموعة ألوان عصرية تجمع بين **Royal Blue** (`#00539C`) كأساس موثوق وأكاديمي، و**Peach** (`#EEA47F`) كلمسة دافئة للتفاعل والتأكيد.
+
+---
+
+### المرحلة 1 — تحديث متغيرات CSS (Design Tokens)
+**الملف:** `src/app/globals.css`
+
+| المتغير | السابق | الجديد |
+|---------|--------|--------|
+| `--color-primary` | غير موجود | `hsl(208 100% 30%)` |
+| `--color-secondary` | غير موجود | `hsl(20 78% 71%)` |
+| `--color-academic-navy` | `#00539C` | `hsl(208 100% 30%)` |
+| `--color-action-blue` | `#EEA47F` | `hsl(20 78% 71%)` |
+| `--color-ai-light` | `#E6F1FA` | `hsl(208 100% 30%)` |
+| `--color-ai-lavender` | `#FDE8DD` | `hsl(20 78% 71%)` |
+| `--color-app-bg` | `#F7FAFC` | `hsl(210 33% 98%)` |
+| `--color-card-bg` | `#FFFFFF` | `hsl(0 0% 100%)` |
+| `--color-text-primary` | `#1A202C` | `hsl(218 23% 14%)` |
+| `--color-text-secondary` | `#718096` | `hsl(215 16% 47%)` |
+| `--color-border` | `#E2E8F0` | `hsl(214 32% 91%)` |
+| `--color-danger` | `#E53E3E` | `hsl(0 72% 51%)` |
+| `--color-success` | `#38A169` | `hsl(142 43% 44%)` |
+| `--color-teal` | `#319795` | `hsl(174 48% 40%)` |
+| `--color-purple` | `#805AD5` | `hsl(263 54% 58%)` |
+| `--color-warning` | `#EEA47F` | `hsl(20 78% 71%)` |
+| `--color-orange` | `#EEA47F` | `hsl(20 78% 71%)` |
+
+**Dark Mode:**
+*   Royal Blue أصبح أفتح قليلاً `hsl(208 100% 45%)` لتحسين القراءة على الخلفيات الداكنة.
+*   Peach أصبح أكثر اعتدالاً `hsl(20 78% 65%)` ليناسب الوضع الليلي.
+
+**Tailwind v4 `@theme inline`:**
+تم تسجيل `primary`, `primary-foreground`, `secondary`, `secondary-foreground` إضافةً إلى المتغيرات الموجودة، مما يتيح استخدام `bg-primary` و `text-secondary` عالمياً.
+
+---
+
+### المرحلة 2 — تحديث التدرج الذكي (AI Gradient)
+**الملفات المُعدَّلة:**
+
+| الملف | التغيير |
+|-------|---------|
+| `src/app/student/unibot/unibot-client.tsx` | تدرج رؤوس المحادثة والأيقونات من Royal Blue إلى Peach. تحديث ألوان النصوص إلى `text-white` لضمان التباين. تخفيف تدرج فقاعات الرسائل إلى `/10` و `/10` ليظل لطيفاً. |
+| `src/app/student/materials/materials-client.tsx` | شارة "AI" أصبح تدرجها من Royal Blue إلى Peach مع نص أبيض. |
+| `src/app/student/page.tsx` | شريط التقدم الأكاديمي أصبح `from-academic-navy to-action-blue`. |
+| `src/components/action-progress-enhancer.tsx` | كان يحمل التدرج الجديد مسبقاً (`linear-gradient(90deg, #00539C, #EEA47F)`). لم يتطلب تعديل. |
+
+---
+
+### المرحلة 3 — تحديث الوثائق
+**الملفات المُعدَّلة:**
+
+| الملف | التغيير |
+|-------|---------|
+| `documentations/theme.md` | تحديث أقسام Primary Colors, Backgrounds, Semantic Colors, Buttons, و Navigation لتعكس Royal Blue & Peach. إضافة قيم HSL بجانب HEX. |
+
+---
+
+## UI/UX Upgrade: Pro Analytics Dashboards & Recharts Integration
+**التاريخ:** 2026-06-03
+
+### ملخص
+ترقية كاملة للوحات التحكم الخمس (Super Admin, Tenant Admin, Academic Management, Faculty, Student) من "بطاقات إحصائيات بسيطة" إلى "لوحات تحكم تحليلية احترافية (Pro Analytics SaaS Dashboards)" باستخدام مكتبة `recharts`. تمت إضافة مؤشرات الاتجاه (Trend Indicators)، ومخططات Recharts تفاعلية، وتخطيط Bento Box Grid.
+
+**الحزمة المُضافة:**
+- `recharts` — مكتبة React لرسوم البيانات التفاعلية.
+
+**المكوّنات المشتركة الجديدة:**
+| الملف | الوصف |
+|-------|-------|
+| `src/components/analytics/kpi-card.tsx` | بطاقة KPI موحدة: عنوان + رقم رئيسي + أيقونة + مؤشر اتجاه (TrendingUp/Down) |
+| `src/components/analytics/chart-card.tsx` | حاوية مخطط موحدة: عنوان + subtitle + محتوى Recharts |
+| `src/components/analytics/index.tsx` | Barrel export |
+
+---
+
+### 1. Super Admin Dashboard (`src/app/super-admin/`)
+**الملفات الجديدة:**
+- `src/app/super-admin/super-admin-client.tsx`
+
+**الملفات المُعدَّلة:**
+- `src/app/super-admin/page.tsx`
+
+**KPIs:**
+- إجمالي الجامعات + عدد النشطة
+- استهلاك AI Tokens + إجمالي التكلفة
+- إجمالي التخزين + نسبة الاستخدام
+
+**المخططات:**
+- **BarChart:** استهلاك AI Tokens حسب الجامعة (Top 8)
+- **LineChart:** نمو الجامعات بمرور الوقت ( cumulative + monthly ) مع خطين
+- **بطاقة إيرادات:** إجمالي الإيرادات المحصّلة مع عدد الفواتير المتأخرة
+- **توزيع الحالات:** نشطة / معلّقة / محذوفة
+
+---
+
+### 2. Tenant Admin Dashboard (`src/app/tenant-admin/`)
+**الملفات الجديدة:**
+- `src/app/tenant-admin/tenant-admin-client.tsx`
+
+**الملفات المُعدَّلة:**
+- `src/app/tenant-admin/page.tsx`
+
+**KPIs:**
+- إجمالي الطلاب + نسبة السعة
+- أعضاء هيئة التدريس + إجمالي المستخدمين
+- الشعب المفتوحة + إجمالي الشعب
+- التخزين المستخدم + نسبة السعة
+
+**المخططات:**
+- **PieChart (Donut):** توزيع المستخدمين (طلاب / هيئة تدريس / إداريون)
+- **BarChart (vertical):** عدد الشعب حسب القسم (Top 10)
+- **بطاقة معلومات الجامعة:** تفاصيل التخزين والسعة والحالة
+
+---
+
+### 3. Academic Management Dashboard (`src/app/academic-management/`)
+**الملفات الجديدة:**
+- `src/app/academic-management/academic-management-client.tsx`
+
+**الملفات المُعدَّلة:**
+- `src/app/academic-management/page.tsx`
+
+**KPIs:**
+- الطلاب المسجلون + عدد الشعب النشطة
+- معدل الغياب + عدد سجلات الحضور
+- منطقة الخطر (High + Critical)
+
+**المخططات:**
+- **ComposedChart (Bar + Line):** متوسط نسبة الغياب % (محور يسار) مقابل متوسط Risk Score (محور يمين) حسب الشعبة
+- **Widget — Risk Zone:** قائمة Top 5 طلاب يحتاجون تدخلاً فورياً مع Risk Score ملوّن و GPA
+
+**منطق جلب البيانات:**
+- يبدأ بجلب الأقسام المُسندة للمسؤول من `academic_management_departments`
+- ثم يجلب المقررات (`courses`) في تلك الأقسام
+- ثم الشعب (`sections`) للفصل النشط ضمن تلك المقررات
+- ثم التسجيلات والحضور والمخاطر للشعب المحددة
+
+---
+
+### 4. Faculty Dashboard (`src/app/faculty/`)
+**الملفات الجديدة:**
+- `src/app/faculty/faculty-client.tsx`
+
+**الملفات المُعدَّلة:**
+- `src/app/faculty/page.tsx`
+
+**KPIs:**
+- إجمالي الطلاب في الشعب النشطة
+- تسليمات بانتظار التقييم
+- التكاليف المنشورة + إجمالي المطلوب تقييمه
+- نسبة الحضور الأخيرة + عدد الحضور المسجل
+
+**المخططات:**
+- **AreaChart:** اتجاهات الحضور (حاضر vs غائب) عبر آخر الجلسات مع تدرج لوني
+- **Widget — Pending Submissions:** قائمة آخر 10 تسليمات بانتظار التقييم مع اسم الطالب وتاريخ التسليم
+
+---
+
+### 5. Student Dashboard (`src/app/student/`)
+**الملفات الجديدة:**
+- `src/app/student/student-client.tsx`
+
+**الملفات المُعدَّلة:**
+- `src/app/student/page.tsx`
+
+**KPIs:**
+- المعدل التراكمي + التصنيف (ممتاز/جيد/ضعيف)
+- الساعات المكتسبة + نسبة التقدم
+- نسبة الحضور الإجمالية + إحصائيات الجلسات
+- المقررات الحالية + التكاليف القادمة
+
+**المخططات:**
+- **Study Path Card:** شريط التقدم نحو التخرج مع المعدل التراكمي
+- **LineChart:** اتجاه الدرجات (النسبة المئوية والدرجة الخام) عبر آخر 10 تقييمات
+- **Widget — Upcoming Deadlines:** قائمة المواعيد النهائية القادمة مع أيام متبقية وتصنيف ألوان (أحمر=متأخر / برتقالي=مستعجل / أخضر=آمن)
+
+---
+
+### تصميم الألوان والوضع المظلم
+جميع المخططات تستخدم CSS Variables (`var(--color-card-bg)`, `var(--color-border)`, `var(--color-text-primary)`) مما يضمن تكيفها تلقائياً مع الوضع المظلم عبر `next-themes`. الألوان الرئيسية للمخططات:
+- Royal Blue `#00539C` — Primary
+- Peach `#EEA47F` — Secondary / Accent
+- Success `#38A169` — Positive metrics
+- Danger `#E53E3E` — Risk / Negative
+- Purple `#805AD5` — AI / Storage
+
+---
+
 ## Academic Workflow: سد الفجوات الأكاديمية وإصلاح الأخطاء المنطقية
 **التاريخ:** 2026-04-26
 

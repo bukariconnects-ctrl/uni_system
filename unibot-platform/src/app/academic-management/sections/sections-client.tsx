@@ -222,7 +222,7 @@ export function SectionsClient({
 
       {Object.keys(groupedByCourse).length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card-bg py-16 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-action-blue/10">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-action-blue/20">
             <BookCopy className="h-7 w-7 text-action-blue" />
           </div>
           <p className="text-base font-semibold text-text-primary">
@@ -257,7 +257,7 @@ export function SectionsClient({
                   className="flex w-full items-center justify-between px-5 py-4 text-right transition-colors hover:bg-app-bg/50"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-action-blue/10">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-action-blue/20">
                       <BookCopy className="h-6 w-6 text-action-blue" />
                     </div>
                     <div>
@@ -522,7 +522,7 @@ function StatBadge({
   color: "blue" | "green" | "purple";
 }) {
   const colors = {
-    blue: "bg-action-blue/10 text-action-blue",
+    blue: "bg-action-blue/20 text-action-blue",
     green: "bg-success/10 text-success",
     purple: "bg-purple/10 text-purple",
   };

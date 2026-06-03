@@ -135,7 +135,7 @@ export function CampusesClient({
 
       {initialCampuses.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card-bg py-20 text-center">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-action-blue/10">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-action-blue/20">
             <MapPin className="h-8 w-8 text-action-blue" />
           </div>
           <p className="text-base font-semibold text-text-primary">لا توجد فروع بعد</p>
@@ -154,7 +154,7 @@ export function CampusesClient({
             <div key={campus.id} className="rounded-2xl border border-border bg-card-bg p-5 shadow-sm">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue/10">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue/20">
                     <MapPin className="h-5 w-5 text-action-blue" />
                   </div>
                   <div>
