@@ -3423,3 +3423,75 @@ if (!scopedCourseIds || scopedCourseIds.length === 0) {
 ### ملاحظة
 يجب تشغيل الـ migration في Supabase Dashboard لتفعيل الميزة.
 
+---
+
+## Feature: Voice-Enabled UniBot (STT & Gemini TTS)
+**التاريخ:** 2026-06-21
+
+### ملخص
+ترقية واجهة UniBot Chat لدعم التفاعل الصوتي الكامل: تحويل الكلام إلى نص عبر Browser Speech API، وتحويل النص إلى كلام عبر Google Gemini TTS API.
+
+---
+
+### المرحلة 1 — تحويل الكلام إلى نص (Browser SpeechRecognition API)
+**الملف:** `src/app/student/unibot/unibot-client.tsx`
+
+**الإضافات:**
+- زر ميكروفون 🎙️ بجانب زر الإرسال في شريط الإدخال
+- استخدام `window.SpeechRecognition` أو `window.webkitSpeechRecognition` الأصلي
+- لغة التعرف: `ar-SA` (العربية السعودية)
+- التسجيل مستمر (`continuous: true`) مع نتائج مؤقتة (`interimResults: true`)
+- إظهار النص المُسجَّل مباشرة في حقل الإدخال (textarea)
+
+**المؤشر البصري:**
+- نقطة حمراء نابضة (`animate-ping`) أثناء التسجيل
+- نص "جاري التسجيل..." بلون danger
+- زر الميكروفون يتحول إلى خلفية حمراء أثناء التسجيل
+
+---
+
+### المرحلة 2 — تحويل النص إلى كلام (Google Gemini TTS)
+**الملف:** `src/app/api/ai/chat/route.ts`
+
+**الإضافات:**
+- دالة `generateAudio(text)` تُرسل النص إلى نموذج `gemini-2.5-pro-preview-tts` عبر REST API
+- تستخدم نفس مفتاح `GEMINI_API_KEY`
+- تُعيد كائن `{ data: string, mimeType: string }` أو `null` عند الفشل
+- تُستدعى بعد إنشاء الرد النصي وإضافته إلى استجابة API
+
+**تعديل الاستجابة:**
+- إضافة حقل `audio` إلى `NextResponse.json()` يحمل البيانات الصوتية (Base64) ونوع MIME
+
+**معالجة الأخطاء:**
+- إذا فشلت خدمة TTS (خطأ API أو timeout)، يُعاد `null` للصوت مع بقاء الرد النصي سليماً
+- يُسجَّل تحذير في الـ console دون تعطيل تدفق المحادثة
+
+---
+
+### المرحلة 3 — تشغيل الصوت في الواجهة الأمامية
+**الملف:** `src/app/student/unibot/unibot-client.tsx`
+
+**الإضافات:**
+- أيقونة مكبر صوت 🔊 بجانب فقاعات المساعد التي تحتوي على صوت
+- تشغيل تلقائي للصوت عند وصول رد جديد من UniBot
+- إعادة التشغيل عند النقر على أيقونة السماعة
+
+**الآلية:**
+- `Audio` object من HTML5 API لتحويل Base64 إلى صوت
+- `data:${mimeType};base64,${data}` لبناء مصدر الصوت
+- عداد `playingAudioId` لتتبع الرسالة التي يتم تشغيلها حالياً
+- إيقاف التشغيل الحالي عند بدء تشغيل جديد
+
+### الملفات المُعدَّلة
+| الملف | التغيير |
+|-------|---------|
+| `src/app/student/unibot/unibot-client.tsx` | إضافة الميكروفون، SpeechRecognition، أيقونة السماعة، التشغيل التلقائي |
+| `src/app/api/ai/chat/route.ts` | إضافة دالة `generateAudio()` وحقل `audio` في الاستجابة |
+| `change_log.md` | هذا التوثيق |
+
+### ملاحظات تقنية
+- Browser Speech API يعمل على Chrome و Edge و Safari (iOS 16+) — غير مدعوم في Firefox
+- نموذج `gemini-2.5-pro-preview-tts` يتطلب مفتاح API مع صلاحية الوصول إلى Gemini API
+- إذا فشل TTS، يستمر النظام في العمل كنص فقط بدون تعطيل
+- Rust SDK للـ TTS ليس مطلوباً — استخدمنا REST API المباشر
+

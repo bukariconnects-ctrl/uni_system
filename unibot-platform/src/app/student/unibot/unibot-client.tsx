@@ -18,6 +18,8 @@ import {
   Trash2,
   PanelLeftClose,
   PanelLeftOpen,
+  Mic,
+  Volume2,
 } from "lucide-react";
 import type { ChatbotConversation } from "@/lib/types/database";
 import { getConversationMessages, endConversation } from "./actions";
@@ -101,6 +103,7 @@ interface ChatMessage {
   content: string;
   source_chunk_ids: string[];
   created_at: string;
+  audio?: { data: string; mimeType: string };
 }
 
 interface SourceChunk {
@@ -132,6 +135,69 @@ export function UnibotClient({
   const [docPanelOpen, setDocPanelOpen] = useState(true);
   const [convDropdownOpen, setConvDropdownOpen] = useState(false);
 
+  const [isRecording, setIsRecording] = useState(false);
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const shouldAutoPlayRef = useRef(false);
+
+  function startRecording() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SpeechRecognitionCtor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) return;
+
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = "ar-SA";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (event: any) => {
+      const results = event.results as ArrayLike<{ [index: number]: { transcript: string } }>;
+      const transcript = Array.from(results)
+        .map((result) => result[0].transcript)
+        .join("");
+      setInput(transcript);
+    };
+
+    recognition.onerror = () => setIsRecording(false);
+    recognition.onend = () => setIsRecording(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+  }
+
+  function stopRecording() {
+    recognitionRef.current?.stop();
+    setIsRecording(false);
+  }
+
+  function playAudio(msg: ChatMessage) {
+    if (!msg.audio) return;
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    const audioSrc = `data:${msg.audio.mimeType};base64,${msg.audio.data}`;
+    const audio = new Audio(audioSrc);
+    audioRef.current = audio;
+    setPlayingAudioId(msg.id);
+
+    audio.onended = () => {
+      setPlayingAudioId(null);
+      audioRef.current = null;
+    };
+
+    audio.play().catch(() => {
+      setPlayingAudioId(null);
+      audioRef.current = null;
+    });
+  }
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -152,6 +218,14 @@ export function UnibotClient({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg?.role === "assistant" && lastMsg.audio && shouldAutoPlayRef.current) {
+      playAudio(lastMsg);
+      shouldAutoPlayRef.current = false;
+    }
+  }, [messages]);
 
   async function loadConversation(convId: string) {
     setActiveConvId(convId);
@@ -179,6 +253,7 @@ export function UnibotClient({
     setMessages((prev) => [...prev, optimisticMsg]);
 
     try {
+      shouldAutoPlayRef.current = true;
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -219,6 +294,7 @@ export function UnibotClient({
         content: data.message,
         source_chunk_ids: data.sources?.map((s: SourceChunk) => s.id) || [],
         created_at: new Date().toISOString(),
+        audio: data.audio || undefined,
       };
       setMessages((prev) => [...prev, assistantMsg]);
 
@@ -442,6 +518,22 @@ export function UnibotClient({
                         ))}
                     </div>
                   )}
+                {msg.role === "assistant" && msg.audio && (
+                  <div className="mt-2 flex items-center gap-1.5 border-t border-border/40 pt-2">
+                    <button
+                      onClick={() => playAudio(msg)}
+                      className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                        playingAudioId === msg.id
+                          ? "bg-purple text-white"
+                          : "bg-purple/20 text-purple hover:bg-purple/20"
+                      }`}
+                      title={playingAudioId === msg.id ? "جاري التشغيل..." : "استماع للرد"}
+                    >
+                      <Volume2 className="h-3 w-3" />
+                      {playingAudioId === msg.id ? "جاري التشغيل..." : "استماع"}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -465,29 +557,52 @@ export function UnibotClient({
         </div>
 
         <div className="border-t border-border bg-card-bg px-4 py-3">
-          <form onSubmit={handleSend} className="flex items-end gap-2">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend(e);
-                }
-              }}
-              placeholder="اكتب سؤالك هنا..."
-              rows={1}
-              className="flex-1 resize-none overflow-hidden rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors placeholder:text-text-secondary focus:border-action-blue"
-              style={{ maxHeight: "10rem" }}
-            />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue text-white transition-colors hover:bg-action-blue/90 disabled:opacity-50"
-            >
-              <Send className="h-4 w-4" />
-            </button>
+          <form onSubmit={handleSend} className="flex flex-col gap-2">
+            {isRecording && (
+              <div className="flex items-center gap-2 px-1">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-danger opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-danger" />
+                </span>
+                <span className="text-xs text-danger">جاري التسجيل...</span>
+              </div>
+            )}
+            <div className="flex items-end gap-2">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend(e);
+                  }
+                }}
+                placeholder="اكتب سؤالك هنا..."
+                rows={1}
+                className="flex-1 resize-none overflow-hidden rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors placeholder:text-text-secondary focus:border-action-blue"
+                style={{ maxHeight: "10rem" }}
+              />
+              <button
+                type="button"
+                onClick={isRecording ? stopRecording : startRecording}
+                className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+                  isRecording
+                    ? "bg-danger text-white"
+                    : "border border-border bg-app-bg text-text-secondary hover:bg-border"
+                }`}
+                title={isRecording ? "إيقاف التسجيل" : "تسجيل صوتي"}
+              >
+                <Mic className="h-4 w-4" />
+              </button>
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue text-white transition-colors hover:bg-action-blue/90 disabled:opacity-50"
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </div>
           </form>
         </div>
       </div>

@@ -174,6 +174,49 @@ async function generateConversationTitle(userMessage: string): Promise<string> {
   }
 }
 
+async function generateAudio(text: string): Promise<{ data: string; mimeType: string } | null> {
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-tts:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text }] }],
+          generationConfig: {
+            responseModalities: ["Audio"],
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.warn(`[UniBot TTS] API returned ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const candidate = data.candidates?.[0];
+    if (!candidate?.content?.parts) return null;
+
+    const audioPart = candidate.content.parts.find(
+      (p: { inlineData?: { mimeType?: string; data?: string } }) =>
+        p.inlineData?.mimeType?.startsWith("audio/")
+    );
+
+    if (!audioPart?.inlineData?.data) return null;
+
+    return {
+      data: audioPart.inlineData.data,
+      mimeType: audioPart.inlineData.mimeType,
+    };
+  } catch (err) {
+    console.warn("[UniBot TTS] Failed:", err);
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -362,6 +405,8 @@ export async function POST(request: NextRequest) {
           : "ط­ط¯ط« ط®ط·ط£ ط£ط«ظ†ط§ط، طھظˆظ„ظٹط¯ ط§ظ„ط¥ط¬ط§ط¨ط©. ظٹظڈط±ط¬ظ‰ ط§ظ„ظ…ط­ط§ظˆظ„ط© ظ…ط±ط© ط£ط®ط±ظ‰."
     }
 
+    const audioData = await generateAudio(assistantMessage);
+
     const usage = chatResult.response.usageMetadata;
     const promptTokens = usage?.promptTokenCount || 0;
     const completionTokens = usage?.candidatesTokenCount || 0;
@@ -400,7 +445,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       conversation_id: convId,
       message: assistantMessage,
-      // Show sources only when RAG was actually used (non-personal question with relevant chunks)
+      audio: audioData,
       sources: !isPersonalQuestion && sourceChunks.length > 0 ? sourceChunks : [],
       conversation_title: conversationTitle,
     });
