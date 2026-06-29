@@ -12,7 +12,7 @@ export async function submitAttendanceByQr(token: string) {
   // Find the session with this QR token
   const { data: session, error: sessionError } = await supabase
     .from("attendance_sessions")
-    .select("id, section_id, is_open, qr_code, qr_expires_at")
+    .select("id, course_id, is_open, qr_code, qr_expires_at")
     .eq("qr_code", token)
     .eq("is_open", true)
     .single();
@@ -26,17 +26,17 @@ export async function submitAttendanceByQr(token: string) {
     throw new Error("انتهت صلاحية رمز QR — اطلب من المحاضر تحديثه");
   }
 
-  // Check if student is enrolled in this section
+  // Check if student is enrolled in this course
   const { data: enrollment } = await serviceClient
     .from("enrollments")
     .select("id")
     .eq("student_id", profile.id)
-    .eq("section_id", session.section_id)
+    .eq("course_id", session.course_id)
     .eq("status", "enrolled")
     .single();
 
   if (!enrollment) {
-    throw new Error("أنت غير مسجل في هذه الشعبة");
+    throw new Error("أنت غير مسجل في هذه المادة");
   }
 
   // Find the attendance record for this student in this session
@@ -77,10 +77,10 @@ export async function getOpenSessionsForStudent() {
   const { profile } = await requireRole(["student"]);
   const supabase = await createClient();
 
-  // Get student's enrolled sections
+  // Get student's enrolled courses
   const { data: enrollments } = await supabase
     .from("enrollments")
-    .select("section_id")
+    .select("course_id")
     .eq("student_id", profile.id)
     .eq("status", "enrolled");
 
@@ -88,13 +88,13 @@ export async function getOpenSessionsForStudent() {
     return [];
   }
 
-  const sectionIds = enrollments.map((e) => e.section_id);
+  const courseIds = enrollments.map((e) => e.course_id);
 
-  // Get open sessions for these sections
+  // Get open sessions for these courses
   const { data: sessions } = await supabase
     .from("attendance_sessions")
-    .select("id, session_date, start_time, is_open, sections(section_code, courses(code, name))")
-    .in("section_id", sectionIds)
+    .select("id, session_date, start_time, is_open, courses(code, name)")
+    .in("course_id", courseIds)
     .eq("is_open", true)
     .order("session_date", { ascending: false });
 

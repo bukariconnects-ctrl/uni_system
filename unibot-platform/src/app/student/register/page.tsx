@@ -1,9 +1,9 @@
-import { getAvailableSections } from "./actions";
+import { getMyCoursesForRegistration } from "./actions";
 import { RegisterClient } from "./register-client";
 import { BookOpen } from "lucide-react";
 
 export default async function StudentRegisterPage() {
-  const { semester, sections, labSections } = await getAvailableSections();
+  const data = await getMyCoursesForRegistration();
 
   return (
     <div className="space-y-6 p-6">
@@ -13,14 +13,13 @@ export default async function StudentRegisterPage() {
         </div>
         <div>
           <h1 className="text-xl font-bold text-text-primary">التسجيل الذاتي</h1>
-          <p className="text-sm text-text-secondary">سجّل في المقررات المتاحة لهذا الفصل الدراسي</p>
+          <p className="text-sm text-text-secondary">سجّل في المقررات المتاحة حسب خطتك الدراسية</p>
         </div>
       </div>
 
       <RegisterClient
-        semester={semester}
-        sections={sections as any}
-        labSections={labSections as any}
+        semester={data.semester}
+        courses={data.courses as any}
       />
     </div>
   );

@@ -33,6 +33,7 @@ interface MajorNode {
   id: string;
   name: string;
   code: string | null;
+  department_id: string | null;
   departments: { name: string; colleges: { name: string } | null } | null;
   academic_levels: LevelNode[];
 }
@@ -43,6 +44,7 @@ interface CourseOption {
   name: string;
   credit_hours: number;
   course_type: string;
+  department_id: string | null;
 }
 
 interface PlanCourseRow {
@@ -91,6 +93,11 @@ export function StudyPlanClient({
 
   const major = majors.find((m) => m.id === selectedMajor);
   const levels = major?.academic_levels?.sort((a, b) => a.level_number - b.level_number) || [];
+
+  // Filter courses to only show those from the selected major's department
+  const departmentCourses = courses.filter(
+    (c) => !selectedMajor || !major?.department_id || c.department_id === major.department_id
+  );
 
   useEffect(() => {
     if (!selectedMajor) {
@@ -333,7 +340,7 @@ export function StudyPlanClient({
         <AddCourseModal
           levelId={modal.levelId}
           semester={modal.semester}
-          courses={courses}
+          courses={departmentCourses}
           existingCourseIds={planCourses.map((pc) => pc.course_id)}
           loading={loading}
           error={error}
@@ -346,7 +353,7 @@ export function StudyPlanClient({
         <AddPrereqModal
           courseId={modal.courseId}
           courseName={modal.courseName}
-          courses={courses}
+          courses={departmentCourses}
           existingPrereqIds={prerequisites
             .filter((p) => p.course_id === modal.courseId)
             .map((p) => p.prerequisite_id)}

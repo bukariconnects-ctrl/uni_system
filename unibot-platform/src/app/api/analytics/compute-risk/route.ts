@@ -46,62 +46,57 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get enrollments by tenant + semester directly (no sections join needed)
     const { data: enrollments } = await adminClient
       .from("enrollments")
-      .select("id, student_id, section_id, tenant_id")
+      .select("id, student_id, course_id, tenant_id")
       .eq("tenant_id", tenant_id)
+      .eq("semester_id", semester_id)
       .eq("status", "enrolled");
 
     if (!enrollments || enrollments.length === 0) {
       return NextResponse.json({ computed: 0 });
     }
 
-    const sectionIds = [...new Set(enrollments.map((e) => e.section_id))];
-
-    const { data: sections } = await adminClient
-      .from("sections")
-      .select("id, semester_id")
-      .in("id", sectionIds)
-      .eq("semester_id", semester_id);
-
-    const validSectionIds = new Set(
-      (sections || []).map((s) => s.id)
-    );
-
-    const filteredEnrollments = enrollments.filter((e) =>
-      validSectionIds.has(e.section_id)
-    );
-
-    if (filteredEnrollments.length === 0) {
-      return NextResponse.json({ computed: 0 });
-    }
-
-    const studentSectionPairs = filteredEnrollments.map((e) => ({
+    const studentCoursePairs = enrollments.map((e) => ({
       student_id: e.student_id,
-      section_id: e.section_id,
+      course_id: e.course_id,
       tenant_id: e.tenant_id,
     }));
 
-    const studentIds = [...new Set(studentSectionPairs.map((p) => p.student_id))];
-    const allSectionIds = [...new Set(studentSectionPairs.map((p) => p.section_id))];
+    const studentIds = [...new Set(studentCoursePairs.map((p) => p.student_id))];
+    const courseIds = [...new Set(studentCoursePairs.map((p) => p.course_id))];
 
-    const { data: summaries } = await adminClient
-      .from("attendance_summaries")
-      .select("student_id, section_id, absence_percentage")
+    // For attendance: we still use section_id from enrollment to join with attendance_summaries (backward compat)
+    const { data: allEnrollmentsForAtt } = await adminClient
+      .from("enrollments")
+      .select("id, student_id, course_id, section_id")
       .in("student_id", studentIds)
-      .in("section_id", allSectionIds);
+      .in("course_id", courseIds)
+      .eq("status", "enrolled");
 
+    const sectionIdsForSummaries = [
+      ...new Set(
+        (allEnrollmentsForAtt || [])
+          .map((e: any) => e.section_id)
+          .filter(Boolean)
+      ),
+    ];
+
+    // Gradebook entries by course_id (table has course_id since migration 3)
     const { data: grades } = await adminClient
       .from("gradebook_entries")
-      .select("student_id, section_id, total_grade")
+      .select("student_id, course_id, total_grade")
       .in("student_id", studentIds)
-      .in("section_id", allSectionIds);
+      .in("course_id", courseIds);
 
+    // Assignments by course_id (table has course_id since migration 3)
     const { data: allAssignments } = await adminClient
       .from("assignments")
-      .select("id, section_id")
-      .in("section_id", allSectionIds);
+      .select("id, course_id")
+      .in("course_id", courseIds);
 
+    // Submissions
     const { data: submissions } = await adminClient
       .from("submissions")
       .select("student_id, assignment_id")
@@ -110,6 +105,21 @@ export async function POST(request: NextRequest) {
         (allAssignments || []).map((a) => a.id)
       );
 
+    // Attendance summaries by section_id (backward compat — no course_id column)
+    const { data: summaries } = await adminClient
+      .from("attendance_summaries")
+      .select("student_id, section_id, absence_percentage")
+      .in("student_id", studentIds)
+      .in("section_id", sectionIdsForSummaries);
+
+    // Build a lookup from enrollment (student_id + course_id) to section_id for attendance
+    const enrollmentToSection = new Map<string, string>();
+    (allEnrollmentsForAtt || []).forEach((e: any) => {
+      if (e.section_id) {
+        enrollmentToSection.set(`${e.student_id}-${e.course_id}`, e.section_id);
+      }
+    });
+
     const summaryMap = new Map<string, number>();
     (summaries || []).forEach((s) => {
       summaryMap.set(`${s.student_id}-${s.section_id}`, Number(s.absence_percentage));
@@ -117,14 +127,14 @@ export async function POST(request: NextRequest) {
 
     const gradeMap = new Map<string, number>();
     (grades || []).forEach((g) => {
-      gradeMap.set(`${g.student_id}-${g.section_id}`, Number(g.total_grade));
+      gradeMap.set(`${g.student_id}-${g.course_id}`, Number(g.total_grade));
     });
 
-    const assignmentsBySection = new Map<string, string[]>();
+    const assignmentsByCourse = new Map<string, string[]>();
     (allAssignments || []).forEach((a) => {
-      const list = assignmentsBySection.get(a.section_id) || [];
+      const list = assignmentsByCourse.get(a.course_id) || [];
       list.push(a.id);
-      assignmentsBySection.set(a.section_id, list);
+      assignmentsByCourse.set(a.course_id, list);
     });
 
     const submissionsByStudent = new Map<string, Set<string>>();
@@ -137,7 +147,7 @@ export async function POST(request: NextRequest) {
     const riskScores: {
       tenant_id: string;
       student_id: string;
-      section_id: string;
+      course_id: string;
       semester_id: string;
       risk_level: string;
       risk_score: number;
@@ -148,26 +158,35 @@ export async function POST(request: NextRequest) {
       computed_at: string;
     }[] = [];
 
-    for (const pair of studentSectionPairs) {
-      const key = `${pair.student_id}-${pair.section_id}`;
+    for (const pair of studentCoursePairs) {
+      const key = `${pair.student_id}-${pair.course_id}`;
 
-      const absencePct = summaryMap.get(key) || 0;
-      const absenceFactor = Math.min(absencePct, 100);
+      // Look up section_id for this enrollment to get attendance
+      const sectionIdForAtt = enrollmentToSection.get(key);
 
+      // Absence factor: use attendance_summaries via section_id (backward compat)
+      let absenceFactor = 0;
+      if (sectionIdForAtt) {
+        const absencePct = summaryMap.get(`${pair.student_id}-${sectionIdForAtt}`) || 0;
+        absenceFactor = Math.min(absencePct, 100);
+      }
+
+      // Grade factor
       const totalGrade = gradeMap.get(key);
       let gradeFactor = 0;
       if (totalGrade !== undefined && totalGrade !== null) {
         gradeFactor = Math.max(0, ((60 - totalGrade) / 60) * 100);
       }
 
-      const sectionAssignments = assignmentsBySection.get(pair.section_id) || [];
+      // Engagement factor
+      const courseAssignments = assignmentsByCourse.get(pair.course_id) || [];
       const studentSubs = submissionsByStudent.get(pair.student_id) || new Set();
       let engagementFactor = 0;
-      if (sectionAssignments.length > 0) {
-        const submitted = sectionAssignments.filter((aId) =>
+      if (courseAssignments.length > 0) {
+        const submitted = courseAssignments.filter((aId) =>
           studentSubs.has(aId)
         ).length;
-        engagementFactor = (1 - submitted / sectionAssignments.length) * 100;
+        engagementFactor = (1 - submitted / courseAssignments.length) * 100;
       }
 
       const riskScore =
@@ -182,7 +201,7 @@ export async function POST(request: NextRequest) {
       riskScores.push({
         tenant_id: pair.tenant_id,
         student_id: pair.student_id,
-        section_id: pair.section_id,
+        course_id: pair.course_id,
         semester_id,
         risk_level: riskLevel,
         risk_score: Math.round(riskScore * 100) / 100,
@@ -194,21 +213,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Batch upsert student_risk_scores
     const batchSize = 50;
     for (let i = 0; i < riskScores.length; i += batchSize) {
       const batch = riskScores.slice(i, i + batchSize);
       await adminClient.from("student_risk_scores").upsert(batch, {
-        onConflict: "student_id,section_id,semester_id",
+        onConflict: "student_id,course_id,semester_id",
       });
     }
 
-    const sectionRiskMap = new Map<
+    // Aggregate by course for course-level flags
+    const courseRiskMap = new Map<
       string,
       { scores: number[]; highCount: number; total: number; failCount: number }
     >();
 
     riskScores.forEach((rs) => {
-      const existing = sectionRiskMap.get(rs.section_id) || {
+      const existing = courseRiskMap.get(rs.course_id) || {
         scores: [],
         highCount: 0,
         total: 0,
@@ -219,16 +240,16 @@ export async function POST(request: NextRequest) {
       if (rs.risk_level === "high" || rs.risk_level === "critical") {
         existing.highCount++;
       }
-      const grade = gradeMap.get(`${rs.student_id}-${rs.section_id}`);
+      const grade = gradeMap.get(`${rs.student_id}-${rs.course_id}`);
       if (grade !== undefined && grade < 60) {
         existing.failCount++;
       }
-      sectionRiskMap.set(rs.section_id, existing);
+      courseRiskMap.set(rs.course_id, existing);
     });
 
     const courseFlags: {
       tenant_id: string;
-      section_id: string;
+      course_id: string;
       semester_id: string;
       avg_risk_score: number;
       high_risk_count: number;
@@ -239,7 +260,7 @@ export async function POST(request: NextRequest) {
       computed_at: string;
     }[] = [];
 
-    sectionRiskMap.forEach((data, sectionId) => {
+    courseRiskMap.forEach((data, courseId) => {
       const avg =
         data.scores.reduce((a, b) => a + b, 0) / data.scores.length;
       const failureRate =
@@ -249,7 +270,7 @@ export async function POST(request: NextRequest) {
 
       courseFlags.push({
         tenant_id: tenant_id,
-        section_id: sectionId,
+        course_id: courseId,
         semester_id,
         avg_risk_score: Math.round(avg * 100) / 100,
         high_risk_count: data.highCount,
@@ -263,7 +284,7 @@ export async function POST(request: NextRequest) {
 
     if (courseFlags.length > 0) {
       await adminClient.from("course_risk_flags").upsert(courseFlags, {
-        onConflict: "section_id,semester_id",
+        onConflict: "course_id,semester_id",
       });
     }
 

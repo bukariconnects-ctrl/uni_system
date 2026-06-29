@@ -1,770 +1,993 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import {
-  createSchedule,
-  updateScheduleStatus,
-  deleteSchedule,
-  updateSchedule,
+  getStudyPlanCoursesForScheduling,
+  createCourseSchedule,
+  updateCourseSchedule,
+  deleteCourseSchedule,
+  toggleScheduleStatus,
 } from "./actions";
 import {
   Plus,
-  X,
-  CalendarClock,
-  Trash2,
   Pencil,
-  Send,
-  FileEdit,
+  Trash2,
+  BookOpen,
+  FlaskConical,
+  CheckCircle,
   AlertTriangle,
-  MapPin,
-  User,
   Clock,
-  Filter,
-  RotateCcw,
-  Lock,
+  X,
+  Loader2,
 } from "lucide-react";
 
-interface ScheduleRow {
+// ── Types ──────────────────────────────────────────────
+interface Major { id: string; name: string; code: string | null; department_id: string | null; }
+interface Semester { id: string; name: string; status: string; semester_type: string | null; }
+interface Venue { id: string; name: string; code: string | null; venue_type: string | null; capacity: number | null; }
+interface Faculty { id: string; first_name: string; last_name: string; }
+interface AcademicLevel { id: string; name: string; level_number: number; major_id: string; }
+
+interface StudyPlanCourse {
   id: string;
+  course_id: string;
+  plan_course_type: string;
+  courses: {
+    id: string; code: string; name: string; credit_hours: number;
+    course_type: string; department_id: string | null;
+  };
+  academic_levels: { id: string; name: string; level_number: number; major_id: string };
+}
+
+interface ScheduleEntry {
+  id: string;
+  study_plan_course_id: string;
+  component_type: string;
   day_of_week: string;
   start_time: string;
   end_time: string;
-  status: string;
-  section_id: string;
   venue_id: string | null;
-  sections: {
-    section_code: string;
-    course_id: string;
-    semester_id: string;
-    courses: { code: string; name: string } | null;
-    profiles: { first_name: string; last_name: string } | null;
-    semesters: { id: string; name: string } | null;
-  } | null;
-  venues: { name: string; code: string | null } | null;
-}
-
-interface SectionOption {
-  id: string;
-  section_code: string;
-  course_id: string;
-  semester_id: string;
   instructor_id: string | null;
-  courses: { code: string; name: string } | null;
-  semesters: { name: string; status: string } | null;
-  profiles: { first_name: string; last_name: string } | null;
+  status: string;
+  venues: { name: string; code: string | null; capacity: number | null } | null;
+  instructors: { first_name: string; last_name: string } | null;
 }
 
-interface VenueOption {
-  id: string;
-  name: string;
-  code: string | null;
-  venue_type: string;
-  capacity: number;
-}
-
-interface SemesterOption { id: string; name: string; status: string }
-interface MajorOption { id: string; name: string; code: string | null }
-interface LevelOption { id: string; name: string | null; level_number: number; major_id: string }
-interface StudyPlanCourse { course_id: string; major_id: string; academic_level_id: string | null }
-
-type ModalState =
-  | { type: "add"; day: string; startTime: string }
-  | { type: "edit"; schedule: ScheduleRow }
-  | null;
-
-const DAYS = [
-  { value: "sunday", label: "الأحد", short: "أحد" },
-  { value: "monday", label: "الإثنين", short: "إثن" },
-  { value: "tuesday", label: "الثلاثاء", short: "ثلا" },
-  { value: "wednesday", label: "الأربعاء", short: "أرب" },
-  { value: "thursday", label: "الخميس", short: "خمي" },
-];
-
+// ── Constants ──────────────────────────────────────────
 const TIME_SLOTS = [
-  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
-  "11:00", "11:30", "12:00", "12:30", "13:00", "13:30",
-  "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
-  "17:00", "17:30", "18:00",
+  { id: "8-10", label: "8AM-10AM", start: "08:00", end: "10:00" },
+  { id: "10-12", label: "10AM-12PM", start: "10:00", end: "12:00" },
+  { id: "12-2", label: "12PM-2PM", start: "12:00", end: "14:00" },
+  { id: "2-4", label: "2PM-4PM", start: "14:00", end: "16:00" },
 ];
 
-const DAY_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  sunday: { bg: "bg-action-blue/20", border: "border-action-blue/40", text: "text-action-blue" },
-  monday: { bg: "bg-success/20", border: "border-success/40", text: "text-success" },
-  tuesday: { bg: "bg-purple/20", border: "border-purple/40", text: "text-purple" },
-  wednesday: { bg: "bg-warning/20", border: "border-warning/40", text: "text-warning" },
-  thursday: { bg: "bg-teal/20", border: "border-teal/40", text: "text-teal" },
-};
+const DAYS: { id: string; label: string }[] = [
+  { id: "sunday", label: "الأحد" },
+  { id: "monday", label: "الإثنين" },
+  { id: "tuesday", label: "الثلاثاء" },
+  { id: "wednesday", label: "الأربعاء" },
+  { id: "thursday", label: "الخميس" },
+];
 
-function timeToSlotIndex(time: string): number {
-  const idx = TIME_SLOTS.indexOf(time.slice(0, 5));
-  return idx >= 0 ? idx : 0;
+const ROW_TYPES = ["subject", "instructor", "venue"] as const;
+
+interface CellSchedule {
+  scheduleId: string;
+  spcId: string;
+  componentType: string;
+  courseCode: string;
+  courseName: string;
+  courseId: string;
+  instructorId: string | null;
+  instructorName: string | null;
+  venueId: string | null;
+  venueName: string | null;
+  status: string;
+  creditHours: number;
+  planCourseType: string;
 }
 
-function getSlotSpan(startTime: string, endTime: string): number {
-  const startIdx = timeToSlotIndex(startTime);
-  const endIdx = timeToSlotIndex(endTime);
-  return Math.max(1, endIdx - startIdx);
+interface EditState {
+  day: string;
+  slotId: string;
+  rowType: typeof ROW_TYPES[number];
 }
 
-function isConflictError(msg: string): boolean {
-  return msg.includes("تعارض مكاني") || msg.includes("تعارض المحاضر") || msg.includes("تعارض طلابي");
-}
-
+// ── Main Component ─────────────────────────────────────
 export function SchedulesClient({
-  initialSchedules,
-  sections,
-  venues,
-  semesters,
   majors,
+  semesters: initialSemesters,
+  venues,
+  faculty,
   academicLevels,
-  studyPlanCourses,
 }: {
-  initialSchedules: ScheduleRow[];
-  sections: SectionOption[];
-  venues: VenueOption[];
-  semesters: SemesterOption[];
-  majors: MajorOption[];
-  academicLevels: LevelOption[];
-  studyPlanCourses: StudyPlanCourse[];
+  majors: Major[];
+  semesters: Semester[];
+  venues: Venue[];
+  faculty: Faculty[];
+  academicLevels: AcademicLevel[];
 }) {
-  const [modal, setModal] = useState<ModalState>(null);
+  const [selectedMajor, setSelectedMajor] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState("");
+  const [selectedSemester, setSelectedSemester] = useState("");
+  const [selectedSemesterObj, setSelectedSemesterObj] = useState<Semester | null>(null);
   const [loading, setLoading] = useState(false);
+  const [spcList, setSpcList] = useState<StudyPlanCourse[]>([]);
+  // Grid: grid[day][slotId] = CellSchedule | null
+  const [grid, setGrid] = useState<Record<string, Record<string, CellSchedule | null>>>({});
   const [error, setError] = useState("");
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [saving, setSaving] = useState<Record<string, boolean>>({});
+  const [success, setSuccess] = useState("");
+  const [editState, setEditState] = useState<EditState | null>(null);
+  const [publishMode, setPublishMode] = useState(false);
+  const selectedRef = useRef<HTMLDivElement>(null);
 
-  const [filterSemesterId, setFilterSemesterId] = useState("");
-  const [filterMajorId, setFilterMajorId] = useState("");
-  const [filterLevelId, setFilterLevelId] = useState("");
+  const filteredLevels = academicLevels.filter((l) => !selectedMajor || l.major_id === selectedMajor);
 
-  const filteredLevels = academicLevels.filter((l) => !filterMajorId || l.major_id === filterMajorId);
-
-  const displayedSchedules = initialSchedules.filter((schedule) => {
-    if (filterSemesterId && schedule.sections?.semesters?.id !== filterSemesterId) return false;
-    if (filterMajorId) {
-      const validCourseIds = new Set(
-        studyPlanCourses
-          .filter((spc) => spc.major_id === filterMajorId && (!filterLevelId || spc.academic_level_id === filterLevelId))
-          .map((spc) => spc.course_id)
-      );
-      if (!validCourseIds.has(schedule.sections?.course_id || "")) return false;
+  // Compute used spcIds to prevent double-booking across time slots
+  const usedSpcIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const d of DAYS) for (const s of TIME_SLOTS) {
+      const c = grid[d.id]?.[s.id];
+      if (c) ids.add(c.spcId);
     }
-    return true;
-  });
+    return ids;
+  }, [grid]);
 
-  const closeModal = () => {
-    setModal(null);
-    setError("");
-  };
-
-  async function run(action: () => Promise<void>) {
+  const loadSchedule = useCallback(async () => {
+    if (!selectedLevel || !selectedSemester) return;
     setLoading(true);
     setError("");
+    setEditState(null);
     try {
-      await action();
-      closeModal();
-      window.location.reload();
+      const semesterType = (selectedSemesterObj?.semester_type || "first") as "first" | "second" | "summer";
+      const result = await getStudyPlanCoursesForScheduling(selectedMajor, selectedLevel, semesterType);
+      setSpcList(result.studyPlanCourses);
+
+      // Build grid from existing schedules
+      const newGrid: Record<string, Record<string, CellSchedule | null>> = {};
+      for (const day of DAYS) {
+        newGrid[day.id] = {};
+        for (const slot of TIME_SLOTS) {
+          newGrid[day.id][slot.id] = null;
+        }
+      }
+
+      for (const s of result.existingSchedules) {
+        const day = s.day_of_week as string;
+        if (!newGrid[day]) continue;
+
+        // Determine which time slot this falls into
+        const startTime = s.start_time?.slice(0, 5) || "";
+        let slotId = "";
+        for (const slot of TIME_SLOTS) {
+          if (startTime >= slot.start && startTime < slot.end) {
+            slotId = slot.id;
+            break;
+          }
+        }
+        if (!slotId) {
+          // If exact slot not found, find closest
+          const sorted = [...TIME_SLOTS].sort((a, b) => {
+            const diffA = Math.abs(timeToMinutes(startTime) - timeToMinutes(a.start));
+            const diffB = Math.abs(timeToMinutes(startTime) - timeToMinutes(b.start));
+            return diffA - diffB;
+          });
+          slotId = sorted[0].id;
+        }
+
+        const studyPlanCourse = result.studyPlanCourses.find(
+          (spc: any) => spc.id === s.study_plan_course_id
+        );
+        const course = studyPlanCourse?.courses;
+
+        // Only add to grid if slot is empty (prefer theoretical over practical)
+        if (!newGrid[day][slotId]) {
+          newGrid[day][slotId] = {
+            scheduleId: s.id,
+            spcId: s.study_plan_course_id,
+            componentType: s.component_type,
+            courseCode: course?.code || "",
+            courseName: course?.name || "",
+            courseId: course?.id || "",
+            instructorId: s.instructor_id,
+            instructorName: s.instructors
+              ? `${s.instructors.first_name} ${s.instructors.last_name}`
+              : null,
+            venueId: s.venue_id,
+            venueName: s.venues
+              ? `${s.venues.name}${s.venues.code ? ` (${s.venues.code})` : ""}`
+              : null,
+            status: s.status,
+            creditHours: course?.credit_hours || 0,
+            planCourseType: studyPlanCourse?.plan_course_type || "",
+          };
+        }
+      }
+
+      setGrid(newGrid);
+      setHasLoaded(true);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ غير متوقع");
+      setError(e instanceof Error ? e.message : "حدث خطأ");
     } finally {
       setLoading(false);
     }
+  }, [selectedMajor, selectedLevel, selectedSemester, selectedSemesterObj]);
+
+  // Auto-load when all three filters are selected
+  useEffect(() => {
+    if (selectedLevel && selectedSemester && selectedMajor) {
+      loadSchedule();
+    }
+  }, [selectedMajor, selectedLevel, selectedSemester]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Cell editing helpers ─────────────────────────────
+  function startEdit(day: string, slotId: string, rowType: typeof ROW_TYPES[number]) {
+    setEditState({ day, slotId, rowType });
+    setError("");
   }
 
-  const schedulesByDayAndTime: Record<string, Record<string, ScheduleRow[]>> = {};
-  DAYS.forEach((d) => {
-    schedulesByDayAndTime[d.value] = {};
-    TIME_SLOTS.forEach((t) => {
-      schedulesByDayAndTime[d.value][t] = [];
-    });
-  });
+  function cancelEdit() {
+    setEditState(null);
+  }
 
-  displayedSchedules.forEach((schedule) => {
-    const day = schedule.day_of_week;
-    const startSlot = schedule.start_time?.slice(0, 5);
-    if (schedulesByDayAndTime[day] && schedulesByDayAndTime[day][startSlot]) {
-      schedulesByDayAndTime[day][startSlot].push(schedule);
+  // When user selects a course for a subject cell
+  async function handleSubjectSelect(day: string, slotId: string, spcId: string) {
+    const spc = spcList.find((s) => s.id === spcId);
+    if (!spc) return;
+    const course = spc.courses;
+    if (!course) return;
+
+    setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: true }));
+    setError("");
+    setSuccess("");
+
+    try {
+      const slot = TIME_SLOTS.find((s) => s.id === slotId)!;
+      const isHybrid = course.course_type === "hybrid";
+      const componentType = isHybrid ? "theoretical" : course.course_type;
+      const semesterId = selectedSemester;
+
+      const fd = new FormData();
+      fd.set("study_plan_course_id", spcId);
+      fd.set("semester_id", semesterId);
+      fd.set("component_type", componentType);
+      fd.set("day_of_week", day);
+      fd.set("start_time", slot.start);
+      fd.set("end_time", slot.end);
+      fd.set("venue_id", "");
+      fd.set("instructor_id", "");
+
+      await createCourseSchedule(fd);
+
+      // Refresh
+      await loadSchedule();
+      setSuccess(`تمت إضافة ${course.name}`);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "حدث خطأ في الحفظ");
+    } finally {
+      setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: false }));
+      cancelEdit();
     }
-  });
+  }
 
-  const occupiedSlots: Set<string> = new Set();
-  displayedSchedules.forEach((schedule) => {
-    const day = schedule.day_of_week;
-    const startIdx = timeToSlotIndex(schedule.start_time);
-    const span = getSlotSpan(schedule.start_time, schedule.end_time);
-    for (let i = 0; i < span; i++) {
-      if (TIME_SLOTS[startIdx + i]) {
-        occupiedSlots.add(`${day}-${TIME_SLOTS[startIdx + i]}`);
-      }
+  async function handleInstructorSelect(day: string, slotId: string, instructorId: string) {
+    const cell = grid[day]?.[slotId];
+    if (!cell?.scheduleId) return;
+
+    setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: true }));
+    setError("");
+    setSuccess("");
+
+    try {
+      const fd = new FormData();
+      fd.set("day_of_week", day);
+      const slot = TIME_SLOTS.find((s) => s.id === slotId)!;
+      fd.set("start_time", slot.start);
+      fd.set("end_time", slot.end);
+      fd.set("venue_id", cell.venueId || "");
+      fd.set("instructor_id", instructorId);
+      fd.set("status", cell.status);
+
+      await updateCourseSchedule(cell.scheduleId, fd);
+      await loadSchedule();
+      setSuccess("تم تحديث المحاضر");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "حدث خطأ");
+    } finally {
+      setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: false }));
+      cancelEdit();
     }
-  });
+  }
 
-  const totalLectures = displayedSchedules.length;
-  const publishedLectures = displayedSchedules.filter((s) => s.status === "published").length;
+  async function handleVenueSelect(day: string, slotId: string, venueId: string) {
+    const cell = grid[day]?.[slotId];
+    if (!cell?.scheduleId) return;
+
+    setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: true }));
+    setError("");
+    setSuccess("");
+
+    try {
+      const fd = new FormData();
+      fd.set("day_of_week", day);
+      const slot = TIME_SLOTS.find((s) => s.id === slotId)!;
+      fd.set("start_time", slot.start);
+      fd.set("end_time", slot.end);
+      fd.set("venue_id", venueId);
+      fd.set("instructor_id", cell.instructorId || "");
+      fd.set("status", cell.status);
+
+      await updateCourseSchedule(cell.scheduleId, fd);
+      await loadSchedule();
+      setSuccess("تم تحديث القاعة");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "حدث خطأ");
+    } finally {
+      setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: false }));
+      cancelEdit();
+    }
+  }
+
+  async function handleDeleteCell(day: string, slotId: string) {
+    const cell = grid[day]?.[slotId];
+    if (!cell?.scheduleId) return;
+    if (!confirm("هل أنت متأكد من حذف هذا الموعد؟")) return;
+
+    setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: true }));
+    setError("");
+    setSuccess("");
+
+    try {
+      await deleteCourseSchedule(cell.scheduleId);
+      await loadSchedule();
+      setSuccess("تم حذف الموعد");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "حدث خطأ");
+    } finally {
+      setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: false }));
+      cancelEdit();
+    }
+  }
+
+  async function handleToggleCell(day: string, slotId: string) {
+    const cell = grid[day]?.[slotId];
+    if (!cell?.scheduleId) return;
+
+    const newStatus = cell.status === "published" ? "draft" : "published";
+    setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: true }));
+
+    try {
+      await toggleScheduleStatus(cell.scheduleId, newStatus as "draft" | "published");
+      await loadSchedule();
+      setSuccess(newStatus === "published" ? "تم النشر" : "تم الإرجاع للمسودة");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "حدث خطأ");
+    } finally {
+      setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: false }));
+    }
+  }
+
+  // Clear success after 3s
+  useEffect(() => {
+    if (success) {
+      const t = setTimeout(() => setSuccess(""), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [success]);
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-2xl border border-border bg-card-bg p-4 shadow-sm">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-text-secondary">
-            <Filter className="h-4 w-4" />
-            <span>تصفية الجدول</span>
+    <div className="space-y-5" dir="ltr">
+      {/* ── Filter Bar ─────────────────────────────────── */}
+      <div className="flex flex-wrap gap-4 rounded-2xl border border-border bg-card-bg p-4 shadow-sm">
+        <div className="min-w-[200px] flex-1">
+          <label className="mb-1.5 block text-xs font-semibold text-text-primary">Major</label>
+          <select
+            value={selectedMajor}
+            onChange={(e) => { setSelectedMajor(e.target.value); setSelectedLevel(""); setHasLoaded(false); }}
+            className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none focus:border-action-blue"
+          >
+            <option value="">— Select Major —</option>
+            {majors.map((m) => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="min-w-[200px] flex-1">
+          <label className="mb-1.5 block text-xs font-semibold text-text-primary">Academic Level</label>
+          <select
+            value={selectedLevel}
+            onChange={(e) => { setSelectedLevel(e.target.value); setHasLoaded(false); }}
+            disabled={!selectedMajor}
+            className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none focus:border-action-blue disabled:opacity-50"
+          >
+            <option value="">— Select Level —</option>
+            {filteredLevels.map((l) => (
+              <option key={l.id} value={l.id}>{l.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="min-w-[200px] flex-1">
+          <label className="mb-1.5 block text-xs font-semibold text-text-primary">Semester</label>
+          <select
+            value={selectedSemester}
+            onChange={(e) => {
+              setSelectedSemester(e.target.value);
+              setSelectedSemesterObj(initialSemesters.find((s) => s.id === e.target.value) || null);
+              setHasLoaded(false);
+            }}
+            className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none focus:border-action-blue"
+          >
+            <option value="">— Select Semester —</option>
+            {initialSemesters.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name} ({s.semester_type === "first" ? "First" : s.semester_type === "second" ? "Second" : "Summer"})
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* ── Messages ──────────────────────────────────── */}
+      {error && (
+        <div className="flex items-center gap-3 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+          <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="flex items-center gap-3 rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">
+          <CheckCircle className="h-5 w-5 flex-shrink-0" />
+          {success}
+        </div>
+      )}
+
+      {/* ── Loading / Empty States ────────────────────── */}
+      {loading && (
+        <div className="flex items-center justify-center py-10">
+          <Loader2 className="h-8 w-8 animate-spin text-action-blue" />
+        </div>
+      )}
+
+      {!hasLoaded && !loading && (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card-bg py-16 text-center">
+          <BookOpen className="mb-3 h-10 w-10 text-text-secondary" />
+          <p className="text-base font-semibold text-text-primary">Select Major, Level, and Semester</p>
+          <p className="mt-1 text-sm text-text-secondary">The schedule grid will appear automatically</p>
+        </div>
+      )}
+
+      {hasLoaded && !loading && spcList.length === 0 && (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card-bg py-16 text-center">
+          <AlertTriangle className="mb-3 h-10 w-10 text-warning" />
+          <p className="text-base font-semibold text-text-primary">No courses in study plan</p>
+          <p className="mt-1 text-sm text-text-secondary">For this major, level, and semester type</p>
+        </div>
+      )}
+
+      {/* ── Schedule Grid ──────────────────────────────── */}
+      {hasLoaded && !loading && spcList.length > 0 && (
+        <div ref={selectedRef}>
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-text-secondary">
+              <span>🟩 Drag or click to assign courses to time slots</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-text-secondary">
+                {spcList.length} course{spcList.length !== 1 ? "s" : ""} available
+              </span>
+            </div>
           </div>
-          <div className="flex flex-1 flex-wrap items-center gap-3">
+
+          <div className="overflow-x-auto rounded-2xl border-2 border-black shadow-sm" dir="ltr">
+            <table className="w-full border-collapse" style={{ minWidth: 900 }}>
+              {/* ── Header Row ───────────────────────────── */}
+              <thead>
+                <tr>
+                  <th
+                    className="border border-black bg-gray-100 px-3 py-2.5 text-sm font-bold text-gray-800"
+                    style={{ width: 90, backgroundColor: "#e5e7eb" }}
+                  >
+                    Day
+                  </th>
+                  <th
+                    className="border border-black bg-gray-100 px-3 py-2.5 text-sm font-bold text-gray-800"
+                    style={{ width: 80, backgroundColor: "#e5e7eb" }}
+                  >
+                    Details
+                  </th>
+                  {TIME_SLOTS.map((slot) => (
+                    <th
+                      key={slot.id}
+                      className="border border-black bg-gray-100 px-2 py-2.5 text-center text-sm font-bold text-gray-800"
+                      style={{ backgroundColor: "#e5e7eb" }}
+                    >
+                      <div>{slot.label}</div>
+                      <div className="text-[10px] font-normal text-gray-500">
+                        {slot.start} – {slot.end}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {DAYS.map((day) => {
+                  const cellSlots = TIME_SLOTS.map((s) => grid[day.id]?.[s.id]);
+
+                  return (<React.Fragment key={day.id}>
+                    <tr key={day.id}>
+                      {/* ── Day cell (rowspan=3) ──────────── */}
+                      <td
+                        className="border border-black bg-gray-100 px-3 py-2 text-center align-middle text-sm font-bold text-gray-700"
+                        rowSpan={3}
+                        style={{ backgroundColor: "#e5e7eb", minWidth: 90 }}
+                      >
+                        <div className="flex flex-col items-center gap-1">
+                          <span>{day.label}</span>
+                          {cellSlots.some((c) => c !== null) && (
+                            <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] text-green-700">
+                              {cellSlots.filter(Boolean).length} slot{cellSlots.filter(Boolean).length !== 1 ? "s" : ""}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* ── Subject Row ────────────────────── */}
+                      <td
+                        className="border border-black bg-gray-100 px-2 py-1.5 text-center text-[11px] font-semibold text-gray-700"
+                        style={{ backgroundColor: "#e5e7eb", width: 80 }}
+                      >
+                        Subject
+                      </td>
+                      {TIME_SLOTS.map((slot) => (
+                        <Cell
+                          key={`${day.id}-${slot.id}-subject`}
+                          cell={grid[day.id]?.[slot.id] ?? null}
+                          day={day.id}
+                          slotId={slot.id}
+                          rowType="subject"
+                          spcList={spcList}
+                          editState={editState}
+                          saving={saving}
+                          onStartEdit={startEdit}
+                          onCancelEdit={cancelEdit}
+                          onSubjectSelect={handleSubjectSelect}
+                          onInstructorSelect={handleInstructorSelect}
+                          onVenueSelect={handleVenueSelect}
+                          onDelete={handleDeleteCell}
+                          onToggleStatus={handleToggleCell}
+                          usedSpcIds={usedSpcIds}
+                        />
+                      ))}
+                    </tr>
+                    <tr key={`${day.id}-instructor`}>
+                      {/* ── Dr. Row ───────────────────────── */}
+                      <td
+                        className="border border-black bg-gray-100 px-2 py-1.5 text-center text-[11px] font-semibold text-gray-700"
+                        style={{ backgroundColor: "#e5e7eb" }}
+                      >
+                        Dr.
+                      </td>
+                      {TIME_SLOTS.map((slot) => (
+                        <Cell
+                          key={`${day.id}-${slot.id}-instructor`}
+                          cell={grid[day.id]?.[slot.id] ?? null}
+                          day={day.id}
+                          slotId={slot.id}
+                          rowType="instructor"
+                          spcList={spcList}
+                          faculty={faculty}
+                          editState={editState}
+                          saving={saving}
+                          onStartEdit={startEdit}
+                          onCancelEdit={cancelEdit}
+                          onSubjectSelect={handleSubjectSelect}
+                          onInstructorSelect={handleInstructorSelect}
+                          onVenueSelect={handleVenueSelect}
+                          onDelete={handleDeleteCell}
+                          onToggleStatus={handleToggleCell}
+                          usedSpcIds={usedSpcIds}
+                        />
+                      ))}
+                    </tr>
+                    <tr key={`${day.id}-hall`}>
+                      {/* ── Hall Row ──────────────────────── */}
+                      <td
+                        className="border border-black bg-gray-100 px-2 py-1.5 text-center text-[11px] font-semibold text-gray-700"
+                        style={{ backgroundColor: "#e5e7eb" }}
+                      >
+                        Hall
+                      </td>
+                      {TIME_SLOTS.map((slot) => (
+                        <Cell
+                          key={`${day.id}-${slot.id}-venue`}
+                          cell={grid[day.id]?.[slot.id] ?? null}
+                          day={day.id}
+                          slotId={slot.id}
+                          rowType="venue"
+                          spcList={spcList}
+                          venues={venues}
+                          editState={editState}
+                          saving={saving}
+                          onStartEdit={startEdit}
+                          onCancelEdit={cancelEdit}
+                          onSubjectSelect={handleSubjectSelect}
+                          onInstructorSelect={handleInstructorSelect}
+                          onVenueSelect={handleVenueSelect}
+                          onDelete={handleDeleteCell}
+                          onToggleStatus={handleToggleCell}
+                          usedSpcIds={usedSpcIds}
+                        />
+                      ))}
+                    </tr>
+                  </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ── Legend ──────────────────────────────────── */}
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-text-secondary">
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-3 w-3 rounded bg-green-100 border border-green-300"></span>
+              Published
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-3 w-3 rounded bg-yellow-100 border border-yellow-300"></span>
+              Draft
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-3 w-3 rounded border border-dashed border-gray-400"></span>
+              Empty — click to add
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Cell Component ──────────────────────────────────────
+function Cell({
+  cell,
+  day,
+  slotId,
+  rowType,
+  spcList,
+  faculty,
+  venues,
+  editState,
+  saving,
+  usedSpcIds,
+  onStartEdit,
+  onCancelEdit,
+  onSubjectSelect,
+  onInstructorSelect,
+  onVenueSelect,
+  onDelete,
+  onToggleStatus,
+}: {
+  cell: CellSchedule | null;
+  day: string;
+  slotId: string;
+  rowType: typeof ROW_TYPES[number];
+  spcList: StudyPlanCourse[];
+  faculty?: Faculty[];
+  venues?: Venue[];
+  editState: EditState | null;
+  saving: Record<string, boolean>;
+  usedSpcIds?: Set<string>;
+  onStartEdit: (day: string, slotId: string, rowType: typeof ROW_TYPES[number]) => void;
+  onCancelEdit: () => void;
+  onSubjectSelect: (day: string, slotId: string, spcId: string) => void;
+  onInstructorSelect: (day: string, slotId: string, instructorId: string) => void;
+  onVenueSelect: (day: string, slotId: string, venueId: string) => void;
+  onDelete: (day: string, slotId: string) => void;
+  onToggleStatus: (day: string, slotId: string) => void;
+}) {
+  const isEditing =
+    editState?.day === day && editState?.slotId === slotId && editState?.rowType === rowType;
+  const isSaving = saving[`${day}-${slotId}`];
+  // Filter out courses already placed in other slots (allow current cell's own course)
+  const availableSpcList = usedSpcIds
+    ? spcList.filter((spc) => !usedSpcIds.has(spc.id) || (cell && cell.spcId === spc.id))
+    : spcList;
+
+  // ── Subject cell (empty / add mode) ──────────────────
+  if (rowType === "subject" && !cell) {
+    if (isEditing) {
+      return (
+        <td className="border border-black bg-white p-1 align-top">
+          <div className="flex flex-col gap-1">
             <select
-              value={filterMajorId}
-              onChange={(e) => { setFilterMajorId(e.target.value); setFilterLevelId(""); }}
-              className="min-w-[160px] rounded-xl border border-border bg-app-bg px-3 py-2 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:ring-2 focus:ring-action-blue/20"
+              autoFocus
+              className="w-full rounded border border-gray-400 px-1.5 py-1 text-[11px] outline-none focus:border-blue-600"
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value) onSubjectSelect(day, slotId, e.target.value);
+              }}
             >
-              <option value="">— كل التخصصات —</option>
-              {majors.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}{m.code ? ` (${m.code})` : ""}
-                </option>
-              ))}
+              <option value="">— Select course —</option>
+              {availableSpcList.map((spc) => {
+                  const course = spc.courses;
+                  const typeLabel =
+                    course?.course_type === "hybrid"
+                      ? " (T)"
+                      : course?.course_type === "practical"
+                        ? " (P)"
+                        : "";
+                  return (
+                    <option key={spc.id} value={spc.id}>
+                      {course?.code} — {course?.name}{typeLabel}
+                    </option>
+                  );
+                })}
             </select>
-            <select
-              value={filterLevelId}
-              onChange={(e) => setFilterLevelId(e.target.value)}
-              disabled={!filterMajorId}
-              className="min-w-[160px] rounded-xl border border-border bg-app-bg px-3 py-2 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:ring-2 focus:ring-action-blue/20 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">— كل المستويات —</option>
-              {filteredLevels.map((l) => (
-                <option key={l.id} value={l.id}>
-                  المستوى {l.level_number}{l.name ? ` (${l.name})` : ""}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filterSemesterId}
-              onChange={(e) => setFilterSemesterId(e.target.value)}
-              className="min-w-[160px] rounded-xl border border-border bg-app-bg px-3 py-2 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:ring-2 focus:ring-action-blue/20"
-            >
-              <option value="">— كل الفصول —</option>
-              {semesters.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-            {(filterMajorId || filterLevelId || filterSemesterId) && (
+            <div className="flex gap-1">
               <button
-                onClick={() => { setFilterMajorId(""); setFilterLevelId(""); setFilterSemesterId(""); }}
-                className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm text-text-secondary transition-colors hover:border-danger/40 hover:text-danger"
+                onClick={onCancelEdit}
+                className="flex-1 rounded border border-gray-300 px-1 py-0.5 text-[10px] text-gray-600 hover:bg-gray-100"
               >
-                <RotateCcw className="h-3.5 w-3.5" />
-                مسح الفلاتر
+                Cancel
               </button>
+              {cell && (
+                <button
+                  onClick={() => onDelete(day, slotId)}
+                  className="rounded border border-red-300 px-1 py-0.5 text-[10px] text-red-600 hover:bg-red-50"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+          </div>
+        </td>
+      );
+    }
+
+    return (
+      <td
+        className="border border-black bg-white p-0"
+        onClick={() => onStartEdit(day, slotId, "subject")}
+      >
+        <div className="flex min-h-[44px] cursor-pointer items-center justify-center hover:bg-blue-50">
+          {isSaving ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
+          ) : (
+            <Plus className="h-4 w-4 text-gray-400" />
+          )}
+        </div>
+      </td>
+    );
+  }
+
+  // ── Subject cell (occupied) ──────────────────────────
+  if (rowType === "subject" && cell) {
+    if (isEditing) {
+      return (
+        <td className="border border-black bg-white p-1 align-top">
+          <div className="flex flex-col gap-1">
+            <select
+              autoFocus
+              className="w-full rounded border border-gray-400 px-1.5 py-1 text-[11px] outline-none focus:border-blue-600"
+              defaultValue={cell.spcId}
+              onChange={(e) => {
+                if (e.target.value) onSubjectSelect(day, slotId, e.target.value);
+              }}
+            >
+              <option value="">— Select course —</option>
+              {availableSpcList.map((spc) => {
+                const course = spc.courses;
+                const typeLabel =
+                  course?.course_type === "hybrid"
+                    ? " (T)"
+                    : course?.course_type === "practical"
+                      ? " (P)"
+                      : "";
+                return (
+                  <option key={spc.id} value={spc.id}>
+                    {course?.code} — {course?.name}{typeLabel}
+                  </option>
+                );
+              })}
+            </select>
+            <div className="flex gap-1">
+              <button
+                onClick={onCancelEdit}
+                className="flex-1 rounded border border-gray-300 px-1 py-0.5 text-[10px] text-gray-600 hover:bg-gray-100"
+              >
+                Done
+              </button>
+              <button
+                onClick={() => onToggleStatus(day, slotId)}
+                className={`flex-1 rounded border px-1 py-0.5 text-[10px] ${
+                  cell.status === "published"
+                    ? "border-yellow-300 text-yellow-700 hover:bg-yellow-50"
+                    : "border-green-300 text-green-700 hover:bg-green-50"
+                }`}
+              >
+                {cell.status === "published" ? "Unpublish" : "Publish"}
+              </button>
+              <button
+                onClick={() => onDelete(day, slotId)}
+                className="rounded border border-red-300 px-1 py-0.5 text-[10px] text-red-600 hover:bg-red-50"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </td>
+      );
+    }
+
+    const isPublished = cell.status === "published";
+    const isPractical = cell.componentType === "practical";
+
+    return (
+      <td
+        className={`border border-black p-1.5 ${isPublished ? "bg-green-50" : "bg-yellow-50"} cursor-pointer`}
+        onClick={() => onStartEdit(day, slotId, "subject")}
+      >
+        <div className="flex flex-col">
+          <div className="flex items-center gap-1">
+            {isPractical ? (
+              <FlaskConical className="h-3 w-3 flex-shrink-0 text-purple-600" />
+            ) : (
+              <BookOpen className="h-3 w-3 flex-shrink-0 text-blue-600" />
+            )}
+            <span className="text-[11px] font-bold leading-tight text-gray-800">
+              {cell.courseCode}
+            </span>
+            {cell.creditHours > 0 && (
+              <span className="text-[9px] text-gray-500">({cell.creditHours}h)</span>
+            )}
+          </div>
+          <span className="mt-0.5 text-[10px] leading-tight text-gray-600 line-clamp-2">
+            {cell.courseName}
+          </span>
+          <div className="mt-1 flex items-center gap-1">
+            {isPublished ? (
+              <span className="inline-flex items-center gap-0.5 text-[9px] text-green-600">
+                <CheckCircle className="h-2.5 w-2.5" /> Published
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-0.5 text-[9px] text-yellow-600">
+                <Clock className="h-2.5 w-2.5" /> Draft
+              </span>
+            )}
+            {isPractical && (
+              <span className="rounded bg-purple-100 px-1 text-[8px] text-purple-700">Lab</span>
             )}
           </div>
         </div>
-      </div>
+      </td>
+    );
+  }
 
-      {error && (
-        <div className={`rounded-xl px-4 py-3 text-sm ${isConflictError(error) ? "bg-warning/10 border border-warning/30 text-warning" : "bg-danger/10 text-danger"}`}>
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-            <span className="font-medium">{error}</span>
+  // ── Dr. / Instructor cell ────────────────────────────
+  if (rowType === "instructor") {
+    if (!cell) {
+      return (
+        <td className="border border-black bg-white p-0">
+          <div className="flex min-h-[36px] items-center justify-center">
+            <span className="text-[10px] text-gray-300">—</span>
           </div>
-        </div>
-      )}
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-xl bg-action-blue/20 px-3 py-2 text-action-blue">
-            <CalendarClock className="h-4 w-4" />
-            <span className="text-base font-bold">{totalLectures}</span>
-            <span className="text-xs font-medium">محاضرة</span>
-          </div>
-          <div className="flex items-center gap-2 rounded-xl bg-success/10 px-3 py-2 text-success">
-            <Send className="h-4 w-4" />
-            <span className="text-base font-bold">{publishedLectures}</span>
-            <span className="text-xs font-medium">منشورة</span>
-          </div>
-        </div>
-        <button
-          onClick={() => setModal({ type: "add", day: "sunday", startTime: "08:00" })}
-          className="flex items-center gap-2 rounded-xl bg-action-blue px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-action-blue/90"
-        >
-          <Plus className="h-4 w-4" />
-          إضافة محاضرة
-        </button>
-      </div>
-
-      <div className="overflow-x-auto rounded-2xl border border-border bg-card-bg shadow-sm">
-        <div className="min-w-[900px]">
-          <div className="grid grid-cols-[80px_repeat(5,1fr)] border-b border-border bg-app-bg">
-            <div className="p-3 text-center text-xs font-semibold text-text-secondary">الوقت</div>
-            {DAYS.map((day) => (
-              <div key={day.value} className="border-r border-border p-3 text-center">
-                <p className="text-sm font-bold text-text-primary">{day.label}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="relative">
-            {TIME_SLOTS.map((time, timeIdx) => (
-              <div key={time} className="grid grid-cols-[80px_repeat(5,1fr)] border-b border-border last:border-b-0">
-                <div className="flex items-center justify-center border-l border-border bg-app-bg/50 p-2 text-xs font-medium text-text-secondary" dir="ltr">
-                  {time}
-                </div>
-                {DAYS.map((day) => {
-                  const cellKey = `${day.value}-${time}`;
-                  const schedulesInSlot = schedulesByDayAndTime[day.value][time] || [];
-                  const isOccupied = occupiedSlots.has(cellKey) && schedulesInSlot.length === 0;
-
-                  if (isOccupied) {
-                    return <div key={cellKey} className="border-r border-border" />;
-                  }
-
-                  return (
-                    <div
-                      key={cellKey}
-                      className="relative min-h-[50px] border-r border-border transition-colors hover:bg-action-blue/5 cursor-pointer"
-                      onClick={() => {
-                        if (schedulesInSlot.length === 0) {
-                          setModal({ type: "add", day: day.value, startTime: time });
-                        }
-                      }}
-                    >
-                      {schedulesInSlot.map((schedule) => {
-                        const span = getSlotSpan(schedule.start_time, schedule.end_time);
-                        const colors = DAY_COLORS[day.value] || DAY_COLORS.sunday;
-
-                        return (
-                          <div
-                            key={schedule.id}
-                            className={`absolute inset-x-1 top-1 z-10 overflow-hidden rounded-lg border ${colors.bg} ${colors.border} p-2 shadow-sm`}
-                            style={{ height: `calc(${span * 50}px - 8px)` }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setModal({ type: "edit", schedule });
-                            }}
-                          >
-                            <div className="flex h-full flex-col">
-                              <div className="flex items-start justify-between gap-1">
-                                <p className={`text-xs font-bold ${colors.text}`}>
-                                  {schedule.sections?.courses?.code}
-                                </p>
-                                <span className={`rounded px-1 py-0.5 text-[10px] font-medium ${
-                                  schedule.status === "published" ? "bg-success/20 text-success" : "bg-warning/20 text-warning"
-                                }`}>
-                                  {schedule.status === "published" ? "منشور" : "مسودة"}
-                                </span>
-                              </div>
-                              <p className="mt-0.5 text-[10px] text-text-secondary line-clamp-1">
-                                {schedule.sections?.courses?.name}
-                              </p>
-                              {span >= 2 && (
-                                <>
-                                  <div className="mt-auto space-y-0.5 text-[10px] text-text-secondary">
-                                    {schedule.sections?.profiles && (
-                                      <p className="flex items-center gap-1">
-                                        <User className="h-2.5 w-2.5" />
-                                        {schedule.sections.profiles.first_name} {schedule.sections.profiles.last_name}
-                                      </p>
-                                    )}
-                                    {schedule.venues && (
-                                      <p className="flex items-center gap-1">
-                                        <MapPin className="h-2.5 w-2.5" />
-                                        {schedule.venues.code || schedule.venues.name}
-                                      </p>
-                                    )}
-                                    <p className="flex items-center gap-1" dir="ltr">
-                                      <Clock className="h-2.5 w-2.5" />
-                                      {schedule.start_time?.slice(0, 5)} - {schedule.end_time?.slice(0, 5)}
-                                    </p>
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-4 text-xs text-text-secondary">
-        <span className="font-medium">دليل الألوان:</span>
-        {DAYS.map((day) => {
-          const colors = DAY_COLORS[day.value];
-          return (
-            <div key={day.value} className="flex items-center gap-1.5">
-              <span className={`h-3 w-3 rounded ${colors.bg} ${colors.border} border`} />
-              <span>{day.label}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      {modal?.type === "add" && (
-        <AddLectureModal
-          defaultDay={modal.day}
-          defaultStartTime={modal.startTime}
-          sections={sections}
-          venues={venues}
-          loading={loading}
-          error={error}
-          onClose={closeModal}
-          onSubmit={(fd) => run(() => createSchedule(fd))}
-        />
-      )}
-
-      {modal?.type === "edit" && (
-        <EditLectureModal
-          schedule={modal.schedule}
-          venues={venues}
-          loading={loading}
-          error={error}
-          onClose={closeModal}
-          onUpdate={(fd) => run(() => updateSchedule(modal.schedule.id, fd))}
-          onDelete={() => {
-            if (confirm("حذف هذه المحاضرة من الجدول؟")) {
-              run(() => deleteSchedule(modal.schedule.id));
-            }
-          }}
-          onPublish={() => run(() => updateScheduleStatus(modal.schedule.id, "published"))}
-          onUnpublish={() => run(() => updateScheduleStatus(modal.schedule.id, "draft"))}
-        />
-      )}
-    </div>
-  );
-}
-
-function Modal({
-  title,
-  subtitle,
-  onClose,
-  error,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  onClose: () => void;
-  error: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="w-full max-w-lg rounded-2xl bg-card-bg shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <div>
-            <h2 className="text-lg font-bold text-text-primary">{title}</h2>
-            {subtitle && <p className="text-xs text-text-secondary">{subtitle}</p>}
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-app-bg"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        {error && (
-          <div className={`mx-6 mt-4 rounded-lg px-4 py-3 text-sm ${isConflictError(error) ? "bg-warning/10 border border-warning/30 text-warning" : "bg-danger/10 text-danger"}`}>
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-              <span>{error}</span>
-            </div>
-          </div>
-        )}
-        <div className="p-6">{children}</div>
-      </div>
-    </div>
-  );
-}
-
-const DAYS_FULL = [
-  { value: "sunday", label: "الأحد" },
-  { value: "monday", label: "الإثنين" },
-  { value: "tuesday", label: "الثلاثاء" },
-  { value: "wednesday", label: "الأربعاء" },
-  { value: "thursday", label: "الخميس" },
-  { value: "friday", label: "الجمعة" },
-  { value: "saturday", label: "السبت" },
-];
-
-function AddLectureModal({
-  defaultDay,
-  defaultStartTime,
-  sections,
-  venues,
-  loading,
-  error,
-  onClose,
-  onSubmit,
-}: {
-  defaultDay: string;
-  defaultStartTime: string;
-  sections: SectionOption[];
-  venues: VenueOption[];
-  loading: boolean;
-  error: string;
-  onClose: () => void;
-  onSubmit: (fd: FormData) => void;
-}) {
-  const [startTime, setStartTime] = useState(defaultStartTime);
-
-  const suggestedEndTime = () => {
-    const idx = TIME_SLOTS.indexOf(startTime);
-    if (idx >= 0 && idx + 2 < TIME_SLOTS.length) {
-      return TIME_SLOTS[idx + 2];
+        </td>
+      );
     }
-    return TIME_SLOTS[TIME_SLOTS.length - 1];
-  };
 
-  return (
-    <Modal title="إضافة محاضرة للجدول" onClose={onClose} error={error}>
-      <form action={onSubmit} className="space-y-4">
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold text-text-primary">الشعبة</label>
+    if (isEditing) {
+      return (
+        <td className="border border-black bg-white p-1 align-top">
           <select
-            name="section_id"
-            required
-            className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
+            autoFocus
+            className="w-full rounded border border-gray-400 px-1.5 py-1 text-[11px] outline-none focus:border-blue-600"
+            defaultValue={cell.instructorId || ""}
+            onChange={(e) => {
+              if (e.target.value) onInstructorSelect(day, slotId, e.target.value);
+              else onCancelEdit();
+            }}
           >
-            <option value="">— اختر الشعبة —</option>
-            {sections.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.courses?.code} ({s.section_code}) — {s.profiles ? `${s.profiles.first_name} ${s.profiles.last_name}` : "بدون محاضر"} — {s.semesters?.name}
+            <option value="">— None —</option>
+            {(faculty || []).map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.first_name} {f.last_name}
               </option>
             ))}
           </select>
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold text-text-primary">القاعة</label>
-          <select
-            name="venue_id"
-            className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
+          <button
+            onClick={onCancelEdit}
+            className="mt-1 w-full rounded border border-gray-300 px-1 py-0.5 text-[10px] text-gray-600 hover:bg-gray-100"
           >
-            <option value="">— بدون قاعة —</option>
-            {venues.map((v) => (
+            Done
+          </button>
+        </td>
+      );
+    }
+
+    return (
+      <td
+        className="border border-black bg-white p-1.5 cursor-pointer hover:bg-blue-50"
+        onClick={() => onStartEdit(day, slotId, "instructor")}
+      >
+        {isSaving ? (
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+          </div>
+        ) : cell.instructorName ? (
+          <span className="text-[11px] text-gray-700">{cell.instructorName}</span>
+        ) : (
+          <span className="text-[10px] text-gray-400 italic">—</span>
+        )}
+      </td>
+    );
+  }
+
+  // ── Hall / Venue cell ────────────────────────────────
+  if (rowType === "venue") {
+    if (!cell) {
+      return (
+        <td className="border border-black bg-white p-0">
+          <div className="flex min-h-[36px] items-center justify-center">
+            <span className="text-[10px] text-gray-300">—</span>
+          </div>
+        </td>
+      );
+    }
+
+    if (isEditing) {
+      return (
+        <td className="border border-black bg-white p-1 align-top">
+          <select
+            autoFocus
+            className="w-full rounded border border-gray-400 px-1.5 py-1 text-[11px] outline-none focus:border-blue-600"
+            defaultValue={cell.venueId || ""}
+            onChange={(e) => {
+              if (e.target.value) onVenueSelect(day, slotId, e.target.value);
+              else onCancelEdit();
+            }}
+          >
+            <option value="">— None —</option>
+            {(venues || []).map((v) => (
               <option key={v.id} value={v.id}>
-                {v.name} {v.code ? `(${v.code})` : ""} — سعة {v.capacity}
+                {v.name} {v.code ? `(${v.code})` : ""} — {v.capacity ?? "?"} seats
               </option>
             ))}
           </select>
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold text-text-primary">اليوم</label>
-          <select
-            name="day_of_week"
-            required
-            defaultValue={defaultDay}
-            className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
+          <button
+            onClick={onCancelEdit}
+            className="mt-1 w-full rounded border border-gray-300 px-1 py-0.5 text-[10px] text-gray-600 hover:bg-gray-100"
           >
-            {DAYS_FULL.map((d) => (
-              <option key={d.value} value={d.value}>{d.label}</option>
-            ))}
-          </select>
-        </div>
+            Done
+          </button>
+        </td>
+      );
+    }
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-text-primary">وقت البداية</label>
-            <input
-              type="time"
-              name="start_time"
-              required
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
-              dir="ltr"
-            />
+    return (
+      <td
+        className="border border-black bg-white p-1.5 cursor-pointer hover:bg-blue-50"
+        onClick={() => onStartEdit(day, slotId, "venue")}
+      >
+        {isSaving ? (
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
           </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-text-primary">وقت النهاية</label>
-            <input
-              type="time"
-              name="end_time"
-              required
-              defaultValue={suggestedEndTime()}
-              className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
-              dir="ltr"
-            />
-          </div>
-        </div>
+        ) : cell.venueName ? (
+          <span className="text-[11px] text-gray-700">{cell.venueName}</span>
+        ) : (
+          <span className="text-[10px] text-gray-400 italic">—</span>
+        )}
+      </td>
+    );
+  }
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-xl bg-action-blue py-2.5 text-sm font-semibold text-white transition-colors hover:bg-action-blue/90 disabled:opacity-50"
-        >
-          {loading ? "جاري الإضافة..." : "إضافة للجدول"}
-        </button>
-      </form>
-    </Modal>
-  );
+  return null;
 }
 
-function EditLectureModal({
-  schedule,
-  venues,
-  loading,
-  error,
-  onClose,
-  onUpdate,
-  onDelete,
-  onPublish,
-  onUnpublish,
-}: {
-  schedule: ScheduleRow;
-  venues: VenueOption[];
-  loading: boolean;
-  error: string;
-  onClose: () => void;
-  onUpdate: (fd: FormData) => void;
-  onDelete: () => void;
-  onPublish: () => void;
-  onUnpublish: () => void;
-}) {
-  return (
-    <Modal
-      title={`${schedule.sections?.courses?.code} (${schedule.sections?.section_code})`}
-      subtitle={schedule.sections?.courses?.name}
-      onClose={onClose}
-      error={error}
-    >
-      <div className="space-y-4">
-        <div className="rounded-xl bg-app-bg p-4">
-          <div className="grid gap-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-text-secondary">المحاضر:</span>
-              <span className="font-medium text-text-primary">
-                {schedule.sections?.profiles
-                  ? `${schedule.sections.profiles.first_name} ${schedule.sections.profiles.last_name}`
-                  : "غير معيّن"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-text-secondary">الفصل:</span>
-              <span className="font-medium text-text-primary">{schedule.sections?.semesters?.name || "—"}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-text-secondary">الحالة:</span>
-              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                schedule.status === "published" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
-              }`}>
-                {schedule.status === "published" ? "منشور" : "مسودة"}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {schedule.status === "published" && (
-          <div className="flex items-center gap-3 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3">
-            <Lock className="h-4 w-4 shrink-0 text-warning" />
-            <p className="text-xs text-warning">
-              هذا الجدول منشور — لا يمكن تعديله مباشرة. حوّله إلى مسودة أولاً ثم أجرِ التعديلات.
-            </p>
-          </div>
-        )}
-
-        <form action={onUpdate} className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-text-primary">القاعة</label>
-            <select
-              name="venue_id"
-              defaultValue={schedule.venue_id || ""}
-              className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
-            >
-              <option value="">— بدون قاعة —</option>
-              {venues.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name} {v.code ? `(${v.code})` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-text-primary">اليوم</label>
-            <select
-              name="day_of_week"
-              defaultValue={schedule.day_of_week}
-              className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
-            >
-              {DAYS_FULL.map((d) => (
-                <option key={d.value} value={d.value}>{d.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-text-primary">وقت البداية</label>
-              <input
-                type="time"
-                name="start_time"
-                required
-                defaultValue={schedule.start_time?.slice(0, 5)}
-                className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
-                dir="ltr"
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-text-primary">وقت النهاية</label>
-              <input
-                type="time"
-                name="end_time"
-                required
-                defaultValue={schedule.end_time?.slice(0, 5)}
-                className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
-                dir="ltr"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading || schedule.status === "published"}
-            className="w-full rounded-xl bg-action-blue py-2.5 text-sm font-semibold text-white transition-colors hover:bg-action-blue/90 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "جاري التحديث..." : schedule.status === "published" ? "🔒 الجدول منشور" : "تحديث الموعد"}
-          </button>
-        </form>
-
-        <div className="flex gap-2 border-t border-border pt-4">
-          {schedule.status === "draft" && (
-            <button
-              onClick={onPublish}
-              disabled={loading}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-success/10 py-2.5 text-sm font-medium text-success transition-colors hover:bg-success/20 disabled:opacity-50"
-            >
-              <Send className="h-4 w-4" />
-              نشر
-            </button>
-          )}
-          {schedule.status === "published" && (
-            <button
-              onClick={onUnpublish}
-              disabled={loading}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-warning/10 py-2.5 text-sm font-medium text-warning transition-colors hover:bg-warning/20 disabled:opacity-50"
-            >
-              <FileEdit className="h-4 w-4" />
-              تحويل لمسودة
-            </button>
-          )}
-          <button
-            onClick={onDelete}
-            disabled={loading}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-danger/10 py-2.5 text-sm font-medium text-danger transition-colors hover:bg-danger/20 disabled:opacity-50"
-          >
-            <Trash2 className="h-4 w-4" />
-            حذف
-          </button>
-        </div>
-      </div>
-    </Modal>
-  );
+// ── Helpers ─────────────────────────────────────────────
+function timeToMinutes(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + (m || 0);
 }

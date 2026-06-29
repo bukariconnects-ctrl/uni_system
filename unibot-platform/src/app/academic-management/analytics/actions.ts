@@ -24,9 +24,9 @@ async function getScopedCourseIds(
     .eq("department_id", amdRow.department_id);
 
   const majorIds = (majorsData || []).map((m) => m.id);
-  
+
   let scopedCourseIds: string[] = [];
-  
+
   if (majorIds.length > 0) {
     // Get academic_level_ids for these majors
     const { data: levelsData } = await supabase
@@ -43,7 +43,7 @@ async function getScopedCourseIds(
       scopedCourseIds = [...new Set((spcData || []).map((s) => s.course_id))];
     }
   }
-  
+
   // Fallback: if no courses from study_plan, get courses from the department directly
   if (scopedCourseIds.length === 0) {
     const { data: deptCourses } = await supabase
@@ -69,7 +69,7 @@ export async function getRiskZoneData(semesterId?: string) {
   let query = supabase
     .from("student_risk_scores")
     .select(
-      "*, profiles!student_risk_scores_student_id_fkey(first_name, last_name, email), sections!student_risk_scores_section_id_fkey(section_code, course_id, courses(name))"
+      "*, profiles!student_risk_scores_student_id_fkey(first_name, last_name, email), courses!student_risk_scores_course_id_fkey(code, name)"
     )
     .eq("tenant_id", profile.tenant_id)
     .in("risk_level", ["high", "critical"])
@@ -83,7 +83,7 @@ export async function getRiskZoneData(semesterId?: string) {
 
   if (scopedCourseIds === null) return data || [];
   return (data || []).filter(
-    (r: any) => r.sections?.course_id && scopedCourseIds.includes(r.sections.course_id)
+    (r: any) => r.course_id && scopedCourseIds.includes(r.course_id)
   );
 }
 
@@ -99,7 +99,7 @@ export async function getCourseRiskFlags(semesterId?: string) {
   let query = supabase
     .from("course_risk_flags")
     .select(
-      "*, sections!course_risk_flags_section_id_fkey(section_code, course_id, courses(name), instructor_id, profiles!sections_instructor_id_fkey(first_name, last_name))"
+      "*, courses!course_risk_flags_course_id_fkey(code, name)"
     )
     .eq("tenant_id", profile.tenant_id)
     .eq("flagged", true)
@@ -113,7 +113,7 @@ export async function getCourseRiskFlags(semesterId?: string) {
 
   if (scopedCourseIds === null) return data || [];
   return (data || []).filter(
-    (r: any) => r.sections?.course_id && scopedCourseIds.includes(r.sections.course_id)
+    (r: any) => r.course_id && scopedCourseIds.includes(r.course_id)
   );
 }
 
@@ -128,7 +128,7 @@ export async function getAllRiskScores(semesterId?: string) {
 
   let query = supabase
     .from("student_risk_scores")
-    .select("risk_level, section_id, sections!student_risk_scores_section_id_fkey(course_id)")
+    .select("risk_level, course_id, courses!student_risk_scores_course_id_fkey(id)")
     .eq("tenant_id", profile.tenant_id);
 
   if (semesterId) {
@@ -139,7 +139,7 @@ export async function getAllRiskScores(semesterId?: string) {
 
   if (scopedCourseIds === null) return data || [];
   return (data || []).filter(
-    (r: any) => r.sections?.course_id && scopedCourseIds.includes(r.sections.course_id)
+    (r: any) => r.course_id && scopedCourseIds.includes(r.course_id)
   );
 }
 
@@ -190,7 +190,7 @@ export async function sendRecommendation(formData: FormData) {
   const supabase = await createClient();
 
   const studentId = formData.get("student_id") as string;
-  const sectionId = (formData.get("section_id") as string) || null;
+  const courseId = (formData.get("course_id") as string) || null;
   const title = formData.get("title") as string;
   const body = formData.get("body") as string;
   const materialUrl = (formData.get("material_url") as string) || null;
@@ -198,7 +198,7 @@ export async function sendRecommendation(formData: FormData) {
   const { error } = await supabase.from("student_recommendations").insert({
     tenant_id: profile.tenant_id,
     student_id: studentId,
-    section_id: sectionId,
+    course_id: courseId,
     sent_by: profile.id,
     title,
     body,

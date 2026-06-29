@@ -4,18 +4,18 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 
-export async function getAssignments(sectionId?: string) {
+export async function getAssignments(courseId?: string) {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
   let query = supabase
     .from("assignments")
-    .select("*, sections(section_code, courses(code, name))")
+    .select("*, courses(code, name)")
     .eq("tenant_id", profile.tenant_id)
     .eq("created_by", profile.id)
     .order("due_date", { ascending: true });
 
-  if (sectionId) query = query.eq("section_id", sectionId);
+  if (courseId) query = query.eq("course_id", courseId);
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
@@ -48,7 +48,7 @@ export async function createAssignment(formData: FormData) {
 
   const { error } = await supabase.from("assignments").insert({
     tenant_id: profile.tenant_id,
-    section_id: formData.get("section_id") as string,
+    course_id: formData.get("course_id") as string,
     created_by: profile.id,
     title: formData.get("title") as string,
     description: (formData.get("description") as string) || null,

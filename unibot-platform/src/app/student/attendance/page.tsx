@@ -6,33 +6,54 @@ export default async function StudentAttendancePage() {
   const { profile } = await requireRole(["student"]);
   const supabase = await createClient();
 
+  // Fetch enrollments — section_id is kept for backward compat with attendance_summaries
   const { data: enrollments } = await supabase
     .from("enrollments")
-    .select("section_id, sections(section_code, courses(code, name))")
+    .select("course_id, section_id, courses!inner(code, name)")
     .eq("student_id", profile.id)
     .eq("status", "enrolled");
 
-  const sectionIds = (enrollments || []).map((e: any) => e.section_id);
+  const enrollmentList = (enrollments || []) as any[];
+  const courseIds = enrollmentList.map((e: any) => e.course_id).filter(Boolean);
+
+  // Build lookup: course_id → course code
+  const courseLookup: Record<string, { code: string; name: string }> = {};
+  // Build lookup: section_id → course_id (backward compat)
+  const sectionToCourse: Record<string, string> = {};
+  for (const e of enrollmentList) {
+    const course = Array.isArray(e.courses) ? e.courses[0] : e.courses;
+    if (e.course_id && course) {
+      courseLookup[e.course_id] = { code: course.code, name: course.name };
+    }
+    if (e.section_id && e.course_id) {
+      sectionToCourse[e.section_id] = e.course_id;
+    }
+  }
 
   let summaries: any[] = [];
   let records: any[] = [];
 
-  if (sectionIds.length > 0) {
+  if (courseIds.length > 0) {
+    // Query attendance_summaries — still uses section_id (backward compat)
+    const sectionIds = enrollmentList.map((e: any) => e.section_id).filter(Boolean);
     const [sumRes, recRes] = await Promise.all([
       supabase
         .from("attendance_summaries")
-        .select("*, sections(section_code, courses(code, name))")
+        .select("*")
         .eq("student_id", profile.id)
         .in("section_id", sectionIds),
       supabase
         .from("attendance_records")
-        .select("*, attendance_sessions(session_date, start_time, sections(section_code, courses(code, name)))")
+        .select("*, attendance_sessions!inner(session_date, start_time, course_id, courses!inner(code, name))")
         .eq("student_id", profile.id)
-        .in("section_id", sectionIds)
+        .in("attendance_sessions.course_id", courseIds)
         .order("created_at", { ascending: false })
         .limit(100),
     ]);
-    summaries = sumRes.data || [];
+    summaries = (sumRes.data || []).map((s: any) => ({
+      ...s,
+      course_id: sectionToCourse[s.section_id] || null,
+    }));
     records = recRes.data || [];
   }
 
@@ -43,10 +64,11 @@ export default async function StudentAttendancePage() {
         <p className="mt-1 text-sm text-text-secondary">متابعة الحضور والغياب في مقرراتك</p>
       </div>
       <StudentAttendanceClient
-        enrollments={enrollments || []}
+        enrollments={enrollmentList}
         summaries={summaries}
         records={records}
         studentId={profile.id}
+        courseLookup={courseLookup}
       />
     </div>
   );

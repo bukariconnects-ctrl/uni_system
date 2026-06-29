@@ -11,17 +11,17 @@ export async function getStudentAssignments() {
 
   const { data: enrollments } = await supabase
     .from("enrollments")
-    .select("section_id")
+    .select("course_id")
     .eq("student_id", profile.id)
     .eq("status", "enrolled");
 
-  const sectionIds = (enrollments || []).map((e: any) => e.section_id);
-  if (sectionIds.length === 0) return [];
+  const courseIds = (enrollments || []).map((e: any) => e.course_id);
+  if (courseIds.length === 0) return [];
 
   const { data, error } = await supabase
     .from("assignments")
-    .select("*, sections(section_code, courses(code, name))")
-    .in("section_id", sectionIds)
+    .select("*, courses(code, name)")
+    .in("course_id", courseIds)
     .eq("is_published", true)
     .order("due_date", { ascending: true });
 
@@ -51,7 +51,7 @@ export async function submitAssignment(formData: FormData) {
 
   const { data: assignment } = await supabase
     .from("assignments")
-    .select("due_date, allow_late, section_id")
+    .select("due_date, allow_late")
     .eq("id", assignmentId)
     .single();
 

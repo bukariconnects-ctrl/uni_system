@@ -6,13 +6,12 @@ export default async function MaterialsPage() {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
-  const [sectionsRes, materialsRes, syllabiRes] = await Promise.all([
+  const [coursesRes, materialsRes, syllabiRes] = await Promise.all([
     supabase
-      .from("sections")
-      .select("id, section_code, courses(code, name), semesters(name, status)")
+      .from("course_schedules")
+      .select("study_plan_courses!inner(course_id, courses!inner(id, code, name)), semesters!inner(name, status)")
       .eq("tenant_id", profile.tenant_id)
-      .eq("instructor_id", profile.id)
-      .order("created_at", { ascending: false }),
+      .eq("instructor_id", profile.id),
     supabase
       .from("course_materials")
       .select("*")
@@ -22,11 +21,22 @@ export default async function MaterialsPage() {
       .order("created_at", { ascending: false }),
     supabase
       .from("syllabi")
-      .select("*, sections(section_code, courses(code, name))")
+      .select("*, courses(code, name)")
       .eq("tenant_id", profile.tenant_id)
       .eq("instructor_id", profile.id)
       .order("created_at", { ascending: false }),
   ]);
+
+  // Deduplicate courses
+  const seen = new Set<string>();
+  const courses = (coursesRes.data || []).reduce((acc: any[], s: any) => {
+    const c = s.study_plan_courses?.courses;
+    if (c && !seen.has(c.id)) {
+      seen.add(c.id);
+      acc.push(c);
+    }
+    return acc;
+  }, []);
 
   return (
     <div>
@@ -37,7 +47,7 @@ export default async function MaterialsPage() {
         </p>
       </div>
       <MaterialsClient
-        sections={sectionsRes.data || []}
+        courses={courses}
         materials={materialsRes.data || []}
         syllabi={syllabiRes.data || []}
       />

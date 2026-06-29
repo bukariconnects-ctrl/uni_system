@@ -44,11 +44,11 @@ const SYLLABUS_STATUS: Record<string, { label: string; color: string }> = {
 };
 
 export function MaterialsClient({
-  sections,
+  courses,
   materials,
   syllabi,
 }: {
-  sections: any[];
+  courses: any[];
   materials: any[];
   syllabi: any[];
 }) {
@@ -65,7 +65,7 @@ export function MaterialsClient({
   }
   const [showUpload, setShowUpload] = useState(false);
   const [showSyllabus, setShowSyllabus] = useState(false);
-  const [filterSection, setFilterSection] = useState("");
+  const [filterCourse, setFilterCourse] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [fileName, setFileName] = useState("");
@@ -79,8 +79,8 @@ export function MaterialsClient({
     });
   }
 
-  const filtered = filterSection
-    ? materials.filter((m: any) => m.section_id === filterSection)
+  const filtered = filterCourse
+    ? materials.filter((m: any) => m.course_id === filterCourse)
     : materials;
 
   const grouped = filtered.reduce((acc: Record<number, any[]>, m: any) => {
@@ -132,14 +132,14 @@ export function MaterialsClient({
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <select
-              value={filterSection}
-              onChange={(e) => setFilterSection(e.target.value)}
+              value={filterCourse}
+              onChange={(e) => setFilterCourse(e.target.value)}
               className="rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
             >
-              <option value="">كل الشعب</option>
-              {sections.map((s: any) => (
-                <option key={s.id} value={s.id}>
-                  {s.courses?.code} ({s.section_code})
+              <option value="">كل المواد</option>
+              {courses.map((c: any) => (
+                <option key={c.id} value={c.id}>
+                  {c.code} — {c.name}
                 </option>
               ))}
             </select>
@@ -163,11 +163,11 @@ export function MaterialsClient({
                 className="grid gap-4 sm:grid-cols-2"
               >
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-text-primary">الشعبة</label>
-                  <select name="section_id" required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
+                  <label className="mb-1 block text-xs font-medium text-text-primary">المادة</label>
+                  <select name="course_id" required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
                     <option value="">-- اختر --</option>
-                    {sections.map((s: any) => (
-                      <option key={s.id} value={s.id}>{s.courses?.code} ({s.section_code}) — {s.semesters?.name}</option>
+                    {courses.map((c: any) => (
+                      <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
                     ))}
                   </select>
                 </div>
@@ -332,11 +332,11 @@ export function MaterialsClient({
               </div>
               <form action={(fd) => handleAction(() => upsertSyllabus(fd))} className="space-y-4">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-text-primary">الشعبة</label>
-                  <select name="section_id" required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
+                  <label className="mb-1 block text-xs font-medium text-text-primary">المادة</label>
+                  <select name="course_id" required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
                     <option value="">-- اختر --</option>
-                    {sections.map((s: any) => (
-                      <option key={s.id} value={s.id}>{s.courses?.code} ({s.section_code})</option>
+                    {courses.map((c: any) => (
+                      <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
                     ))}
                   </select>
                 </div>
@@ -370,7 +370,7 @@ export function MaterialsClient({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-text-primary">
-                          {syllabus.sections?.courses?.code} ({syllabus.sections?.section_code})
+                          {syllabus.courses?.code} — {syllabus.courses?.name}
                         </span>
                         <span className={`rounded-full px-2 py-0.5 text-xs ${statusInfo.color}`}>{statusInfo.label}</span>
                       </div>

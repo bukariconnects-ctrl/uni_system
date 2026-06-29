@@ -1,7 +1,7 @@
 "use server";
 
 
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient, createAdminClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 import type { UserRole } from "@/lib/types/database";
@@ -53,7 +53,7 @@ export async function getAcademicLevels() {
   return data || [];
 }
 
-export async function createUser(formData: FormData) {
+export async function createUser(formData: FormData): Promise<{ autoEnrollment?: { enrolled: number; total: number; semesterName?: string; warning?: string } }> {
   const { profile } = await requireRole(["tenant_admin"]);
   const supabase = await createClient();
   const admin = await createAdminClient();
@@ -130,10 +130,76 @@ export async function createUser(formData: FormData) {
         academic_level_id: academic_level_id || null,
       });
       if (smError) throw new Error(`خطأ في ربط التخصص: ${smError.message}`);
+
+      // Auto-enroll: register student in all study plan courses for their major/level/semester
+      if (academic_level_id) {
+        try {
+          const serviceClient = createServiceClient();
+          const { data: activeSemester } = await serviceClient
+            .from("semesters")
+            .select("id, name, semester_type, status")
+            .eq("tenant_id", profile.tenant_id)
+            .in("status", ["planning", "registration", "active"])
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!activeSemester) {
+            const msg = "⚠️ لم يتم العثور على فصل دراسي بحالة (تخطيط/تسجيل/نشط) — لم يتم التسجيل الآلي";
+            console.warn(msg);
+            return { autoEnrollment: { enrolled: 0, total: 0, warning: msg } };
+          }
+
+          if (!activeSemester.semester_type) {
+            const msg = `⚠️ الفصل "${activeSemester.name}" ليس له نوع فصل (semester_type) — لم يتم التسجيل الآلي`;
+            console.warn(msg);
+            return { autoEnrollment: { enrolled: 0, total: 0, warning: msg } };
+          }
+
+          const { data: planCourses } = await serviceClient
+            .from("study_plan_courses")
+            .select("course_id")
+            .eq("academic_level_id", academic_level_id)
+            .eq("semester_type", activeSemester.semester_type);
+
+          if (!planCourses || planCourses.length === 0) {
+            const msg = `⚠️ لا توجد مواد في الخطة الدراسية لهذا المستوى والترم (${activeSemester.semester_type}) — لم يتم التسجيل الآلي`;
+            console.warn(msg);
+            return { autoEnrollment: { enrolled: 0, total: 0, warning: msg } };
+          }
+
+          const enrollments = planCourses.map((pc: any) => ({
+            tenant_id: profile.tenant_id,
+            student_id: authUser.user.id,
+            course_id: pc.course_id,
+            semester_id: activeSemester.id,
+            status: "enrolled" as const,
+          }));
+
+          const { error: enrollError } = await serviceClient
+            .from("enrollments")
+            .insert(enrollments);
+
+          if (enrollError) {
+            const msg = `⚠️ خطأ في التسجيل الآلي: ${enrollError.message}`;
+            console.warn(msg);
+            return { autoEnrollment: { enrolled: 0, total: planCourses.length, warning: msg } };
+          }
+
+          console.log(`✅ Auto-enrolled student in ${enrollments.length} courses for semester "${activeSemester.name}"`);
+          return { autoEnrollment: { enrolled: enrollments.length, total: planCourses.length, semesterName: activeSemester.name } };
+        } catch (e) {
+          const msg = `⚠️ خطأ غير متوقع في التسجيل الآلي: ${e instanceof Error ? e.message : "خطأ غير معروف"}`;
+          console.warn(msg);
+          return { autoEnrollment: { enrolled: 0, total: 0, warning: msg } };
+        }
+      } else {
+        console.warn("⚠️ لم يتم اختيار المستوى الدراسي للطالب — لم يتم التسجيل الآلي");
+      }
     }
   }
 
-  if (role === "faculty") {
+  if (role === "faculty" || role === "lecturer") {
     if (employee_id) {
       const { error: fpError } = await supabase.from("faculty_profiles").insert({
         profile_id: authUser.user.id,
@@ -192,6 +258,8 @@ export async function createUser(formData: FormData) {
   }
 
   revalidatePath("/tenant-admin/users");
+  revalidatePath("/student/register");
+  return {}; // non-student or missing major/level — no auto-enrollment
 }
 
 export async function getMajors() {
@@ -256,7 +324,7 @@ export async function bulkImportUsers(rows: CsvRow[]) {
     }
 
     const role = row.role as UserRole;
-    if (!["student", "faculty", "academic_management"].includes(role)) {
+    if (!["student", "faculty", "lecturer", "academic_management"].includes(role)) {
       results.errors.push(`سطر ${rowNum}: الدور "${row.role}" غير صالح`);
       continue;
     }
@@ -321,10 +389,44 @@ export async function bulkImportUsers(rows: CsvRow[]) {
             tenant_id: profile.tenant_id,
             is_primary: true,
           });
+
+          // Auto-enroll for bulk import
+          try {
+            const svc = createServiceClient();
+            const { data: sem } = await svc
+              .from("semesters")
+              .select("id, semester_type")
+              .eq("tenant_id", profile.tenant_id)
+              .in("status", ["planning", "registration", "active"])
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            if (sem?.semester_type) {
+              const { data: planCourses } = await svc
+                .from("study_plan_courses")
+                .select("course_id")
+                .eq("academic_level_id", row.academic_level_id || "")
+                .eq("semester_type", sem.semester_type);
+
+              if (planCourses && planCourses.length > 0) {
+                const entries = planCourses.map((pc: any) => ({
+                  tenant_id: profile.tenant_id,
+                  student_id: authUser.user.id,
+                  course_id: pc.course_id,
+                  semester_id: sem.id,
+                  status: "enrolled" as const,
+                }));
+                await svc.from("enrollments").insert(entries);
+              }
+            }
+          } catch {
+            // Non-fatal for bulk import
+          }
         }
       }
 
-      if ((role === "faculty" || role === "academic_management") && row.employee_id) {
+      if ((role === "faculty" || role === "lecturer" || role === "academic_management") && row.employee_id) {
         const { error: fpError } = await supabase
           .from("faculty_profiles")
           .insert({
@@ -440,8 +542,8 @@ export async function updateUser(userId: string, formData: FormData) {
       .eq("profile_id", userId);
   }
 
-  // ── Faculty ────────────────────────────────────────────────
-  if (role === "faculty") {
+  // ── Faculty / Lecturer ─────────────────────────────────────
+  if (role === "faculty" || role === "lecturer") {
     // Faculty profile (employee_id, specialization)
     await supabase
       .from("faculty_profiles")

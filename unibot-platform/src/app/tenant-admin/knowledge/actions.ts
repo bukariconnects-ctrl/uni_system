@@ -14,7 +14,7 @@ export async function getKnowledgeDocuments() {
     .from("ai_knowledge_documents")
     .select("*")
     .eq("tenant_id", profile.tenant_id)
-    .is("section_id", null)
+    .is("course_id", null)
     .order("created_at", { ascending: false });
 
   return data || [];

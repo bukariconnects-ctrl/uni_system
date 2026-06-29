@@ -1,0 +1,146 @@
+- generic [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e23] [cursor=pointer]:
+    - img [ref=e24]
+  - alert [ref=e27]
+  - generic [ref=e43]:
+    - complementary [ref=e44]:
+      - generic [ref=e45]:
+        - generic [ref=e47]: 🏫
+        - generic [ref=e48]:
+          - paragraph [ref=e49]: UniBot
+          - paragraph [ref=e50]: مدير الجامعة
+          - paragraph [ref=e51]: UST uni
+      - navigation [ref=e52]:
+        - link "لوحة المعلومات" [ref=e53] [cursor=pointer]:
+          - /url: /tenant-admin
+          - img [ref=e54]
+          - text: لوحة المعلومات
+        - link "إعدادات الجامعة" [ref=e59] [cursor=pointer]:
+          - /url: /tenant-admin/settings
+          - img [ref=e60]
+          - text: إعدادات الجامعة
+        - link "الفروع والأحرم" [ref=e63] [cursor=pointer]:
+          - /url: /tenant-admin/campuses
+          - img [ref=e64]
+          - text: الفروع والأحرم
+        - link "القاعات والمباني" [ref=e68] [cursor=pointer]:
+          - /url: /tenant-admin/venues
+          - img [ref=e69]
+          - text: القاعات والمباني
+        - link "الهيكل التنظيمي" [ref=e72] [cursor=pointer]:
+          - /url: /tenant-admin/academic
+          - img [ref=e73]
+          - text: الهيكل التنظيمي
+        - button "الخطط والمقررات" [ref=e78]:
+          - img [ref=e79]
+          - generic [ref=e81]: الخطط والمقررات
+          - img [ref=e82]
+        - link "إدارة المستخدمين" [ref=e84] [cursor=pointer]:
+          - /url: /tenant-admin/users
+          - img [ref=e85]
+          - text: إدارة المستخدمين
+        - link "قاعدة المعرفة" [ref=e90] [cursor=pointer]:
+          - /url: /tenant-admin/knowledge
+          - img [ref=e91]
+          - text: قاعدة المعرفة
+        - link "التقويم الأكاديمي" [active] [ref=e103] [cursor=pointer]:
+          - /url: /tenant-admin/calendar
+          - img [ref=e104]
+          - text: التقويم الأكاديمي
+      - generic [ref=e106]:
+        - link "aa ahmed ahmed ahmednazn2020@gmail.com" [ref=e107] [cursor=pointer]:
+          - /url: /tenant-admin/profile
+          - generic [ref=e108]: aa
+          - generic [ref=e109]:
+            - paragraph [ref=e110]: ahmed ahmed
+            - paragraph [ref=e111]: ahmednazn2020@gmail.com
+        - button "تسجيل الخروج" [ref=e112]:
+          - img [ref=e113]
+          - text: تسجيل الخروج
+      - button "تبديل الوضع" [ref=e117]:
+        - img [ref=e118]
+    - main [ref=e120]:
+      - generic [ref=e344]:
+        - generic [ref=e345]:
+          - heading "التقويم الأكاديمي" [level=1] [ref=e346]
+          - paragraph [ref=e347]: إدارة الفصول الدراسية ومواعيد التسجيل
+        - generic [ref=e348]:
+          - button "فصل دراسي جديد" [ref=e350]:
+            - img [ref=e351]
+            - text: فصل دراسي جديد
+          - generic [ref=e352]:
+            - generic [ref=e354]:
+              - generic [ref=e355]:
+                - generic [ref=e356]:
+                  - img [ref=e358]
+                  - generic [ref=e360]:
+                    - heading "الترم الثاني 2025 - 2026" [level=3] [ref=e361]
+                    - paragraph [ref=e362]: 2025 - 2026 — الفصل الثاني
+                - generic [ref=e363]: نشط
+              - generic [ref=e364]:
+                - generic [ref=e365]:
+                  - paragraph [ref=e366]: بداية الفصل
+                  - paragraph [ref=e367]: ١٨ يناير ٢٠٢٦
+                - generic [ref=e368]:
+                  - paragraph [ref=e369]: نهاية الفصل
+                  - paragraph [ref=e370]: ٦ يوليو ٢٠٢٦
+                - generic [ref=e371]:
+                  - paragraph [ref=e372]: بداية التسجيل
+                  - paragraph [ref=e373]: ١٨ يناير ٢٠٢٦
+                - generic [ref=e374]:
+                  - paragraph [ref=e375]: نهاية التسجيل
+                  - paragraph [ref=e376]: ٦ يوليو ٢٠٢٦
+                - generic [ref=e377]:
+                  - paragraph [ref=e378]: بداية الحذف والإضافة
+                  - paragraph [ref=e379]: ١٨ يناير ٢٠٢٦
+                - generic [ref=e380]:
+                  - paragraph [ref=e381]: نهاية الحذف والإضافة
+                  - paragraph [ref=e382]: ٦ يوليو ٢٠٢٦
+                - generic [ref=e383]:
+                  - paragraph [ref=e384]: تجميد الدرجات
+                  - paragraph [ref=e385]: —
+              - generic [ref=e386]:
+                - button "تعديل التواريخ" [ref=e387]:
+                  - img [ref=e388]
+                  - text: تعديل التواريخ
+                - button "أرشفة وإنهاء" [ref=e391]:
+                  - img [ref=e392]
+                  - text: أرشفة وإنهاء
+            - generic [ref=e396]:
+              - generic [ref=e397]:
+                - generic [ref=e398]:
+                  - img [ref=e400]
+                  - generic [ref=e402]:
+                    - heading "الترم الاول 2025 - 2026" [level=3] [ref=e403]
+                    - paragraph [ref=e404]: 2025 - 2026 — الفصل الأول
+                - generic [ref=e405]: تخطيط
+              - generic [ref=e406]:
+                - generic [ref=e407]:
+                  - paragraph [ref=e408]: بداية الفصل
+                  - paragraph [ref=e409]: ١٤ سبتمبر ٢٠٢٥
+                - generic [ref=e410]:
+                  - paragraph [ref=e411]: نهاية الفصل
+                  - paragraph [ref=e412]: ٣٠ ديسمبر ٢٠٢٥
+                - generic [ref=e413]:
+                  - paragraph [ref=e414]: بداية التسجيل
+                  - paragraph [ref=e415]: ١٠ أغسطس ٢٠٢٥
+                - generic [ref=e416]:
+                  - paragraph [ref=e417]: نهاية التسجيل
+                  - paragraph [ref=e418]: ١١ أكتوبر ٢٠٢٥
+                - generic [ref=e419]:
+                  - paragraph [ref=e420]: بداية الحذف والإضافة
+                  - paragraph [ref=e421]: ١٤ سبتمبر ٢٠٢٥
+                - generic [ref=e422]:
+                  - paragraph [ref=e423]: نهاية الحذف والإضافة
+                  - paragraph [ref=e424]: ٣٠ ديسمبر ٢٠٢٥
+                - generic [ref=e425]:
+                  - paragraph [ref=e426]: تجميد الدرجات
+                  - paragraph [ref=e427]: —
+              - generic [ref=e428]:
+                - button "تعديل التواريخ" [ref=e429]:
+                  - img [ref=e430]
+                  - text: تعديل التواريخ
+                - button "تفعيل" [ref=e433]:
+                  - img [ref=e434]
+                  - text: تفعيل
+  - generic [ref=e275]: الهندسة والحاسبات

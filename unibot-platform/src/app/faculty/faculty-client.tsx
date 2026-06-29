@@ -19,11 +19,11 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-interface Section {
+interface Course {
   id: string;
-  section_code: string;
-  courses?: { code: string; name: string };
-  semesters?: { name: string; status: string };
+  code: string;
+  name: string;
+  semester: { name: string; status: string };
   enrolled_count: number;
 }
 
@@ -40,14 +40,14 @@ interface Submission {
 
 interface AttendanceRecord {
   session_id: string;
-  section_id: string;
+  course_id: string;
   status: string;
   created_at: string;
   attendance_sessions?: { session_date: string; start_time: string };
 }
 
 interface DashboardData {
-  sections: Section[];
+  courses: Course[];
   totalStudents: number;
   pendingSubmissions: Submission[];
   assignmentsCount: number;
@@ -62,10 +62,10 @@ const CHART_COLORS = {
 };
 
 export function FacultyDashboardClient({ data }: { data: DashboardData }) {
-  const { sections, totalStudents, pendingSubmissions, assignmentsCount, attendanceRecords } = data;
+  const { courses, totalStudents, pendingSubmissions, assignmentsCount, attendanceRecords } = data;
 
-  const activeSections = sections.filter(
-    (s) => s.semesters?.status === "active"
+  const activeCourses = courses.filter(
+    (c) => c.semester?.status === "active"
   );
 
   // Area chart: attendance trends by session
@@ -105,9 +105,9 @@ export function FacultyDashboardClient({ data }: { data: DashboardData }) {
           icon={Users}
           iconColor="bg-academic-navy/10 text-academic-navy"
           trend={{
-            value: `${activeSections.length}`,
+            value: `${activeCourses.length}`,
             direction: "up",
-            label: "شعبة نشطة",
+            label: "مادة نشطة",
           }}
         />
         <KpiCard
@@ -251,16 +251,16 @@ export function FacultyDashboardClient({ data }: { data: DashboardData }) {
         </ChartCard>
       </div>
 
-      {/* Active Sections */}
+      {/* Active Courses */}
       <div className="rounded-2xl border border-border bg-card-bg p-5 shadow-sm">
-        <h2 className="mb-4 text-lg font-bold text-text-primary">شعبي النشطة</h2>
-        {activeSections.length === 0 ? (
-          <p className="text-sm text-text-secondary">لا توجد شعب نشطة حالياً</p>
+        <h2 className="mb-4 text-lg font-bold text-text-primary">موادي النشطة</h2>
+        {activeCourses.length === 0 ? (
+          <p className="text-sm text-text-secondary">لا توجد مواد نشطة حالياً</p>
         ) : (
           <div className="space-y-2">
-            {activeSections.map((section) => (
+            {activeCourses.map((course) => (
               <div
-                key={section.id}
+                key={course.id}
                 className="flex items-center justify-between rounded-xl border border-border p-4"
               >
                 <div className="flex items-center gap-3">
@@ -269,17 +269,15 @@ export function FacultyDashboardClient({ data }: { data: DashboardData }) {
                   </div>
                   <div>
                     <span className="font-bold text-text-primary">
-                      {section.courses?.code} — {section.courses?.name}
+                      {course.code} — {course.name}
                     </span>
                     <div className="flex items-center gap-2 text-xs text-text-secondary">
-                      <span>الشعبة: {section.section_code}</span>
-                      <span>•</span>
-                      <span>{section.semesters?.name}</span>
+                      <span>{course.semester?.name}</span>
                     </div>
                   </div>
                 </div>
                 <span className="rounded-full bg-academic-navy/10 px-3 py-1 text-xs font-medium text-academic-navy">
-                  {section.enrolled_count} طالب
+                  {course.enrolled_count} طالب
                 </span>
               </div>
             ))}

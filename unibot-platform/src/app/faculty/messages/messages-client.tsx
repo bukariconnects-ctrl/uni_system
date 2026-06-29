@@ -268,11 +268,11 @@ export function MessagesClient({
               {channels.map((ch: any) => (
                 <button
                   key={ch.id}
-                  onClick={() => setTarget({ type: "channel", id: ch.id, name: ch.sections?.courses?.code ? `${ch.sections.courses.code} (${ch.sections.section_code})` : ch.name })}
+                  onClick={() => setTarget({ type: "channel", id: ch.id, name: ch.courses?.code ? `${ch.courses.code} — ${ch.courses.name}` : ch.name })}
                   className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-right text-sm transition-colors ${target?.id === ch.id ? "bg-action-blue/20 text-action-blue" : "text-text-secondary hover:bg-app-bg hover:text-text-primary"}`}
                 >
                   <Hash className="h-4 w-4" />
-                  <span className="truncate">{ch.sections?.courses?.code ? `${ch.sections.courses.code} (${ch.sections.section_code})` : ch.name}</span>
+                  <span className="truncate">{ch.courses?.code ? `${ch.courses.code} — ${ch.courses.name}` : ch.name}</span>
                 </button>
               ))}
             </div>

@@ -6,22 +6,32 @@ export default async function AttendancePage() {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
-  const [sectionsRes, sessionsRes] = await Promise.all([
+  const [coursesRes, sessionsRes] = await Promise.all([
     supabase
-      .from("sections")
-      .select("id, section_code, courses(code, name), semesters(name, status)")
-      .eq("tenant_id", profile.tenant_id)
+      .from("course_schedules")
+      .select("study_plan_courses!inner(course_id, courses!inner(id, code, name)), semesters!inner(name, status)")
       .eq("instructor_id", profile.id)
-      .order("created_at", { ascending: false }),
+      .eq("tenant_id", profile.tenant_id),
     supabase
       .from("attendance_sessions")
-      .select("*, sections(section_code, courses(code, name))")
+      .select("*, courses(code, name)")
       .eq("tenant_id", profile.tenant_id)
       .eq("created_by", profile.id)
       .order("session_date", { ascending: false })
       .order("start_time", { ascending: false })
       .limit(50),
   ]);
+
+  // Deduplicate courses
+  const seen = new Set<string>();
+  const courses = (coursesRes.data || []).reduce((acc: any[], s: any) => {
+    const c = s.study_plan_courses?.courses;
+    if (c && !seen.has(c.id)) {
+      seen.add(c.id);
+      acc.push(c);
+    }
+    return acc;
+  }, []);
 
   return (
     <div>
@@ -30,7 +40,7 @@ export default async function AttendancePage() {
         <p className="mt-1 text-sm text-text-secondary">إنشاء جلسات الحضور وتسجيل حضور الطلاب</p>
       </div>
       <AttendanceClient
-        sections={sectionsRes.data || []}
+        courses={courses}
         sessions={sessionsRes.data || []}
       />
     </div>

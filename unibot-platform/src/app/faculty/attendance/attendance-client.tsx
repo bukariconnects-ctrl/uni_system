@@ -31,10 +31,10 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
 };
 
 export function AttendanceClient({
-  sections,
+  courses,
   sessions,
 }: {
-  sections: any[];
+  courses: any[];
   sessions: any[];
 }) {
   const [showForm, setShowForm] = useState(false);
@@ -144,11 +144,11 @@ export function AttendanceClient({
           </div>
           <form action={(fd) => handleAction(async () => { await createAttendanceSession(fd); setShowForm(false); })} className="grid gap-4 sm:grid-cols-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-primary">الشعبة</label>
-              <select name="section_id" required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
+              <label className="mb-1 block text-xs font-medium text-text-primary">المقرر</label>
+              <select name="course_id" required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
                 <option value="">-- اختر --</option>
-                {sections.map((s: any) => (
-                  <option key={s.id} value={s.id}>{s.courses?.code} ({s.section_code})</option>
+                {courses.map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
                 ))}
               </select>
             </div>
@@ -189,7 +189,7 @@ export function AttendanceClient({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-text-primary">
-                      {session.sections?.courses?.code} ({session.sections?.section_code})
+                      {session.courses?.code}
                     </span>
                     {session.is_open ? (
                       <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs text-success">مفتوحة</span>

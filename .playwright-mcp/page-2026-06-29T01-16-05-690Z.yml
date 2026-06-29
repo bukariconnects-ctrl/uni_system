@@ -1,0 +1,352 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e7]: 🏫
+        - generic [ref=e8]:
+          - paragraph [ref=e9]: UniBot
+          - paragraph [ref=e10]: مدير الجامعة
+          - paragraph [ref=e11]: UST uni
+      - navigation [ref=e12]:
+        - link "لوحة المعلومات" [ref=e13] [cursor=pointer]:
+          - /url: /tenant-admin
+          - img [ref=e14]
+          - text: لوحة المعلومات
+        - link "إعدادات الجامعة" [ref=e19] [cursor=pointer]:
+          - /url: /tenant-admin/settings
+          - img [ref=e20]
+          - text: إعدادات الجامعة
+        - link "الفروع والأحرم" [ref=e23] [cursor=pointer]:
+          - /url: /tenant-admin/campuses
+          - img [ref=e24]
+          - text: الفروع والأحرم
+        - link "القاعات والمباني" [ref=e28] [cursor=pointer]:
+          - /url: /tenant-admin/venues
+          - img [ref=e29]
+          - text: القاعات والمباني
+        - link "الهيكل التنظيمي" [ref=e32] [cursor=pointer]:
+          - /url: /tenant-admin/academic
+          - img [ref=e33]
+          - text: الهيكل التنظيمي
+        - button "الخطط والمقررات" [ref=e38]:
+          - img [ref=e39]
+          - generic [ref=e41]: الخطط والمقررات
+          - img [ref=e42]
+        - link "إدارة المستخدمين" [ref=e44] [cursor=pointer]:
+          - /url: /tenant-admin/users
+          - img [ref=e45]
+          - text: إدارة المستخدمين
+        - link "قاعدة المعرفة" [ref=e50] [cursor=pointer]:
+          - /url: /tenant-admin/knowledge
+          - img [ref=e51]
+          - text: قاعدة المعرفة
+        - link "التقويم الأكاديمي" [ref=e63] [cursor=pointer]:
+          - /url: /tenant-admin/calendar
+          - img [ref=e64]
+          - text: التقويم الأكاديمي
+      - generic [ref=e66]:
+        - link "aa ahmed ahmed ahmednazn2020@gmail.com" [ref=e67] [cursor=pointer]:
+          - /url: /tenant-admin/profile
+          - generic [ref=e68]: aa
+          - generic [ref=e69]:
+            - paragraph [ref=e70]: ahmed ahmed
+            - paragraph [ref=e71]: ahmednazn2020@gmail.com
+        - button "تسجيل الخروج" [ref=e72]:
+          - img [ref=e73]
+          - text: تسجيل الخروج
+      - button "تبديل الوضع" [ref=e395]:
+        - img [ref=e396]
+    - main [ref=e78]:
+      - generic [ref=e79]:
+        - generic [ref=e80]:
+          - heading "إدارة المستخدمين" [level=1] [ref=e81]
+          - paragraph [ref=e82]: إضافة المستخدمين وإدارة الأدوار والصلاحيات
+        - generic [ref=e83]:
+          - generic [ref=e84]:
+            - generic [ref=e85]:
+              - generic [ref=e86]:
+                - img [ref=e87]
+                - generic [ref=e92]: "7"
+                - generic [ref=e93]: مستخدمين
+              - generic [ref=e94]:
+                - img [ref=e95]
+                - generic [ref=e98]: "4"
+                - generic [ref=e99]: طلاب
+              - generic [ref=e100]:
+                - img [ref=e101]
+                - generic [ref=e104]: "1"
+                - generic [ref=e105]: محاضرين
+            - generic [ref=e106]:
+              - button "استيراد CSV" [ref=e107]:
+                - img [ref=e108]
+                - text: استيراد CSV
+              - button "إضافة مستخدم" [ref=e111]:
+                - img [ref=e112]
+                - text: إضافة مستخدم
+          - generic [ref=e113]:
+            - generic [ref=e114]:
+              - button "الكل 7" [ref=e115]:
+                - img [ref=e116]
+                - text: الكل
+                - generic [ref=e121]: "7"
+              - button "الطلاب 4" [ref=e122]:
+                - img [ref=e123]
+                - text: الطلاب
+                - generic [ref=e126]: "4"
+              - button "أعضاء هيئة التدريس 1" [ref=e127]:
+                - img [ref=e128]
+                - text: أعضاء هيئة التدريس
+                - generic [ref=e131]: "1"
+              - button "الإدارة الأكاديمية 2" [ref=e132]:
+                - img [ref=e133]
+                - text: الإدارة الأكاديمية
+                - generic [ref=e137]: "2"
+            - generic [ref=e138]:
+              - img [ref=e139]
+              - textbox "بحث بالاسم أو الرقم..." [ref=e142]
+          - table [ref=e144]:
+            - rowgroup [ref=e145]:
+              - row "المستخدم الدور الربط الأكاديمي الحالة" [ref=e146]:
+                - columnheader "المستخدم" [ref=e147]
+                - columnheader "الدور" [ref=e148]
+                - columnheader "الربط الأكاديمي" [ref=e149]
+                - columnheader "الحالة" [ref=e150]
+                - columnheader [ref=e151]
+            - rowgroup [ref=e152]:
+              - row "ات اختبار تسجيل — طالب امن سيبراني (CS) نشط" [ref=e153] [cursor=pointer]:
+                - cell "ات اختبار تسجيل —" [ref=e154]:
+                  - generic [ref=e155]:
+                    - generic [ref=e156]: ات
+                    - generic [ref=e157]:
+                      - paragraph [ref=e158]: اختبار تسجيل
+                      - paragraph [ref=e159]: —
+                - cell "طالب" [ref=e160]:
+                  - generic [ref=e162]: طالب
+                - cell "امن سيبراني (CS)" [ref=e163]:
+                  - generic [ref=e164]: امن سيبراني (CS)
+                - cell "نشط" [ref=e165]
+                - cell [ref=e166]:
+                  - generic [ref=e167]:
+                    - button "تعديل" [ref=e168]:
+                      - img [ref=e169]
+                    - button "تعليق" [ref=e172]:
+                      - img [ref=e173]
+                    - button "حذف" [ref=e178]:
+                      - img [ref=e179]
+              - row "ww wesam wesam — طالب امن سيبراني (CS) نشط" [ref=e182] [cursor=pointer]:
+                - cell "ww wesam wesam —" [ref=e183]:
+                  - generic [ref=e184]:
+                    - generic [ref=e185]: ww
+                    - generic [ref=e186]:
+                      - paragraph [ref=e187]: wesam wesam
+                      - paragraph [ref=e188]: —
+                - cell "طالب" [ref=e189]:
+                  - generic [ref=e191]: طالب
+                - cell "امن سيبراني (CS)" [ref=e192]:
+                  - generic [ref=e193]: امن سيبراني (CS)
+                - cell "نشط" [ref=e194]
+                - cell [ref=e195]:
+                  - generic [ref=e196]:
+                    - button "تعديل" [ref=e197]:
+                      - img [ref=e198]
+                    - button "تعليق" [ref=e201]:
+                      - img [ref=e202]
+                    - button "حذف" [ref=e207]:
+                      - img [ref=e208]
+              - row "ii ibro ibro ibro — طالب امن سيبراني (CS) نشط" [ref=e211] [cursor=pointer]:
+                - cell "ii ibro ibro ibro —" [ref=e212]:
+                  - generic [ref=e213]:
+                    - generic [ref=e214]: ii
+                    - generic [ref=e215]:
+                      - paragraph [ref=e216]: ibro ibro ibro
+                      - paragraph [ref=e217]: —
+                - cell "طالب" [ref=e218]:
+                  - generic [ref=e220]: طالب
+                - cell "امن سيبراني (CS)" [ref=e221]:
+                  - generic [ref=e222]: امن سيبراني (CS)
+                - cell "نشط" [ref=e223]
+                - cell [ref=e224]:
+                  - generic [ref=e225]:
+                    - button "تعديل" [ref=e226]:
+                      - img [ref=e227]
+                    - button "تعليق" [ref=e230]:
+                      - img [ref=e231]
+                    - button "حذف" [ref=e236]:
+                      - img [ref=e237]
+              - row "Aa Ahmed ahmed ahmed — طالب information technology (IT) نشط" [ref=e240] [cursor=pointer]:
+                - cell "Aa Ahmed ahmed ahmed —" [ref=e241]:
+                  - generic [ref=e242]:
+                    - generic [ref=e243]: Aa
+                    - generic [ref=e244]:
+                      - paragraph [ref=e245]: Ahmed ahmed ahmed
+                      - paragraph [ref=e246]: —
+                - cell "طالب" [ref=e247]:
+                  - generic [ref=e249]: طالب
+                - cell "information technology (IT)" [ref=e250]:
+                  - generic [ref=e251]: information technology (IT)
+                - cell "نشط" [ref=e252]
+                - cell [ref=e253]:
+                  - generic [ref=e254]:
+                    - button "تعديل" [ref=e255]:
+                      - img [ref=e256]
+                    - button "تعليق" [ref=e259]:
+                      - img [ref=e260]
+                    - button "حذف" [ref=e265]:
+                      - img [ref=e266]
+              - row "Aw Ahmed work — إدارة أكاديمية رئيس قسم الهندسة والحاسبات نشط" [ref=e269] [cursor=pointer]:
+                - cell "Aw Ahmed work —" [ref=e270]:
+                  - generic [ref=e271]:
+                    - generic [ref=e272]: Aw
+                    - generic [ref=e273]:
+                      - paragraph [ref=e274]: Ahmed work
+                      - paragraph [ref=e275]: —
+                - cell "إدارة أكاديمية رئيس قسم" [ref=e276]:
+                  - generic [ref=e277]:
+                    - generic [ref=e278]: إدارة أكاديمية
+                    - generic [ref=e279]: رئيس قسم
+                - cell "الهندسة والحاسبات" [ref=e280]
+                - cell "نشط" [ref=e281]
+                - cell [ref=e282]:
+                  - generic [ref=e283]:
+                    - button "تعديل" [ref=e284]:
+                      - img [ref=e285]
+                    - button "تعليق" [ref=e288]:
+                      - img [ref=e289]
+                    - button "حذف" [ref=e294]:
+                      - img [ref=e295]
+              - row "AA Ahmed ABDULMUAIN — محاضر الهندسة والحاسبات (EC) نشط" [ref=e298] [cursor=pointer]:
+                - cell "AA Ahmed ABDULMUAIN —" [ref=e299]:
+                  - generic [ref=e300]:
+                    - generic [ref=e301]: AA
+                    - generic [ref=e302]:
+                      - paragraph [ref=e303]: Ahmed ABDULMUAIN
+                      - paragraph [ref=e304]: —
+                - cell "محاضر" [ref=e305]:
+                  - generic [ref=e307]: محاضر
+                - cell "الهندسة والحاسبات (EC)" [ref=e308]:
+                  - generic [ref=e309]: الهندسة والحاسبات (EC)
+                - cell "نشط" [ref=e310]
+                - cell [ref=e311]:
+                  - generic [ref=e312]:
+                    - button "تعديل" [ref=e313]:
+                      - img [ref=e314]
+                    - button "تعليق" [ref=e317]:
+                      - img [ref=e318]
+                    - button "حذف" [ref=e323]:
+                      - img [ref=e324]
+              - row "aa ahmed ahmed — مدير جامعة — نشط" [ref=e327] [cursor=pointer]:
+                - cell "aa ahmed ahmed —" [ref=e328]:
+                  - generic [ref=e329]:
+                    - generic [ref=e330]: aa
+                    - generic [ref=e331]:
+                      - paragraph [ref=e332]: ahmed ahmed
+                      - paragraph [ref=e333]: —
+                - cell "مدير جامعة" [ref=e334]:
+                  - generic [ref=e336]: مدير جامعة
+                - cell "—" [ref=e337]
+                - cell "نشط" [ref=e338]
+                - cell [ref=e339]:
+                  - button "تعديل" [ref=e341]:
+                    - img [ref=e342]
+          - generic [ref=e345]:
+            - generic [ref=e346]:
+              - heading "الأدوار المخصصة" [level=2] [ref=e347]
+              - button "دور جديد" [ref=e348]:
+                - img [ref=e349]
+                - text: دور جديد
+            - generic [ref=e350]:
+              - generic [ref=e351]:
+                - generic [ref=e352]:
+                  - generic [ref=e353]:
+                    - img [ref=e355]
+                    - generic [ref=e357]:
+                      - paragraph [ref=e358]: ibro ibro
+                      - paragraph [ref=e359]: d3b5b274-869a-4676-ba47-42079c391ffe
+                  - button [ref=e360]:
+                    - img [ref=e361]
+                - button "+ تعيين" [ref=e365]
+              - generic [ref=e366]:
+                - generic [ref=e367]:
+                  - generic [ref=e368]:
+                    - img [ref=e370]
+                    - generic [ref=e372]:
+                      - paragraph [ref=e373]: رئيس قسم
+                      - paragraph [ref=e374]: d3b5b274-869a-4676-ba47-42079c391ffe
+                  - button [ref=e375]:
+                    - img [ref=e376]
+                - generic [ref=e379]:
+                  - generic [ref=e380]:
+                    - text: Ahmed work
+                    - button [ref=e381]:
+                      - img [ref=e382]
+                  - button "+ تعيين" [ref=e385]
+          - generic [ref=e399]:
+            - generic [ref=e400]:
+              - heading "إضافة مستخدم جديد" [level=2] [ref=e402]
+              - button [ref=e403]:
+                - img [ref=e404]
+            - generic [ref=e408]:
+              - generic [ref=e409]:
+                - generic [ref=e410]: نوع المستخدم
+                - generic [ref=e411]:
+                  - button "طالب" [ref=e412]:
+                    - img [ref=e413]
+                    - text: طالب
+                  - button "محاضر" [ref=e416]:
+                    - img [ref=e417]
+                    - text: محاضر
+                  - button "إدارة أكاديمية" [ref=e420]:
+                    - img [ref=e421]
+                    - text: إدارة أكاديمية
+              - generic [ref=e425]:
+                - generic [ref=e426]:
+                  - generic [ref=e427]: الاسم الأول
+                  - textbox [ref=e428]: اختبار
+                - generic [ref=e429]:
+                  - generic [ref=e430]: الاسم الأخير
+                  - textbox [ref=e431]: تسجيل2
+                - generic [ref=e432]:
+                  - generic [ref=e433]: البريد الإلكتروني
+                  - textbox [ref=e434]: testautoenroll2@test.com
+                - generic [ref=e435]:
+                  - generic [ref=e436]: كلمة المرور
+                  - generic [ref=e437]:
+                    - textbox [ref=e438]: "123456"
+                    - button [ref=e439]:
+                      - img [ref=e440]
+                - generic [ref=e443]:
+                  - generic [ref=e444]: الهاتف (اختياري)
+                  - textbox [ref=e445]
+              - generic [ref=e446]:
+                - paragraph [ref=e447]: بيانات الطالب
+                - generic [ref=e448]:
+                  - generic [ref=e449]:
+                    - generic [ref=e450]: رقم الطالب
+                    - textbox [ref=e451]: TEST002
+                  - generic [ref=e452]:
+                    - generic [ref=e453]: سنة الالتحاق
+                    - spinbutton [ref=e454]: "2026"
+                  - generic [ref=e455]:
+                    - generic [ref=e456]: التخصص
+                    - combobox [ref=e457]:
+                      - option "— اختر التخصص —"
+                      - option "information technology (IT)"
+                      - option "ادارة اعمال (BM)"
+                      - option "امن سيبراني (CS)" [selected]
+                  - generic [ref=e458]:
+                    - generic [ref=e459]: المستوى الدراسي
+                    - combobox [ref=e460]:
+                      - option "— اختر المستوى —"
+                      - option "المستوى 1 (المستوى الأول)" [selected]
+                      - option "المستوى 2 (المستوى الثاني)"
+                      - option "المستوى 3 (المستوى الثالث)"
+                      - option "المستوى 4 (المستوى الرابع)"
+              - button "إنشاء المستخدم" [active] [ref=e461]
+  - button "Open Next.js Dev Tools" [ref=e463] [cursor=pointer]:
+    - generic [ref=e466]:
+      - text: Rendering
+      - generic [ref=e467]:
+        - generic [ref=e468]: .
+        - generic [ref=e469]: .
+        - generic [ref=e470]: .
+  - alert [ref=e462]

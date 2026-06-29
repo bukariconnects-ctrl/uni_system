@@ -6,18 +6,26 @@ export async function getStudentPersonalSnapshot(
 ): Promise<string> {
   const db = createServiceClient();
 
+  // Fetch enrollments — course_id from courses table (no sections join)
   const enrollmentsRes = await db
     .from("enrollments")
-    .select("section_id, sections(id, section_code, instructor_id, courses(code, name, credit_hours), semesters(name, status))")
+    .select("course_id, section_id, courses!inner(id, code, name, credit_hours)")
     .eq("student_id", userId)
     .eq("tenant_id", tenantId)
     .eq("status", "enrolled");
 
   const enrollments = enrollmentsRes.data ?? [];
-  const sectionIds = enrollments.map((e: any) => e.section_id).filter(Boolean);
-  const instructorIds = [...new Set(
-    enrollments.map((e: any) => (e.sections as any)?.instructor_id).filter(Boolean)
-  )];
+  const courseIds = enrollments.map((e: any) => e.course_id).filter(Boolean) as string[];
+  const sectionIds = enrollments.map((e: any) => e.section_id).filter(Boolean) as string[];
+
+  // Build map: course_id → course info
+  const courseMap = new Map<string, { code: string; name: string; credit_hours: number }>();
+  for (const e of enrollments) {
+    const course = Array.isArray(e.courses) ? e.courses[0] : e.courses;
+    if (course) {
+      courseMap.set(e.course_id, course);
+    }
+  }
 
   const [
     profileRes,
@@ -44,17 +52,22 @@ export async function getStudentPersonalSnapshot(
       .limit(1)
       .single(),
 
-    db
-      .from("attendance_summaries")
-      .select("total_sessions, attended_sessions, unexcused_absences, excused_absences, late_count, is_dismissed, sections(section_code, courses(code, name))")
-      .eq("student_id", userId)
-      .eq("tenant_id", tenantId),
-
+    // Attendance summaries — still uses section_id only (no course_id column)
     sectionIds.length > 0
       ? db
-          .from("assignments")
-          .select("id, title, due_date, max_grade, is_published, sections(section_code, courses(code, name))")
+          .from("attendance_summaries")
+          .select("*")
+          .eq("student_id", userId)
+          .eq("tenant_id", tenantId)
           .in("section_id", sectionIds)
+      : Promise.resolve({ data: [] }),
+
+    // Assignments — uses course_id (migration 3 added the column)
+    courseIds.length > 0
+      ? db
+          .from("assignments")
+          .select("id, title, due_date, max_grade, is_published, course_id, created_by, courses!inner(code, name)")
+          .in("course_id", courseIds)
           .eq("is_published", true)
           .eq("tenant_id", tenantId)
           .order("due_date", { ascending: true })
@@ -66,19 +79,23 @@ export async function getStudentPersonalSnapshot(
       .eq("student_id", userId)
       .eq("tenant_id", tenantId),
 
-    db
-      .from("gradebook_entries")
-      .select("coursework_grade, midterm_grade, final_grade, total_grade, sections(section_code, courses(code, name)), enrollments!inner(letter_grade)")
-      .eq("student_id", userId)
-      .eq("is_published", true)
-      .order("created_at", { ascending: false }),
-
-    sectionIds.length > 0
+    // Gradebook entries — uses course_id (migration 3 added the column)
+    courseIds.length > 0
       ? db
-          .from("schedules")
-          .select("day_of_week, start_time, end_time, sections(section_code, courses(code, name))")
-          .in("section_id", sectionIds)
-          .eq("status", "published")
+          .from("gradebook_entries")
+          .select("coursework_grade, midterm_grade, final_grade, total_grade, course_id, enrollments!inner(letter_grade)")
+          .eq("student_id", userId)
+          .in("course_id", courseIds)
+          .eq("is_published", true)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+
+    // Schedule via course_schedules
+    courseIds.length > 0
+      ? db
+          .from("course_schedules")
+          .select("day_of_week, start_time, end_time, component_type, study_plan_courses!inner(course_id, courses!inner(code, name))")
+          .in("study_plan_courses.course_id", courseIds)
           .order("day_of_week")
           .order("start_time")
       : Promise.resolve({ data: [] }),
@@ -99,12 +116,12 @@ export async function getStudentPersonalSnapshot(
       .order("created_at", { ascending: false })
       .limit(5),
 
-    // Course materials visible to the student
-    sectionIds.length > 0
+    // Course materials — uses course_id (migration 3 added the column)
+    courseIds.length > 0
       ? db
           .from("course_materials")
-          .select("id, title, content_type, week_number, description, section_id, sections(section_code, courses(code, name))")
-          .in("section_id", sectionIds)
+          .select("id, title, content_type, week_number, description, course_id, courses!inner(code, name)")
+          .in("course_id", courseIds)
           .eq("is_published", true)
           .order("week_number", { ascending: true })
       : Promise.resolve({ data: [] }),
@@ -129,8 +146,8 @@ export async function getStudentPersonalSnapshot(
   if (enrollments.length > 0) {
     parts.push("## المقررات المسجلة حالياً");
     for (const e of enrollments) {
-      const sec = e.sections as any;
-      parts.push(`- ${sec?.courses?.code ?? ""} — ${sec?.courses?.name ?? ""} | الشعبة: ${sec?.section_code ?? ""} | الفصل: ${sec?.semesters?.name ?? ""}`);
+      const course = Array.isArray(e.courses) ? e.courses[0] : e.courses;
+      parts.push(`- ${course?.code ?? ""} — ${course?.name ?? ""} (${course?.credit_hours ?? ""} ساعات)`);
     }
     parts.push("");
   } else {
@@ -147,24 +164,35 @@ export async function getStudentPersonalSnapshot(
   if (schedules.length > 0) {
     parts.push("## الجدول الدراسي الأسبوعي");
     for (const s of schedules) {
-      const sec = s.sections as any;
-      parts.push(`- ${dayNames[s.day_of_week] ?? s.day_of_week} | ${s.start_time?.slice(0, 5) ?? ""} – ${s.end_time?.slice(0, 5) ?? ""} | ${sec?.courses?.code ?? ""} — ${sec?.courses?.name ?? ""} (${sec?.section_code ?? ""})`);
+      const spc = s.study_plan_courses as any;
+      const course = Array.isArray(spc?.courses) ? spc.courses[0] : spc?.courses;
+      const compLabel = s.component_type === "practical" ? " (عملي)" : "";
+      parts.push(`- ${dayNames[s.day_of_week] ?? s.day_of_week} | ${s.start_time?.slice(0, 5) ?? ""} – ${s.end_time?.slice(0, 5) ?? ""} | ${course?.code ?? ""} — ${course?.name ?? ""}${compLabel}`);
     }
     parts.push("");
+  }
+
+  // Build section→course map for attendance_summaries backward compat
+  const sectionToCourse = new Map<string, { code: string; name: string }>();
+  for (const e of enrollments) {
+    if (e.section_id && e.course_id) {
+      const course = courseMap.get(e.course_id);
+      if (course) sectionToCourse.set(e.section_id, course);
+    }
   }
 
   const summaries = attendanceRes.data ?? [];
   if (summaries.length > 0) {
     parts.push("## سجل الحضور والغياب");
     for (const s of summaries) {
-      const sec = s.sections as any;
+      const course = sectionToCourse.get(s.section_id);
       const total = s.total_sessions ?? 0;
       const attended = s.attended_sessions ?? 0;
       const attendPct = total > 0 ? Math.round((attended / total) * 100) : 100;
       const absencePct = 100 - attendPct;
       const risk = absencePct >= 25 ? "🔴 خطر الحرمان" : absencePct >= 15 ? "🟡 تحذير" : "🟢 آمن";
       parts.push(
-        `- ${sec?.courses?.code ?? ""} (${sec?.section_code ?? ""}): إجمالي ${total} محاضرة | حضور ${attended} (${attendPct}%) | غياب بعذر ${s.excused_absences ?? 0} | غياب بدون عذر ${s.unexcused_absences ?? 0} | تأخر ${s.late_count ?? 0} | الوضع: ${risk}${s.is_dismissed ? " — ⚠️ محروم من هذا المقرر" : ""}`
+        `- ${course?.code ?? "مادة"}: إجمالي ${total} محاضرة | حضور ${attended} (${attendPct}%) | غياب بعذر ${s.excused_absences ?? 0} | غياب بدون عذر ${s.unexcused_absences ?? 0} | تأخر ${s.late_count ?? 0} | الوضع: ${risk}${s.is_dismissed ? " — ⚠️ محروم من هذا المقرر" : ""}`
       );
     }
     parts.push("");
@@ -178,10 +206,10 @@ export async function getStudentPersonalSnapshot(
   if (grades.length > 0) {
     parts.push("## الدرجات والنتائج المنشورة (سجل المقررات)");
     for (const g of grades) {
-      const sec = g.sections as any;
+      const course = g.course_id ? courseMap.get(g.course_id) : null;
       const enrollment = Array.isArray(g.enrollments) ? g.enrollments[0] : g.enrollments;
       parts.push(
-        `- ${sec?.courses?.code ?? ""} — ${sec?.courses?.name ?? ""}: أعمال سنة ${g.coursework_grade ?? "—"} | منتصف الفصل ${g.midterm_grade ?? "—"} | نهائي ${g.final_grade ?? "—"} | المجموع ${g.total_grade ?? "—"} | التقدير ${enrollment?.letter_grade ?? "—"}`
+        `- ${course?.code ?? "مادة"} — ${course?.name ?? ""}: أعمال سنة ${g.coursework_grade ?? "—"} | منتصف الفصل ${g.midterm_grade ?? "—"} | نهائي ${g.final_grade ?? "—"} | المجموع ${g.total_grade ?? "—"} | التقدير ${enrollment?.letter_grade ?? "—"}`
       );
     }
     parts.push("");
@@ -201,13 +229,18 @@ export async function getStudentPersonalSnapshot(
   if (pendingAssignments.length > 0) {
     parts.push("## التكاليف غير المسلَّمة (مطلوب منك تسليمها)");
     for (const a of pendingAssignments) {
-      const sec = a.sections as any;
+      const course = a.course_id ? courseMap.get(a.course_id) : null;
+      const courseInfo = course
+        ? `${course.code} — ${course.name}`
+        : (Array.isArray(a.courses) ? a.courses[0] : a.courses)
+          ? `${(Array.isArray(a.courses) ? a.courses[0] : a.courses).code}`
+          : "مادة";
       const dueDate = new Date(a.due_date).toLocaleDateString("ar-SA", {
         weekday: "long", year: "numeric", month: "long", day: "numeric",
       });
       const now = new Date();
       const isOverdue = new Date(a.due_date) < now;
-      parts.push(`- "${a.title}" | المقرر: ${sec?.courses?.code ?? ""} — ${sec?.courses?.name ?? ""} | الشعبة: ${sec?.section_code ?? ""} | موعد التسليم: ${dueDate}${isOverdue ? " ⚠️ انتهى الموعد" : ""} | الدرجة القصوى: ${a.max_grade ?? "—"}`);
+      parts.push(`- "${a.title}" | المقرر: ${courseInfo} | موعد التسليم: ${dueDate}${isOverdue ? " ⚠️ انتهى الموعد" : ""} | الدرجة القصوى: ${a.max_grade ?? "—"}`);
     }
     parts.push("");
   } else {
@@ -219,7 +252,12 @@ export async function getStudentPersonalSnapshot(
   if (submittedAssignments.length > 0) {
     parts.push("## التكاليف المسلَّمة ودرجاتها");
     for (const a of submittedAssignments) {
-      const sec = a.sections as any;
+      const course = a.course_id ? courseMap.get(a.course_id) : null;
+      const courseInfo = course
+        ? `${course.code} — ${course.name}`
+        : (Array.isArray(a.courses) ? a.courses[0] : a.courses)
+          ? `${(Array.isArray(a.courses) ? a.courses[0] : a.courses).code}`
+          : "مادة";
       const sub = submissionMap.get(a.id) as any;
       const statusLabel =
         sub.status === "graded" ? "✅ مصحَّح" :
@@ -233,7 +271,7 @@ export async function getStudentPersonalSnapshot(
       const submittedDate = sub.submitted_at
         ? new Date(sub.submitted_at).toLocaleDateString("ar-SA")
         : "—";
-      parts.push(`- "${a.title}" | المقرر: ${sec?.courses?.code ?? ""} — ${sec?.courses?.name ?? ""} | الشعبة: ${sec?.section_code ?? ""} | الحالة: ${statusLabel} | ${gradeInfo}${feedbackInfo} | تاريخ التسليم: ${submittedDate}`);
+      parts.push(`- "${a.title}" | المقرر: ${courseInfo} | الحالة: ${statusLabel} | ${gradeInfo}${feedbackInfo} | تاريخ التسليم: ${submittedDate}`);
     }
     parts.push("");
   }
@@ -241,8 +279,6 @@ export async function getStudentPersonalSnapshot(
   const allCirculars = circularsRes.data ?? [];
   const relevantCirculars = allCirculars.filter((c: any) => {
     if (c.target_type === "all") return true;
-    if (c.target_type === "students" && instructorIds.includes(c.created_by)) return true;
-    if (c.target_type === "section" && sectionIds.includes(c.target_id)) return true;
     return false;
   });
   if (relevantCirculars.length > 0) {
@@ -273,13 +309,17 @@ export async function getStudentPersonalSnapshot(
   // ── Course Materials ──────────────────────────────────
   const materials = materialsRes.data ?? [];
   if (materials.length > 0) {
-    // Group by course
     const byCourse: Record<string, { courseName: string; items: any[] }> = {};
     for (const m of materials) {
-      const sec = m.sections as any;
-      const courseKey = `${sec?.courses?.code ?? "unknown"}`;
+      const course = m.course_id ? courseMap.get(m.course_id) : null;
+      const courseName = course
+        ? `${course.code} — ${course.name}`
+        : (Array.isArray(m.courses) ? m.courses[0] : m.courses)
+          ? `${(Array.isArray(m.courses) ? m.courses[0] : m.courses).code} — ${(Array.isArray(m.courses) ? m.courses[0] : m.courses).name}`
+          : "مادة";
+      const courseKey = course?.code ?? m.course_id ?? "unknown";
       if (!byCourse[courseKey]) {
-        byCourse[courseKey] = { courseName: `${sec?.courses?.code ?? ""} — ${sec?.courses?.name ?? ""}`, items: [] };
+        byCourse[courseKey] = { courseName, items: [] };
       }
       byCourse[courseKey].items.push(m);
     }

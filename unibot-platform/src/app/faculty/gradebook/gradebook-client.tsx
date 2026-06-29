@@ -22,8 +22,8 @@ interface DraftEntry {
   final: string;
 }
 
-export function GradebookClient({ sections }: { sections: any[] }) {
-  const [selectedSection, setSelectedSection] = useState("");
+export function GradebookClient({ courses }: { courses: any[] }) {
+  const [selectedCourseId, setSelectedCourseId] = useState("");
   const [entries, setEntries] = useState<any[]>([]);
   const [drafts, setDrafts] = useState<Record<string, DraftEntry>>({});
   const [dirty, setDirty] = useState<Set<string>>(new Set());
@@ -45,13 +45,13 @@ export function GradebookClient({ sections }: { sections: any[] }) {
     setDirty(new Set());
   }
 
-  async function loadEntries(sectionId: string) {
-    setSelectedSection(sectionId);
-    if (!sectionId) { setEntries([]); setDrafts({}); setDirty(new Set()); return; }
+  async function loadEntries(courseId: string) {
+    setSelectedCourseId(courseId);
+    if (!courseId) { setEntries([]); setDrafts({}); setDirty(new Set()); return; }
     setLoading(true);
     setError("");
     try {
-      const data = await getGradebookEntries(sectionId);
+      const data = await getGradebookEntries(courseId);
       setEntries(data);
       initDrafts(data);
     } catch (e: unknown) {
@@ -62,12 +62,12 @@ export function GradebookClient({ sections }: { sections: any[] }) {
   }
 
   async function handleInit() {
-    if (!selectedSection) return;
+    if (!selectedCourseId) return;
     setLoading(true);
     setError("");
     try {
-      await initGradebook(selectedSection);
-      const data = await getGradebookEntries(selectedSection);
+      await initGradebook(selectedCourseId);
+      const data = await getGradebookEntries(selectedCourseId);
       setEntries(data);
       initDrafts(data);
     } catch (e: unknown) {
@@ -99,7 +99,7 @@ export function GradebookClient({ sections }: { sections: any[] }) {
           );
         })
       );
-      const data = await getGradebookEntries(selectedSection);
+      const data = await getGradebookEntries(selectedCourseId);
       setEntries(data);
       initDrafts(data);
       setSaved(true);
@@ -112,12 +112,12 @@ export function GradebookClient({ sections }: { sections: any[] }) {
   }
 
   async function handlePublish() {
-    if (!selectedSection || !confirm("نشر جميع الدرجات؟ سيتمكن الطلاب من رؤيتها.")) return;
+    if (!selectedCourseId || !confirm("نشر جميع الدرجات؟ سيتمكن الطلاب من رؤيتها.")) return;
     setLoading(true);
     setError("");
     try {
-      await publishGrades(selectedSection);
-      const data = await getGradebookEntries(selectedSection);
+      await publishGrades(selectedCourseId);
+      const data = await getGradebookEntries(selectedCourseId);
       setEntries(data);
       initDrafts(data);
     } catch (e: unknown) {
@@ -150,17 +150,17 @@ export function GradebookClient({ sections }: { sections: any[] }) {
 
       <div className="flex flex-wrap items-center gap-3">
         <select
-          value={selectedSection}
+          value={selectedCourseId}
           onChange={(e) => loadEntries(e.target.value)}
           className="rounded-xl border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue focus:ring-2 focus:ring-action-blue/20"
         >
-          <option value="">— اختر الشعبة —</option>
-          {sections.map((s: any) => (
-            <option key={s.id} value={s.id}>{s.courses?.code} ({s.section_code})</option>
+          <option value="">— اختر المادة —</option>
+          {courses.map((c: any) => (
+            <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
           ))}
         </select>
 
-        {selectedSection && (
+        {selectedCourseId && (
           <>
             <button
               onClick={handleInit}
@@ -203,14 +203,14 @@ export function GradebookClient({ sections }: { sections: any[] }) {
         )}
       </div>
 
-      {!selectedSection && (
+      {!selectedCourseId && (
         <div className="rounded-2xl border border-dashed border-border bg-card-bg p-12 text-center">
           <GraduationCap className="mx-auto mb-3 h-10 w-10 text-text-secondary" />
-          <p className="text-sm text-text-secondary">اختر شعبة لعرض سجل الدرجات</p>
+          <p className="text-sm text-text-secondary">اختر مادة لعرض سجل الدرجات</p>
         </div>
       )}
 
-      {selectedSection && entries.length === 0 && !loading && (
+      {selectedCourseId && entries.length === 0 && !loading && (
         <div className="rounded-2xl border border-dashed border-border bg-card-bg p-12 text-center">
           <GraduationCap className="mx-auto mb-3 h-10 w-10 text-text-secondary" />
           <p className="mb-2 text-sm text-text-secondary">لا توجد سجلات درجات</p>

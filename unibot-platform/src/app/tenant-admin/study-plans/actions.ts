@@ -19,17 +19,20 @@ export async function getMajorsWithLevels() {
   return data || [];
 }
 
-export async function getCourses() {
+export async function getCourses(departmentId?: string) {
   const { profile } = await requireRole(["tenant_admin"]);
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("courses")
-    .select("id, code, name, credit_hours, course_type")
+    .select("id, code, name, credit_hours, course_type, department_id")
     .eq("tenant_id", profile.tenant_id)
     .eq("is_active", true)
     .order("code");
 
+  if (departmentId) query = query.eq("department_id", departmentId);
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data || [];
 }

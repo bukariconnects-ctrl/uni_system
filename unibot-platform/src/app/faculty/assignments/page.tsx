@@ -6,20 +6,30 @@ export default async function AssignmentsPage() {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
-  const [sectionsRes, assignmentsRes] = await Promise.all([
+  const [coursesRes, assignmentsRes] = await Promise.all([
     supabase
-      .from("sections")
-      .select("id, section_code, courses(code, name), semesters(name, status)")
-      .eq("tenant_id", profile.tenant_id)
+      .from("course_schedules")
+      .select("study_plan_courses!inner(course_id, courses!inner(id, code, name)), semesters!inner(name, status)")
       .eq("instructor_id", profile.id)
-      .order("created_at", { ascending: false }),
+      .eq("tenant_id", profile.tenant_id),
     supabase
       .from("assignments")
-      .select("*, sections(section_code, courses(code, name))")
+      .select("*, courses(code, name)")
       .eq("tenant_id", profile.tenant_id)
       .eq("created_by", profile.id)
       .order("due_date", { ascending: true }),
   ]);
+
+  // Deduplicate courses (same course may appear in multiple schedules)
+  const seen = new Set<string>();
+  const courses = (coursesRes.data || []).reduce((acc: any[], s: any) => {
+    const c = s.study_plan_courses?.courses;
+    if (c && !seen.has(c.id)) {
+      seen.add(c.id);
+      acc.push(c);
+    }
+    return acc;
+  }, []);
 
   return (
     <div>
@@ -28,7 +38,7 @@ export default async function AssignmentsPage() {
         <p className="mt-1 text-sm text-text-secondary">إنشاء التكاليف وتصحيح التسليمات</p>
       </div>
       <AssignmentsClient
-        sections={sectionsRes.data || []}
+        courses={courses}
         assignments={assignmentsRes.data || []}
       />
     </div>

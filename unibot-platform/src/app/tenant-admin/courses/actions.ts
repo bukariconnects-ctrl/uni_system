@@ -37,9 +37,12 @@ export async function createCourse(formData: FormData) {
   const { profile } = await requireRole(["tenant_admin"]);
   const supabase = await createClient();
 
+  const department_id = formData.get("department_id") as string;
+  if (!department_id) throw new Error("يجب اختيار القسم");
+
   const { error } = await supabase.from("courses").insert({
     tenant_id: profile.tenant_id,
-    department_id: (formData.get("department_id") as string) || null,
+    department_id,
     code: formData.get("code") as string,
     name: formData.get("name") as string,
     description: (formData.get("description") as string) || null,
@@ -62,7 +65,7 @@ export async function updateCourse(id: string, formData: FormData) {
   const { error } = await supabase
     .from("courses")
     .update({
-      department_id: (formData.get("department_id") as string) || null,
+      department_id: formData.get("department_id") as string,
       code: formData.get("code") as string,
       name: formData.get("name") as string,
       description: (formData.get("description") as string) || null,
@@ -80,7 +83,18 @@ export async function deleteCourse(id: string) {
   await requireRole(["tenant_admin"]);
   const supabase = await createClient();
 
-  const { error } = await supabase.from("courses").delete().eq("id", id);
+  // Soft delete — deactivate instead of removing
+  const { error } = await supabase.from("courses").update({ is_active: false }).eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/tenant-admin/courses");
+}
+
+export async function restoreCourse(id: string) {
+  await requireRole(["tenant_admin"]);
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("courses").update({ is_active: true }).eq("id", id);
 
   if (error) throw new Error(error.message);
   revalidatePath("/tenant-admin/courses");

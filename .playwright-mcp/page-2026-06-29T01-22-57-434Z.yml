@@ -1,0 +1,151 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e179] [cursor=pointer]:
+    - img [ref=e180]
+  - alert [ref=e245]
+  - generic [ref=e246]: الهندسة والحاسبات
+  - generic [ref=e277]:
+    - complementary [ref=e278]:
+      - generic [ref=e279]:
+        - generic [ref=e281]: 👨‍🎓
+        - generic [ref=e282]:
+          - paragraph [ref=e283]: UniBot
+          - paragraph [ref=e284]: بوابة الطالب
+          - paragraph [ref=e285]: UST uni
+        - button [ref=e287]:
+          - img [ref=e288]
+      - navigation [ref=e291]:
+        - link "لوحة التحكم" [ref=e292] [cursor=pointer]:
+          - /url: /student
+          - img [ref=e293]
+          - text: لوحة التحكم
+        - link "التسجيل الذاتي" [ref=e298] [cursor=pointer]:
+          - /url: /student/register
+          - img [ref=e299]
+          - text: التسجيل الذاتي
+        - link "محتوى المقررات" [ref=e302] [cursor=pointer]:
+          - /url: /student/materials
+          - img [ref=e303]
+          - text: محتوى المقررات
+        - link "التكاليف" [ref=e305] [cursor=pointer]:
+          - /url: /student/assignments
+          - img [ref=e306]
+          - text: التكاليف
+        - link "حضوري" [ref=e309] [cursor=pointer]:
+          - /url: /student/attendance
+          - img [ref=e310]
+          - text: حضوري
+        - link "درجاتي" [ref=e314] [cursor=pointer]:
+          - /url: /student/grades
+          - img [ref=e315]
+          - text: درجاتي
+        - link "الرسائل" [ref=e318] [cursor=pointer]:
+          - /url: /student/messages
+          - img [ref=e319]
+          - text: الرسائل
+        - link "التعاميم" [ref=e321] [cursor=pointer]:
+          - /url: /student/circulars
+          - img [ref=e322]
+          - text: التعاميم
+        - link "UniBot" [ref=e325] [cursor=pointer]:
+          - /url: /student/unibot
+          - img [ref=e326]
+          - text: UniBot
+        - link "تذاكري" [ref=e329] [cursor=pointer]:
+          - /url: /student/tickets
+          - img [ref=e330]
+          - text: تذاكري
+      - generic [ref=e332]:
+        - link "ات اختبار تلقائي testauto@test.com" [ref=e333] [cursor=pointer]:
+          - /url: /student/profile
+          - generic [ref=e334]: ات
+          - generic [ref=e335]:
+            - paragraph [ref=e336]: اختبار تلقائي
+            - paragraph [ref=e337]: testauto@test.com
+        - button "تسجيل الخروج" [ref=e338]:
+          - img [ref=e339]
+          - text: تسجيل الخروج
+      - button "تبديل الوضع" [ref=e343]:
+        - img [ref=e344]
+    - main [ref=e346]:
+      - generic [ref=e347]:
+        - generic [ref=e348]:
+          - heading "مرحباً، اختبار 👋" [level=1] [ref=e349]
+          - paragraph [ref=e350]: الاثنين، ٢٩ يونيو ٢٠٢٦
+        - generic [ref=e351]:
+          - generic [ref=e352]:
+            - generic [ref=e354]:
+              - generic [ref=e355]:
+                - paragraph [ref=e356]: المعدل التراكمي
+                - paragraph [ref=e357]: "0.00"
+                - generic [ref=e358]:
+                  - img [ref=e359]
+                  - generic [ref=e362]: ضعيف
+              - img [ref=e364]
+            - generic [ref=e368]:
+              - generic [ref=e369]:
+                - paragraph [ref=e370]: الساعات المكتسبة
+                - paragraph [ref=e371]: "0"
+                - generic [ref=e372]:
+                  - img [ref=e373]
+                  - generic [ref=e376]: NaN%
+                  - generic [ref=e377]: من الإجمالي
+              - img [ref=e379]
+            - generic [ref=e382]:
+              - generic [ref=e383]:
+                - paragraph [ref=e384]: نسبة الحضور
+                - paragraph [ref=e385]: 0%
+                - generic [ref=e386]:
+                  - generic [ref=e387]: 0/0
+                  - generic [ref=e388]: جلسة
+              - img [ref=e390]
+            - generic [ref=e394]:
+              - generic [ref=e395]:
+                - paragraph [ref=e396]: المقررات الحالية
+                - paragraph [ref=e397]: "1"
+                - generic [ref=e398]:
+                  - generic [ref=e399]: "0"
+                  - generic [ref=e400]: تكليف قادم
+              - img [ref=e402]
+          - generic [ref=e404]:
+            - generic [ref=e405]:
+              - generic [ref=e406]:
+                - generic [ref=e407]:
+                  - generic [ref=e408]:
+                    - img [ref=e409]
+                    - heading "مساري الدراسي" [level=2] [ref=e412]
+                  - paragraph [ref=e413]: التقدم نحو التخرج
+                - generic [ref=e414]:
+                  - paragraph [ref=e415]: "0.00"
+                  - paragraph [ref=e416]: المعدل التراكمي
+                  - paragraph [ref=e417]: ضعيف
+              - generic [ref=e418]:
+                - generic [ref=e419]: 0 ساعة مكتسبة
+                - generic [ref=e420]: NaN%
+                - generic [ref=e421]: 0 ساعة إجمالية
+              - generic [ref=e427]:
+                - generic [ref=e428]: 0%
+                - generic [ref=e429]: 25%
+                - generic [ref=e430]: 50%
+                - generic [ref=e431]: 75%
+                - generic [ref=e432]: 100%
+              - generic [ref=e433]:
+                - generic [ref=e434]:
+                  - img [ref=e435]
+                  - generic [ref=e437]: "1"
+                  - generic [ref=e438]: مقررات حالية
+                - generic [ref=e439]:
+                  - img [ref=e440]
+                  - generic [ref=e443]: "0"
+                  - generic [ref=e444]: ساعة معتمدة
+            - generic [ref=e445]:
+              - generic [ref=e446]:
+                - heading "اتجاه الدرجات" [level=3] [ref=e447]
+                - paragraph [ref=e448]: آخر التقييمات (نسبة مئوية من الدرجة القصوى)
+              - generic [ref=e450]:
+                - img [ref=e451]
+                - paragraph [ref=e453]: لا توجد درجات مسجلة بعد
+          - generic [ref=e454]:
+            - generic [ref=e455]:
+              - img [ref=e456]
+              - heading "المواعيد النهائية القادمة" [level=2] [ref=e459]
+            - paragraph [ref=e460]: لا توجد تكاليف قادمة

@@ -35,37 +35,51 @@ export default async function AcademicManagementDashboard() {
     courseIds = (courses || []).map((c) => c.id);
   }
 
-  // Fetch sections in managed departments for active semester
-  const { data: sections } =
+  // Fetch courses in managed departments for active semester
+  const { data: courseList } =
     semesterId && courseIds.length > 0
       ? await supabase
-          .from("sections")
-          .select("id, section_code, status, course_id, semester_id, enrolled_count, courses(code, name)")
+          .from("courses")
+          .select("id, code, name, credit_hours")
+          .in("id", courseIds)
           .eq("tenant_id", profile.tenant_id)
-          .eq("semester_id", semesterId)
-          .in("course_id", courseIds)
       : { data: [] };
 
-  const sectionIds = (sections || []).map((s: any) => s.id);
-
-  // Fetch enrollments for these sections
+  // Fetch enrollments for these courses
   const { data: enrollments } =
-    sectionIds.length > 0
+    courseIds.length > 0
       ? await supabase
           .from("enrollments")
-          .select("id, student_id, section_id, status")
-          .in("section_id", sectionIds)
+          .select("id, student_id, course_id, section_id, status")
+          .in("course_id", courseIds)
           .eq("status", "enrolled")
       : { data: [] };
 
-  // Fetch attendance summaries for these sections
+  // Build section→course map for backward compat with attendance_summaries
+  const enrollmentSectionToCourse: Record<string, string> = {};
+  for (const e of (enrollments || [])) {
+    if ((e as any).section_id && (e as any).course_id) {
+      enrollmentSectionToCourse[(e as any).section_id] = (e as any).course_id;
+    }
+  }
+
+  // Fetch section IDs from enrollments for backward-compat with attendance_summaries
+  const enrolledSectionIds = Object.keys(enrollmentSectionToCourse);
+
+  // Fetch attendance summaries (still uses section_id — backward compat)
   const { data: attendanceSummaries } =
-    sectionIds.length > 0
+    enrolledSectionIds.length > 0
       ? await supabase
           .from("attendance_summaries")
           .select("student_id, section_id, absence_percentage, attended_sessions, total_sessions, is_dismissed")
-          .in("section_id", sectionIds)
+          .in("section_id", enrolledSectionIds)
       : { data: [] };
+
+  // Attach course_id to each summary
+  const enrichedSummaries = (attendanceSummaries || []).map((s: any) => ({
+    ...s,
+    course_id: enrollmentSectionToCourse[s.section_id] || null,
+  }));
 
   // Fetch risk zone students
   const studentIds = (enrollments || []).map((e: any) => e.student_id);
@@ -89,9 +103,9 @@ export default async function AcademicManagementDashboard() {
 
       <AcademicManagementDashboardClient
         data={{
-          sections: (sections || []) as any,
+          courses: (courseList || []) as any,
           enrollments: (enrollments || []) as any,
-          attendanceSummaries: (attendanceSummaries || []) as any,
+          attendanceSummaries: enrichedSummaries as any,
           riskStudents: (riskStudents || []) as any,
         }}
       />

@@ -85,7 +85,7 @@ export function StudentAssignmentsClient({
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-text-primary">{assignment.title}</span>
                     <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary">
-                      {assignment.sections?.courses?.code} ({assignment.sections?.section_code})
+                      {assignment.courses?.code}
                     </span>
                     {sub && (
                       <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_MAP[sub.status]?.color || ""}`}>

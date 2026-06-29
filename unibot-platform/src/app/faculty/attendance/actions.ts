@@ -5,19 +5,19 @@ import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 
-export async function getAttendanceSessions(sectionId?: string) {
+export async function getAttendanceSessions(courseId?: string) {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
   let query = supabase
     .from("attendance_sessions")
-    .select("*, sections(section_code, courses(code, name))")
+    .select("*, courses(code, name)")
     .eq("tenant_id", profile.tenant_id)
     .eq("created_by", profile.id)
     .order("session_date", { ascending: false })
     .order("start_time", { ascending: false });
 
-  if (sectionId) query = query.eq("section_id", sectionId);
+  if (courseId) query = query.eq("course_id", courseId);
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
@@ -28,7 +28,7 @@ export async function createAttendanceSession(formData: FormData) {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
-  const sectionId = formData.get("section_id") as string;
+  const courseId = formData.get("course_id") as string;
   const sessionDate = formData.get("session_date") as string;
   const startTime = formData.get("start_time") as string;
 
@@ -36,7 +36,7 @@ export async function createAttendanceSession(formData: FormData) {
     .from("attendance_sessions")
     .insert({
       tenant_id: profile.tenant_id,
-      section_id: sectionId,
+      course_id: courseId,
       session_date: sessionDate,
       start_time: startTime,
       is_open: false,
@@ -47,41 +47,32 @@ export async function createAttendanceSession(formData: FormData) {
 
   if (error) {
     if (error.message.includes("unique") || error.message.includes("duplicate"))
-      throw new Error("توجد جلسة حضور لهذه الشعبة في نفس التاريخ والوقت");
+      throw new Error("توجد جلسة حضور لهذه المادة في نفس التاريخ والوقت");
     throw new Error(error.message);
   }
 
   // Use service client to bypass RLS for fetching enrollments and inserting records
   const serviceClient = createServiceClient();
-  
-  console.log("Creating attendance records for session:", session.id, "section:", sectionId);
-  
+
   const { data: enrolledStudents, error: enrollError } = await serviceClient
     .from("enrollments")
     .select("student_id")
-    .eq("section_id", sectionId)
+    .eq("course_id", courseId)
     .eq("status", "enrolled");
-
-  console.log("Enrolled students found:", enrolledStudents?.length || 0, "Error:", enrollError);
 
   if (enrolledStudents && enrolledStudents.length > 0) {
     const records = enrolledStudents.map((e: any) => ({
       tenant_id: profile.tenant_id,
       session_id: session.id,
       student_id: e.student_id,
-      section_id: sectionId,
+      course_id: courseId,
       status: "present" as const,
     }));
 
-    console.log("Inserting attendance records:", records.length);
     const { error: insertError } = await serviceClient.from("attendance_records").insert(records);
     if (insertError) {
       console.error("Error inserting attendance records:", insertError);
-    } else {
-      console.log("Successfully inserted attendance records");
     }
-  } else {
-    console.log("No enrolled students found for section:", sectionId);
   }
 
   revalidatePath("/faculty/attendance");
@@ -152,7 +143,7 @@ export async function getSessionRecords(sessionId: string) {
     // Get session info
     const { data: session } = await serviceClient
       .from("attendance_sessions")
-      .select("section_id, tenant_id")
+      .select("course_id, tenant_id")
       .eq("id", sessionId)
       .single();
 
@@ -161,7 +152,7 @@ export async function getSessionRecords(sessionId: string) {
       const { data: enrolledStudents } = await serviceClient
         .from("enrollments")
         .select("student_id")
-        .eq("section_id", session.section_id)
+        .eq("course_id", session.course_id)
         .eq("status", "enrolled");
 
       if (enrolledStudents && enrolledStudents.length > 0) {
@@ -169,7 +160,7 @@ export async function getSessionRecords(sessionId: string) {
           tenant_id: session.tenant_id,
           session_id: sessionId,
           student_id: e.student_id,
-          section_id: session.section_id,
+          course_id: session.course_id,
           status: "present" as const,
         }));
 

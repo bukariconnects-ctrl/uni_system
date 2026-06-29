@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
-  BookCopy,
   CalendarClock,
   Users,
   Megaphone,
@@ -18,9 +17,8 @@ import { SidebarShell } from "@/components/sidebar-shell";
 
 const navItems = [
   { href: "/academic-management", label: "لوحة التحكم", icon: LayoutDashboard },
-  { href: "/academic-management/sections", label: "إدارة الشعب", icon: BookCopy },
-  { href: "/academic-management/enrollments", label: "التسجيل الجماعي", icon: Users },
   { href: "/academic-management/schedules", label: "الجدول الدراسي", icon: CalendarClock },
+  { href: "/academic-management/enrollments", label: "التسجيل الجماعي", icon: Users },
   { href: "/academic-management/circulars", label: "التعاميم", icon: Megaphone },
   { href: "/academic-management/analytics", label: "التحليلات التنبؤية", icon: BarChart3 },
   { href: "/academic-management/tickets", label: "إدارة التذاكر", icon: TicketIcon },

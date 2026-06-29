@@ -8,21 +8,21 @@ export default async function StudentAssignmentsPage() {
 
   const { data: enrollments } = await supabase
     .from("enrollments")
-    .select("section_id")
+    .select("course_id")
     .eq("student_id", profile.id)
     .eq("status", "enrolled");
 
-  const sectionIds = (enrollments || []).map((e: any) => e.section_id);
+  const courseIds = (enrollments || []).map((e: any) => e.course_id);
 
   let assignments: any[] = [];
   let submissions: any[] = [];
 
-  if (sectionIds.length > 0) {
+  if (courseIds.length > 0) {
     const [aRes, sRes] = await Promise.all([
       supabase
         .from("assignments")
-        .select("*, attachment_url, sections(section_code, courses(code, name))")
-        .in("section_id", sectionIds)
+        .select("*, attachment_url, courses(code, name)")
+        .in("course_id", courseIds)
         .eq("is_published", true)
         .order("due_date", { ascending: true }),
       supabase

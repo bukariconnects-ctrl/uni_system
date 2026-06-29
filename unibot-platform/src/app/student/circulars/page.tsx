@@ -6,14 +6,14 @@ export default async function StudentCircularsPage() {
   const { profile } = await requireRole(["student"]);
   const supabase = await createClient();
 
-  // Get sections the student is enrolled in
+  // Get courses the student is enrolled in
   const { data: enrollments } = await supabase
     .from("enrollments")
-    .select("section_id, sections(course_id, courses(major_id: study_plan_courses(academic_level_id)))")
+    .select("course_id")
     .eq("student_id", profile.id)
     .eq("status", "enrolled");
 
-  const enrolledSectionIds = (enrollments || []).map((e: any) => e.section_id);
+  const enrolledCourseIds = (enrollments || []).map((e: any) => e.course_id).filter(Boolean);
 
   // Fetch circulars that apply to this student — include sender profile
   const { data: allCirculars } = await supabase
@@ -24,10 +24,10 @@ export default async function StudentCircularsPage() {
     .order("created_at", { ascending: false });
 
   // Filter circulars relevant to this student
-  // Covers admin circulars (all, students, section) + faculty circulars (students=my students, section=specific section)
+  // Covers admin circulars (all, students) + faculty circulars (section = specific course)
   const circulars = (allCirculars || []).filter((c: any) => {
     if (c.target_type === "all" || c.target_type === "students") return true;
-    if (c.target_type === "section" && enrolledSectionIds.includes(c.target_id)) return true;
+    if (c.target_type === "section" && enrolledCourseIds.includes(c.target_id)) return true;
     return false;
   });
 
