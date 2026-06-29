@@ -10,7 +10,7 @@ export async function getChannels() {
 
   const { data } = await supabase
     .from("channel_members")
-    .select("muted_until, channels(id, name, channel_type, section_id, is_readonly, allow_student_messages, sections(section_code, courses(code, name)))")
+    .select("muted_until, channels(id, name, channel_type, course_id, is_readonly, allow_student_messages, courses(code, name))")
     .eq("profile_id", profile.id)
     .eq("tenant_id", profile.tenant_id);
 

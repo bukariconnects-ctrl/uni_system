@@ -8,7 +8,7 @@ export default async function StudentGradesPage() {
 
   const { data: entries } = await supabase
     .from("gradebook_entries")
-    .select("*, sections(section_code, courses(code, name, credit_hours)), enrollments(final_grade, letter_grade)")
+    .select("*, courses(code, name, credit_hours), enrollments(final_grade, letter_grade)")
     .eq("student_id", profile.id)
     .eq("is_published", true)
     .order("created_at", { ascending: false });
@@ -58,8 +58,8 @@ export default async function StudentGradesPage() {
                           <GraduationCap className="h-4 w-4 text-action-blue" />
                         </div>
                         <div>
-                          <span className="font-medium text-text-primary">{entry.sections?.courses?.code}</span>
-                          <span className="mr-2 text-xs text-text-secondary">{entry.sections?.courses?.name}</span>
+                          <span className="font-medium text-text-primary">{entry.courses?.code}</span>
+                          <span className="mr-2 text-xs text-text-secondary">{entry.courses?.name}</span>
                         </div>
                       </div>
                     </td>

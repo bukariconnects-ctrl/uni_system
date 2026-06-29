@@ -1,0 +1,147 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e7]: 👨‍🎓
+        - generic [ref=e8]:
+          - paragraph [ref=e9]: UniBot
+          - paragraph [ref=e10]: بوابة الطالب
+          - paragraph [ref=e11]: UST uni
+        - button [ref=e13]:
+          - img [ref=e14]
+      - navigation [ref=e17]:
+        - link "لوحة التحكم" [ref=e18] [cursor=pointer]:
+          - /url: /student
+          - img [ref=e19]
+          - text: لوحة التحكم
+        - link "التسجيل الذاتي" [ref=e24] [cursor=pointer]:
+          - /url: /student/register
+          - img [ref=e25]
+          - text: التسجيل الذاتي
+        - link "محتوى المقررات" [ref=e28] [cursor=pointer]:
+          - /url: /student/materials
+          - img [ref=e29]
+          - text: محتوى المقررات
+        - link "التكاليف" [ref=e31] [cursor=pointer]:
+          - /url: /student/assignments
+          - img [ref=e32]
+          - text: التكاليف
+        - link "حضوري" [ref=e35] [cursor=pointer]:
+          - /url: /student/attendance
+          - img [ref=e36]
+          - text: حضوري
+        - link "درجاتي" [ref=e40] [cursor=pointer]:
+          - /url: /student/grades
+          - img [ref=e41]
+          - text: درجاتي
+        - link "الرسائل" [ref=e44] [cursor=pointer]:
+          - /url: /student/messages
+          - img [ref=e45]
+          - text: الرسائل
+        - link "التعاميم" [ref=e47] [cursor=pointer]:
+          - /url: /student/circulars
+          - img [ref=e48]
+          - text: التعاميم
+        - link "UniBot" [ref=e51] [cursor=pointer]:
+          - /url: /student/unibot
+          - img [ref=e52]
+          - text: UniBot
+        - link "تذاكري" [ref=e55] [cursor=pointer]:
+          - /url: /student/tickets
+          - img [ref=e56]
+          - text: تذاكري
+      - generic [ref=e58]:
+        - link "ات اختبار تلقائي testauto@test.com" [ref=e59] [cursor=pointer]:
+          - /url: /student/profile
+          - generic [ref=e60]: ات
+          - generic [ref=e61]:
+            - paragraph [ref=e62]: اختبار تلقائي
+            - paragraph [ref=e63]: testauto@test.com
+        - button "تسجيل الخروج" [ref=e64]:
+          - img [ref=e65]
+          - text: تسجيل الخروج
+    - main [ref=e70]:
+      - generic [ref=e71]:
+        - generic [ref=e72]:
+          - heading "مرحباً، اختبار 👋" [level=1] [ref=e73]
+          - paragraph [ref=e74]: الاثنين، ٢٩ يونيو ٢٠٢٦
+        - generic [ref=e75]:
+          - generic [ref=e76]:
+            - generic [ref=e78]:
+              - generic [ref=e79]:
+                - paragraph [ref=e80]: المعدل التراكمي
+                - paragraph [ref=e81]: "0.00"
+                - generic [ref=e82]:
+                  - img [ref=e83]
+                  - generic [ref=e86]: ضعيف
+              - img [ref=e88]
+            - generic [ref=e92]:
+              - generic [ref=e93]:
+                - paragraph [ref=e94]: الساعات المكتسبة
+                - paragraph [ref=e95]: "0"
+                - generic [ref=e96]:
+                  - img [ref=e97]
+                  - generic [ref=e100]: NaN%
+                  - generic [ref=e101]: من الإجمالي
+              - img [ref=e103]
+            - generic [ref=e106]:
+              - generic [ref=e107]:
+                - paragraph [ref=e108]: نسبة الحضور
+                - paragraph [ref=e109]: 0%
+                - generic [ref=e110]:
+                  - generic [ref=e111]: 0/0
+                  - generic [ref=e112]: جلسة
+              - img [ref=e114]
+            - generic [ref=e118]:
+              - generic [ref=e119]:
+                - paragraph [ref=e120]: المقررات الحالية
+                - paragraph [ref=e121]: "1"
+                - generic [ref=e122]:
+                  - generic [ref=e123]: "0"
+                  - generic [ref=e124]: تكليف قادم
+              - img [ref=e126]
+          - generic [ref=e128]:
+            - generic [ref=e129]:
+              - generic [ref=e130]:
+                - generic [ref=e131]:
+                  - generic [ref=e132]:
+                    - img [ref=e133]
+                    - heading "مساري الدراسي" [level=2] [ref=e136]
+                  - paragraph [ref=e137]: التقدم نحو التخرج
+                - generic [ref=e138]:
+                  - paragraph [ref=e139]: "0.00"
+                  - paragraph [ref=e140]: المعدل التراكمي
+                  - paragraph [ref=e141]: ضعيف
+              - generic [ref=e142]:
+                - generic [ref=e143]: 0 ساعة مكتسبة
+                - generic [ref=e144]: NaN%
+                - generic [ref=e145]: 0 ساعة إجمالية
+              - generic [ref=e151]:
+                - generic [ref=e152]: 0%
+                - generic [ref=e153]: 25%
+                - generic [ref=e154]: 50%
+                - generic [ref=e155]: 75%
+                - generic [ref=e156]: 100%
+              - generic [ref=e157]:
+                - generic [ref=e158]:
+                  - img [ref=e159]
+                  - generic [ref=e161]: "1"
+                  - generic [ref=e162]: مقررات حالية
+                - generic [ref=e163]:
+                  - img [ref=e164]
+                  - generic [ref=e167]: "0"
+                  - generic [ref=e168]: ساعة معتمدة
+            - generic [ref=e169]:
+              - generic [ref=e170]:
+                - heading "اتجاه الدرجات" [level=3] [ref=e171]
+                - paragraph [ref=e172]: آخر التقييمات (نسبة مئوية من الدرجة القصوى)
+              - generic [ref=e174]:
+                - img [ref=e175]
+                - paragraph [ref=e177]: لا توجد درجات مسجلة بعد
+          - generic [ref=e178]:
+            - generic [ref=e179]:
+              - img [ref=e180]
+              - heading "المواعيد النهائية القادمة" [level=2] [ref=e183]
+            - paragraph [ref=e184]: لا توجد تكاليف قادمة
+  - button "Open Next.js Dev Tools" [ref=e190] [cursor=pointer]:
+    - img [ref=e191]

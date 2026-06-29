@@ -1,0 +1,18 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e179] [cursor=pointer]:
+    - img [ref=e180]
+  - alert [ref=e183]
+  - generic [ref=e184]: الهندسة والحاسبات
+  - generic [ref=e186]:
+    - generic [ref=e187]:
+      - generic [ref=e189]: 🎓
+      - heading "UniBot" [level=1] [ref=e190]
+      - paragraph [ref=e191]: المنصة الأكاديمية الذكية
+    - generic [ref=e192]:
+      - generic [ref=e193]:
+        - generic [ref=e194]: البريد الإلكتروني
+        - textbox "admin@university.edu" [ref=e195]: testautoenroll@test.com
+      - generic [ref=e196]:
+        - generic [ref=e197]: كلمة المرور
+        - textbox "••••••••" [ref=e198]: "123456"
+      - button "تسجيل الدخول" [ref=e199]

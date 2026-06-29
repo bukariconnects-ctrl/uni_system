@@ -6,7 +6,7 @@ export default async function CircularsPage() {
   const { profile } = await requireRole(["academic_management"]);
   const supabase = await createClient();
 
-  const [circularsRes, sectionsRes, majorsRes, departmentsRes] = await Promise.all([
+  const [circularsRes, coursesRes, majorsRes, departmentsRes] = await Promise.all([
     supabase
       .from("circulars")
       .select("*, sender:profiles!circulars_created_by_fkey(first_name, last_name, role)")
@@ -14,11 +14,11 @@ export default async function CircularsPage() {
       .order("created_at", { ascending: false }),
 
     supabase
-      .from("sections")
-      .select("id, section_code, courses(code, name), semesters(name)")
+      .from("courses")
+      .select("id, code, name")
       .eq("tenant_id", profile.tenant_id)
-      .in("status", ["open", "closed"])
-      .order("section_code"),
+      .eq("is_active", true)
+      .order("code"),
 
     supabase
       .from("majors")
@@ -45,9 +45,9 @@ export default async function CircularsPage() {
     levels = levelsData || [];
   }
 
-  const sections = (sectionsRes.data || []).map((s: any) => ({
-    id: s.id,
-    label: `${s.section_code} — ${(s.courses as any)?.name || ""} (${(s.semesters as any)?.name || ""})`,
+  const courses = (coursesRes.data || []).map((c: any) => ({
+    id: c.id,
+    label: `${c.code} — ${c.name}`,
   }));
 
   return (
@@ -58,7 +58,7 @@ export default async function CircularsPage() {
       </div>
       <CircularsClient
         circulars={circularsRes.data || []}
-        sections={sections}
+        courses={courses}
         majors={majorsRes.data || []}
         levels={levels}
         departments={departmentsRes.data || []}

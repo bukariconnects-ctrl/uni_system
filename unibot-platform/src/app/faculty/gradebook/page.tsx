@@ -6,12 +6,22 @@ export default async function GradebookPage() {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
-  const { data: sections } = await supabase
-    .from("sections")
-    .select("id, section_code, courses(code, name), semesters(name, status)")
-    .eq("tenant_id", profile.tenant_id)
+  const { data: scheduleData } = await supabase
+    .from("course_schedules")
+    .select("study_plan_courses!inner(course_id, courses!inner(id, code, name)), semesters!inner(name, status)")
     .eq("instructor_id", profile.id)
-    .order("created_at", { ascending: false });
+    .eq("tenant_id", profile.tenant_id);
+
+  // Deduplicate courses
+  const seen = new Set<string>();
+  const courses = (scheduleData || []).reduce((acc: any[], s: any) => {
+    const c = s.study_plan_courses?.courses;
+    if (c && !seen.has(c.id)) {
+      seen.add(c.id);
+      acc.push(c);
+    }
+    return acc;
+  }, []);
 
   return (
     <div>
@@ -19,7 +29,7 @@ export default async function GradebookPage() {
         <h1 className="text-2xl font-bold text-text-primary">سجل الدرجات</h1>
         <p className="mt-1 text-sm text-text-secondary">إدارة درجات الطلاب ونشرها</p>
       </div>
-      <GradebookClient sections={sections || []} />
+      <GradebookClient courses={courses} />
     </div>
   );
 }

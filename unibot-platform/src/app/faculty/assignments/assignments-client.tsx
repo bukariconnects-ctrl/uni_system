@@ -34,10 +34,10 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 };
 
 export function AssignmentsClient({
-  sections,
+  courses,
   assignments,
 }: {
-  sections: any[];
+  courses: any[];
   assignments: any[];
 }) {
   const [showForm, setShowForm] = useState(false);
@@ -99,11 +99,11 @@ export function AssignmentsClient({
           </div>
           <form action={(fd) => handleAction(() => createAssignment(fd))} className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-text-primary">الشعبة</label>
-              <select name="section_id" required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
+              <label className="mb-1 block text-xs font-medium text-text-primary">المقرر</label>
+              <select name="course_id" required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
                 <option value="">-- اختر --</option>
-                {sections.map((s: any) => (
-                  <option key={s.id} value={s.id}>{s.courses?.code} ({s.section_code})</option>
+                {courses.map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
                 ))}
               </select>
             </div>
@@ -180,7 +180,7 @@ export function AssignmentsClient({
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-text-primary">{assignment.title}</span>
                     <span className="rounded-full bg-app-bg px-2 py-0.5 text-xs text-text-secondary">
-                      {assignment.sections?.courses?.code} ({assignment.sections?.section_code})
+                      {assignment.courses?.code}
                     </span>
                     {assignment.is_published ? (
                       <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs text-success">منشور</span>

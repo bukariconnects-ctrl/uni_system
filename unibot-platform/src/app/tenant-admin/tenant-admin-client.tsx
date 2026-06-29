@@ -27,11 +27,12 @@ interface Profile {
   tenant_id: string | null;
 }
 
-interface Section {
+interface Course {
   id: string;
-  status: string;
-  course_id: string;
-  courses?: { code: string; name: string; department_id?: string | null }[];
+  code: string;
+  name: string;
+  department_id: string | null;
+  is_active: boolean;
 }
 
 interface Department {
@@ -50,7 +51,7 @@ interface Tenant {
 
 interface DashboardData {
   profiles: Profile[];
-  sections: Section[];
+  courses: Course[];
   departments: Department[];
   tenant: Tenant | null;
   activeSemester: { name: string; start_date: string; end_date: string } | null;
@@ -66,14 +67,14 @@ const CHART_COLORS = {
 };
 
 export function TenantAdminDashboardClient({ data }: { data: DashboardData }) {
-  const { profiles, sections, departments, tenant, activeSemester } = data;
+  const { profiles, courses, departments, tenant, activeSemester } = data;
 
   const studentsCount = profiles.filter((p) => p.role === "student").length;
   const facultyCount = profiles.filter((p) => p.role === "faculty").length;
   const adminCount = profiles.filter(
     (p) => p.role === "tenant_admin" || p.role === "academic_management" || p.role === "super_admin"
   ).length;
-  const openSections = sections.filter((s) => s.status === "open").length;
+  const activeCourseCount = courses.filter((c) => c.is_active).length;
 
   // User distribution pie
   const userDistribution = [
@@ -84,8 +85,8 @@ export function TenantAdminDashboardClient({ data }: { data: DashboardData }) {
 
   // Courses per department
   const deptCourseCounts: Record<string, number> = {};
-  sections.forEach((s) => {
-    const deptId = s.courses?.[0]?.department_id;
+  courses.forEach((c) => {
+    const deptId = c.department_id;
     if (deptId) {
       deptCourseCounts[deptId] = (deptCourseCounts[deptId] || 0) + 1;
     }
@@ -132,14 +133,14 @@ export function TenantAdminDashboardClient({ data }: { data: DashboardData }) {
           }}
         />
         <KpiCard
-          title="الشعب المفتوحة"
-          value={openSections}
+          title="المواد النشطة"
+          value={activeCourseCount}
           icon={BookOpen}
           iconColor="bg-success/10 text-success"
           trend={{
-            value: `${sections.length}`,
+            value: `${courses.length}`,
             direction: "neutral",
-            label: "إجمالي الشعب",
+            label: "إجمالي المواد",
           }}
         />
         <KpiCard
@@ -192,7 +193,7 @@ export function TenantAdminDashboardClient({ data }: { data: DashboardData }) {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="الشعب حسب القسم" subtitle="Top 10 أقسام">
+        <ChartCard title="المواد حسب القسم" subtitle="Top 10 أقسام">
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={coursesPerDept} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
@@ -266,8 +267,8 @@ export function TenantAdminDashboardClient({ data }: { data: DashboardData }) {
               </p>
             </div>
             <div>
-              <p className="text-text-secondary">الشعب المفتوحة</p>
-              <p className="font-medium text-text-primary">{openSections}</p>
+              <p className="text-text-secondary">المواد النشطة</p>
+              <p className="font-medium text-text-primary">{activeCourseCount}</p>
             </div>
           </div>
         </div>

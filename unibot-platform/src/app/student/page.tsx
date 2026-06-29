@@ -10,7 +10,7 @@ export default async function StudentDashboard() {
   const [enrollmentsRes, profileRes] = await Promise.all([
     serviceClient
       .from("enrollments")
-      .select("id, status, sections(id, section_code, courses(code, name), semesters(name, status))")
+      .select("id, status, course_id, courses(code, name), semesters(name, status)")
       .eq("student_id", profile.id)
       .eq("status", "enrolled")
       .order("created_at", { ascending: false }),
@@ -23,15 +23,15 @@ export default async function StudentDashboard() {
 
   const enrollments = (enrollmentsRes.data || []) as any[];
   const studentProfile = profileRes.data;
-  const sectionIds = enrollments.map((e: any) => e.sections?.id).filter(Boolean);
+  const courseIds = enrollments.map((e: any) => e.course_id).filter(Boolean);
 
-  // Fetch upcoming assignments for enrolled sections
+  // Fetch upcoming assignments for enrolled courses
   const { data: upcomingAssignments } =
-    sectionIds.length > 0
+    courseIds.length > 0
       ? await supabase
           .from("assignments")
-          .select("id, title, due_date, max_grade, is_published, section_id, sections(id, courses(code, name))")
-          .in("section_id", sectionIds)
+          .select("id, title, due_date, max_grade, is_published, course_id, courses(code, name)")
+          .in("course_id", courseIds)
           .eq("is_published", true)
           .gte("due_date", new Date().toISOString())
           .order("due_date", { ascending: true })

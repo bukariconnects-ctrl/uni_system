@@ -319,12 +319,12 @@ function CourseForm({
   defaults?: CourseRow;
   onSubmit: (fd: FormData) => void;
 }) {
-  const [hasPractical, setHasPractical] = useState(
-    defaults ? defaults.course_type !== "theoretical" : false
-  );
+  const [courseTypeSelection, setCourseTypeSelection] = useState<
+    "theoretical" | "practical" | "hybrid"
+  >(defaults?.course_type as "theoretical" | "practical" | "hybrid" || "theoretical");
 
   function handleSubmit(fd: FormData) {
-    fd.set("course_type", hasPractical ? "hybrid" : "theoretical");
+    fd.set("course_type", courseTypeSelection);
     onSubmit(fd);
   }
 
@@ -374,14 +374,15 @@ function CourseForm({
         </div>
         <div>
           <label className="mb-1.5 block text-xs font-semibold text-text-primary">
-            القسم (اختياري)
+            القسم <span className="text-danger">*</span>
           </label>
           <select
             name="department_id"
+            required
             defaultValue={defaults?.department_id || ""}
             className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
           >
-            <option value="">— بدون قسم —</option>
+            <option value="">— اختر القسم —</option>
             {departments.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.name} {d.code ? `(${d.code})` : ""}
@@ -392,38 +393,43 @@ function CourseForm({
       </div>
 
       <div className="rounded-xl border border-border bg-app-bg p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${hasPractical ? "bg-success/10" : "bg-action-blue/20"}`}>
-              {hasPractical ? (
-                <FlaskConical className="h-5 w-5 text-success" />
-              ) : (
-                <BookText className="h-5 w-5 text-action-blue" />
-              )}
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-text-primary">
-                يحتوي على جزء عملي/معمل
-              </p>
-              <p className="text-xs text-text-secondary">
-                {hasPractical
-                  ? "المقرر يتضمن ساعات عملية أو معملية"
-                  : "المقرر نظري بالكامل"}
-              </p>
-            </div>
-          </div>
+        <p className="mb-3 text-sm font-semibold text-text-primary">نوع المقرر</p>
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => setHasPractical(!hasPractical)}
-            className={`relative h-6 w-11 rounded-full transition-colors ${
-              hasPractical ? "bg-success" : "bg-border"
+            onClick={() => setCourseTypeSelection("theoretical")}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
+              courseTypeSelection === "theoretical"
+                ? "border-action-blue bg-action-blue/10 text-action-blue"
+                : "border-border bg-card-bg text-text-secondary hover:border-action-blue/40"
             }`}
           >
-            <span
-              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-all ${
-                hasPractical ? "right-0.5" : "right-[22px]"
-              }`}
-            />
+            <BookText className="h-5 w-5" />
+            <span>نظري</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setCourseTypeSelection("practical")}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
+              courseTypeSelection === "practical"
+                ? "border-success bg-success/10 text-success"
+                : "border-border bg-card-bg text-text-secondary hover:border-success/40"
+            }`}
+          >
+            <FlaskConical className="h-5 w-5" />
+            <span>عملي</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setCourseTypeSelection("hybrid")}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
+              courseTypeSelection === "hybrid"
+                ? "border-purple bg-purple/10 text-purple"
+                : "border-border bg-card-bg text-text-secondary hover:border-purple/40"
+            }`}
+          >
+            <FlaskConical className="h-5 w-5" />
+            <span>نظري + عملي</span>
           </button>
         </div>
       </div>

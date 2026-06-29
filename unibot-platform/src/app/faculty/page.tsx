@@ -7,13 +7,12 @@ export default async function FacultyDashboard() {
   const supabase = await createClient();
   const serviceClient = createServiceClient();
 
-  const [sectionsRes, assignmentsRes] = await Promise.all([
+  const [schedulesRes, assignmentsRes] = await Promise.all([
     supabase
-      .from("sections")
-      .select("id, section_code, status, courses(code, name), semesters(name, status)")
+      .from("course_schedules")
+      .select("study_plan_courses!inner(course_id, courses!inner(id, code, name)), semesters!inner(name, status)")
       .eq("tenant_id", profile.tenant_id)
-      .eq("instructor_id", profile.id)
-      .order("created_at", { ascending: false }),
+      .eq("instructor_id", profile.id),
     supabase
       .from("assignments")
       .select("id")
@@ -21,31 +20,44 @@ export default async function FacultyDashboard() {
       .eq("created_by", profile.id),
   ]);
 
-  const sections = (sectionsRes.data || []) as any[];
-  const sectionIds = sections.map((s) => s.id);
+  // Deduplicate courses
+  const seen = new Set<string>();
+  const courses = ((schedulesRes.data || []) as any[]).reduce((acc: any[], s: any) => {
+    const c = s.study_plan_courses?.courses;
+    if (c && !seen.has(c.id)) {
+      seen.add(c.id);
+      acc.push({
+        ...c,
+        semester: s.semesters,
+      });
+    }
+    return acc;
+  }, []);
+
+  const courseIds = courses.map((c: any) => c.id);
 
   // Get enrollment counts
   let enrollmentCounts: Record<string, number> = {};
-  if (sectionIds.length > 0) {
+  if (courseIds.length > 0) {
     const { data: enrollments } = await serviceClient
       .from("enrollments")
-      .select("section_id")
-      .in("section_id", sectionIds)
+      .select("course_id")
+      .in("course_id", courseIds)
       .eq("tenant_id", profile.tenant_id)
       .eq("status", "enrolled");
 
     (enrollments || []).forEach((e: any) => {
-      enrollmentCounts[e.section_id] = (enrollmentCounts[e.section_id] || 0) + 1;
+      enrollmentCounts[e.course_id] = (enrollmentCounts[e.course_id] || 0) + 1;
     });
   }
 
-  const sectionsWithCount = sections.map((s) => ({
-    ...s,
-    enrolled_count: enrollmentCounts[s.id] || 0,
+  const coursesWithCount = courses.map((c: any) => ({
+    ...c,
+    enrolled_count: enrollmentCounts[c.id] || 0,
   }));
 
-  const totalStudents = sectionsWithCount.reduce(
-    (sum, s) => sum + s.enrolled_count,
+  const totalStudents = coursesWithCount.reduce(
+    (sum: number, c: any) => sum + c.enrolled_count,
     0
   );
 
@@ -64,13 +76,13 @@ export default async function FacultyDashboard() {
     pendingSubmissions = subs || [];
   }
 
-  // Get attendance sessions for faculty's sections
+  // Get attendance sessions for faculty's courses
   let attendanceSessions: any[] = [];
-  if (sectionIds.length > 0) {
+  if (courseIds.length > 0) {
     const { data: sessions } = await serviceClient
       .from("attendance_sessions")
-      .select("id, section_id, session_date, start_time")
-      .in("section_id", sectionIds)
+      .select("id, course_id, session_date, start_time")
+      .in("course_id", courseIds)
       .eq("tenant_id", profile.tenant_id)
       .order("session_date", { ascending: false });
     attendanceSessions = sessions || [];
@@ -83,7 +95,7 @@ export default async function FacultyDashboard() {
   if (sessionIds.length > 0) {
     const { data: records } = await serviceClient
       .from("attendance_records")
-      .select("session_id, section_id, status, created_at")
+      .select("session_id, course_id, status, created_at")
       .in("session_id", sessionIds)
       .eq("tenant_id", profile.tenant_id);
     attendanceRecords = records || [];
@@ -105,7 +117,7 @@ export default async function FacultyDashboard() {
 
       <FacultyDashboardClient
         data={{
-          sections: sectionsWithCount as any,
+          courses: coursesWithCount as any,
           totalStudents,
           pendingSubmissions: (pendingSubmissions || []) as any,
           assignmentsCount: (assignmentsRes.data || []).length,

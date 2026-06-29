@@ -9,18 +9,18 @@ export default async function StudentMaterialsPage() {
 
   const { data: enrollments } = await serviceClient
     .from("enrollments")
-    .select("section_id, sections(section_code, courses(code, name))")
+    .select("course_id, courses(code, name)")
     .eq("student_id", profile.id)
     .eq("status", "enrolled");
 
-  const sectionIds = (enrollments || []).map((e: any) => e.section_id);
+  const courseIds = (enrollments || []).map((e: any) => e.course_id);
 
   let materials: any[] = [];
-  if (sectionIds.length > 0) {
+  if (courseIds.length > 0) {
     const { data } = await supabase
       .from("course_materials")
-      .select("*, sections(section_code, courses(code, name))")
-      .in("section_id", sectionIds)
+      .select("*, courses(code, name)")
+      .in("course_id", courseIds)
       .eq("is_published", true)
       .order("week_number", { ascending: true })
       .order("created_at", { ascending: false });

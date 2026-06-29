@@ -36,11 +36,13 @@ export function StudentAttendanceClient({
   summaries: initialSummaries,
   records: initialRecords,
   studentId,
+  courseLookup = {},
 }: {
   enrollments: any[];
   summaries: any[];
   records: any[];
   studentId: string;
+  courseLookup?: Record<string, { code: string; name: string }>;
 }) {
   const [tab, setTab] = useState<"scan" | "summary" | "details">("scan");
 
@@ -53,7 +55,7 @@ export function StudentAttendanceClient({
     setTab(t);
     window.history.replaceState(null, "", `?tab=${t}`);
   }
-  const [filterSection, setFilterSection] = useState("");
+  const [filterCourse, setFilterCourse] = useState("");
   const [qrInput, setQrInput] = useState("");
   const [cameraActive, setCameraActive] = useState(false);
   const [scanResult, setScanResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -81,7 +83,7 @@ export function StudentAttendanceClient({
           // Refetch records when there's a change
           const { data: newRecords } = await supabase
             .from("attendance_records")
-            .select("*, attendance_sessions(session_date, start_time, sections(section_code, courses(code, name)))")
+            .select("*, attendance_sessions!inner(session_date, start_time, course_id, courses!inner(code, name))")
             .eq("student_id", studentId)
             .order("created_at", { ascending: false })
             .limit(100);
@@ -106,16 +108,21 @@ export function StudentAttendanceClient({
         },
         async (payload) => {
           // Refetch summaries when there's a change
-          const sectionIds = enrollments.map((e: any) => e.section_id);
+          const sectionIds = enrollments.map((e: any) => e.section_id).filter(Boolean);
           if (sectionIds.length > 0) {
             const { data: newSummaries } = await supabase
               .from("attendance_summaries")
-              .select("*, sections(section_code, courses(code, name))")
+              .select("*, section_id")
               .eq("student_id", studentId)
               .in("section_id", sectionIds);
-            
+
             if (newSummaries) {
-              setSummaries(newSummaries);
+              // Build section→course map from enrollments for the new data
+              const s2c: Record<string, string> = {};
+              for (const en of enrollments) {
+                if (en.section_id && en.course_id) s2c[en.section_id] = en.course_id;
+              }
+              setSummaries(newSummaries.map((s: any) => ({ ...s, course_id: s2c[s.section_id] || null })));
             }
           }
         }
@@ -153,8 +160,8 @@ export function StudentAttendanceClient({
     }
   }, [loading, lastScannedCode]);
 
-  const filteredRecords = filterSection
-    ? records.filter((r: any) => r.section_id === filterSection)
+  const filteredRecords = filterCourse
+    ? records.filter((r: any) => r.attendance_sessions?.course_id === filterCourse)
     : records;
 
   async function handleSubmitQr() {
@@ -329,7 +336,14 @@ export function StudentAttendanceClient({
                   <div className="mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-text-primary">
-                        {summary.sections?.courses?.code} ({summary.sections?.section_code})
+                        {(() => {
+                          const course = summary.course_id ? courseLookup[summary.course_id] : null;
+                          if (course) return course.code;
+                          // Fallback: section_id-based lookup (backward compat)
+                          const e = enrollments.find((en: any) => en.section_id === summary.section_id);
+                          if (e?.courses?.code) return e.courses.code;
+                          return 'مادة';
+                        })()}
                       </span>
                       {summary.is_dismissed && (
                         <span className="flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-xs text-danger">
@@ -379,14 +393,14 @@ export function StudentAttendanceClient({
       {tab === "details" && (
         <div className="space-y-3">
           <select
-            value={filterSection}
-            onChange={(e) => setFilterSection(e.target.value)}
+            value={filterCourse}
+            onChange={(e) => setFilterCourse(e.target.value)}
             className="rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
           >
             <option value="">كل المقررات</option>
             {enrollments.map((e: any) => (
-              <option key={e.section_id} value={e.section_id}>
-                {e.sections?.courses?.code} ({e.sections?.section_code})
+              <option key={e.course_id} value={e.course_id}>
+                {e.courses?.code}
               </option>
             ))}
           </select>
@@ -406,7 +420,7 @@ export function StudentAttendanceClient({
                     <Icon className={`h-5 w-5 ${cfg.color}`} />
                     <div>
                       <span className="text-sm font-medium text-text-primary">
-                        {record.attendance_sessions?.sections?.courses?.code} ({record.attendance_sessions?.sections?.section_code})
+                        {record.attendance_sessions?.courses?.code}
                       </span>
                       <div className="text-xs text-text-secondary">
                         {record.attendance_sessions?.session_date && new Date(record.attendance_sessions.session_date).toLocaleDateString("ar-SA")}

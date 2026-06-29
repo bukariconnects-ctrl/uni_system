@@ -6,21 +6,27 @@ export default async function FacultyCircularsPage() {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
-  // Sections taught by this faculty member
-  const { data: taughtSectionsRaw } = await supabase
-    .from("sections")
-    .select("id, section_code, courses(code, name), semesters(name)")
+  // Courses taught by this faculty member
+  const { data: taughtSchedules } = await supabase
+    .from("course_schedules")
+    .select("study_plan_courses!inner(course_id, courses!inner(id, code, name)), semesters!inner(name, status)")
     .eq("instructor_id", profile.id)
-    .eq("tenant_id", profile.tenant_id)
-    .in("status", ["open", "closed"])
-    .order("section_code");
+    .eq("tenant_id", profile.tenant_id);
 
-  const taughtSectionIds = (taughtSectionsRaw || []).map((s: any) => s.id);
+  const seen = new Set<string>();
+  const taughtCourses = (taughtSchedules || []).reduce((acc: any[], s: any) => {
+    const c = s.study_plan_courses?.courses;
+    if (c && !seen.has(c.id)) {
+      seen.add(c.id);
+      acc.push({
+        id: c.id,
+        label: `${c.code} — ${c.name}`,
+      });
+    }
+    return acc;
+  }, []);
 
-  const taughtSections = (taughtSectionsRaw || []).map((s: any) => ({
-    id: s.id,
-    label: `${s.section_code} — ${(s.courses as any)?.name || ""} (${(s.semesters as any)?.name || ""})`,
-  }));
+  const taughtCourseIds = taughtCourses.map((c: any) => c.id);
 
   // Circulars RECEIVED by this faculty (published, from academic management)
   const { data: allPublished } = await supabase
@@ -33,7 +39,7 @@ export default async function FacultyCircularsPage() {
 
   const receivedCirculars = (allPublished || []).filter((c: any) => {
     if (c.target_type === "all" || c.target_type === "faculty") return true;
-    if (c.target_type === "section" && taughtSectionIds.includes(c.target_id)) return true;
+    if (c.target_type === "section" && taughtCourseIds.includes(c.target_id)) return true;
     return false;
   });
 
@@ -58,7 +64,7 @@ export default async function FacultyCircularsPage() {
         sentCirculars={sentCirculars || []}
         userId={profile.id}
         tenantId={profile.tenant_id!}
-        taughtSections={taughtSections}
+        taughtCourses={taughtCourses}
       />
     </div>
   );

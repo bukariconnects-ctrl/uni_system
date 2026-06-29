@@ -7,21 +7,31 @@ import type { ContentType } from "@/lib/types/database";
 import { validateFile } from "@/lib/security/file-validator";
 import { performIngest } from "@/lib/ai/ingest-service";
 
-export async function getFacultySections() {
+export async function getFacultyCourses() {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
   const { data } = await supabase
-    .from("sections")
-    .select("id, section_code, courses(code, name), semesters(name, status)")
-    .eq("tenant_id", profile.tenant_id)
+    .from("course_schedules")
+    .select("study_plan_courses!inner(course_id, courses!inner(id, code, name)), semesters!inner(name, status)")
     .eq("instructor_id", profile.id)
-    .order("created_at", { ascending: false });
+    .eq("tenant_id", profile.tenant_id);
 
-  return data || [];
+  // Deduplicate courses
+  const seen = new Set<string>();
+  const courses = (data || []).reduce((acc: any[], s: any) => {
+    const c = s.study_plan_courses?.courses;
+    if (c && !seen.has(c.id)) {
+      seen.add(c.id);
+      acc.push(c);
+    }
+    return acc;
+  }, []);
+
+  return courses;
 }
 
-export async function getMaterials(sectionId?: string) {
+export async function getMaterials(courseId?: string) {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
@@ -33,8 +43,8 @@ export async function getMaterials(sectionId?: string) {
     .order("week_number", { ascending: true })
     .order("created_at", { ascending: false });
 
-  if (sectionId) {
-    query = query.eq("section_id", sectionId);
+  if (courseId) {
+    query = query.eq("course_id", courseId);
   }
 
   const { data, error } = await query;
@@ -73,7 +83,7 @@ export async function uploadMaterial(formData: FormData) {
 
   const { error } = await supabase.from("course_materials").insert({
     tenant_id: profile.tenant_id,
-    section_id: formData.get("section_id") as string,
+    course_id: formData.get("course_id") as string,
     uploaded_by: profile.id,
     title: formData.get("title") as string,
     description: (formData.get("description") as string) || null,
@@ -143,7 +153,7 @@ export async function toggleAiApproved(id: string, approved: boolean) {
           .from("ai_knowledge_documents")
           .insert({
             tenant_id: profile.tenant_id,
-            section_id: material.section_id,
+            course_id: material.course_id,
             material_id: id,
             uploaded_by: profile.id,
             title: material.title,
@@ -190,7 +200,7 @@ export async function getSyllabi() {
 
   const { data } = await supabase
     .from("syllabi")
-    .select("*, sections(section_code, courses(code, name))")
+    .select("*, courses(code, name)")
     .eq("tenant_id", profile.tenant_id)
     .eq("instructor_id", profile.id)
     .order("created_at", { ascending: false });
@@ -202,7 +212,7 @@ export async function upsertSyllabus(formData: FormData) {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
-  const sectionId = formData.get("section_id") as string;
+  const courseId = formData.get("course_id") as string;
   const contentRaw = formData.get("content") as string;
   let content;
   try {
@@ -214,8 +224,8 @@ export async function upsertSyllabus(formData: FormData) {
   const { data: existing } = await supabase
     .from("syllabi")
     .select("id")
-    .eq("section_id", sectionId)
-    .single();
+    .eq("course_id", courseId)
+    .maybeSingle();
 
   if (existing) {
     const { error } = await supabase
@@ -226,16 +236,12 @@ export async function upsertSyllabus(formData: FormData) {
   } else {
     const { error } = await supabase.from("syllabi").insert({
       tenant_id: profile.tenant_id,
-      section_id: sectionId,
+      course_id: courseId,
       instructor_id: profile.id,
       content,
       status: "draft",
     });
-    if (error) {
-      if (error.message.includes("unique") || error.message.includes("duplicate"))
-        throw new Error("توجد خطة مقرر لهذه الشعبة بالفعل");
-      throw new Error(error.message);
-    }
+    if (error) throw new Error(error.message);
   }
   revalidatePath("/faculty/materials");
 }

@@ -1,0 +1,75 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e7]: 👨‍🎓
+        - generic [ref=e8]:
+          - paragraph [ref=e9]: UniBot
+          - paragraph [ref=e10]: بوابة الطالب
+          - paragraph [ref=e11]: UST uni
+        - button [ref=e13]:
+          - img [ref=e14]
+      - navigation [ref=e17]:
+        - link "لوحة التحكم" [ref=e18] [cursor=pointer]:
+          - /url: /student
+          - img [ref=e19]
+          - text: لوحة التحكم
+        - link "التسجيل الذاتي" [ref=e24] [cursor=pointer]:
+          - /url: /student/register
+          - img [ref=e25]
+          - text: التسجيل الذاتي
+        - link "محتوى المقررات" [ref=e28] [cursor=pointer]:
+          - /url: /student/materials
+          - img [ref=e29]
+          - text: محتوى المقررات
+        - link "التكاليف" [ref=e31] [cursor=pointer]:
+          - /url: /student/assignments
+          - img [ref=e32]
+          - text: التكاليف
+        - link "حضوري" [ref=e35] [cursor=pointer]:
+          - /url: /student/attendance
+          - img [ref=e36]
+          - text: حضوري
+        - link "درجاتي" [ref=e40] [cursor=pointer]:
+          - /url: /student/grades
+          - img [ref=e41]
+          - text: درجاتي
+        - link "الرسائل" [ref=e44] [cursor=pointer]:
+          - /url: /student/messages
+          - img [ref=e45]
+          - text: الرسائل
+        - link "التعاميم" [ref=e47] [cursor=pointer]:
+          - /url: /student/circulars
+          - img [ref=e48]
+          - text: التعاميم
+        - link "UniBot" [ref=e51] [cursor=pointer]:
+          - /url: /student/unibot
+          - img [ref=e52]
+          - text: UniBot
+        - link "تذاكري" [ref=e55] [cursor=pointer]:
+          - /url: /student/tickets
+          - img [ref=e56]
+          - text: تذاكري
+      - generic [ref=e58]:
+        - link "ات اختبار تلقائي testauto@test.com" [ref=e59] [cursor=pointer]:
+          - /url: /student/profile
+          - generic [ref=e60]: ات
+          - generic [ref=e61]:
+            - paragraph [ref=e62]: اختبار تلقائي
+            - paragraph [ref=e63]: testauto@test.com
+        - button "تسجيل الخروج" [ref=e64]:
+          - img [ref=e65]
+          - text: تسجيل الخروج
+    - main [ref=e70]:
+      - generic [ref=e71]:
+        - generic [ref=e72]:
+          - img [ref=e74]
+          - generic [ref=e76]:
+            - heading "التسجيل الذاتي" [level=1] [ref=e77]
+            - paragraph [ref=e78]: سجّل في المقررات المتاحة حسب خطتك الدراسية
+        - generic [ref=e79]:
+          - img [ref=e80]
+          - paragraph [ref=e82]: التسجيل الذاتي غير متاح
+          - paragraph [ref=e83]: لا يوجد فصل دراسي مفتوح للتسجيل الذاتي حالياً، أو ليس لديك تخصص رئيسي
+  - button "Open Next.js Dev Tools" [ref=e89] [cursor=pointer]:
+    - img [ref=e90]

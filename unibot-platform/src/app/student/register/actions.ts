@@ -4,15 +4,19 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 
-export async function getAvailableSections() {
+/**
+ * Get the student's study-plan courses for the current registration semester,
+ * along with their enrollment status and course_schedules.
+ */
+export async function getMyCoursesForRegistration() {
   const { profile } = await requireRole(["student"]);
-  const supabase = await createClient();
   const serviceClient = createServiceClient();
+  const supabase = await createClient();
 
-  // Find the active registration semester with self_reg_enabled
+  // 1. Find the active registration semester
   const { data: semester } = await supabase
     .from("semesters")
-    .select("id, name, status, self_reg_enabled, reg_start, reg_end")
+    .select("id, name, status, self_reg_enabled, reg_start, reg_end, semester_type")
     .eq("tenant_id", profile.tenant_id)
     .in("status", ["registration", "active"])
     .eq("self_reg_enabled", true)
@@ -20,48 +24,122 @@ export async function getAvailableSections() {
     .limit(1)
     .maybeSingle();
 
-  if (!semester) return { semester: null, sections: [], labSections: [] };
+  if (!semester) return { semester: null, courses: [], enrollments: [] };
 
-  // Get student's already-enrolled section IDs to exclude them
-  const { data: existingEnrollments } = await serviceClient
+  // 2. Find the student's primary major
+  const { data: primaryMajor } = await serviceClient
+    .from("student_majors")
+    .select("major_id")
+    .eq("student_id", profile.id)
+    .eq("is_primary", true)
+    .maybeSingle();
+
+  if (!primaryMajor) return { semester, courses: [], enrollments: [] };
+
+  // 3. Find the student's current academic level.
+  //    Use the most-recent enrollment's academic_level_id, or fall back to
+  //    the first level in their major.
+  let academicLevelId: string | null = null;
+
+  const { data: recentEnrollment } = await serviceClient
     .from("enrollments")
-    .select("section_id")
+    .select("academic_level_id")
+    .eq("student_id", profile.id)
+    .not("academic_level_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (recentEnrollment?.academic_level_id) {
+    academicLevelId = recentEnrollment.academic_level_id;
+  } else {
+    // Fall back to first level of the student's major
+    const { data: firstLevel } = await serviceClient
+      .from("academic_levels")
+      .select("id")
+      .eq("major_id", primaryMajor.major_id)
+      .order("level_number", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (firstLevel) academicLevelId = firstLevel.id;
+  }
+
+  if (!academicLevelId) return { semester, courses: [], enrollments: [] };
+
+  // 4. Get study plan courses for this level + semester type
+  const { data: spcRows } = await serviceClient
+    .from("study_plan_courses")
+    .select(`
+      id, course_id, plan_course_type, min_grade_to_pass,
+      courses(id, code, name, credit_hours, course_type)
+    `)
+    .eq("academic_level_id", academicLevelId)
+    .eq("semester_type", semester.semester_type)
+    .eq("courses.is_active", true);
+
+  const studyPlanCourses = spcRows || [];
+  const courseIds = studyPlanCourses.map((spc: any) => spc.course_id);
+
+  if (courseIds.length === 0) return { semester, courses: [], enrollments: [] };
+
+  // 5. Get existing enrollments for this semester
+  const { data: enrollmentRows } = await serviceClient
+    .from("enrollments")
+    .select("course_id, status")
     .eq("student_id", profile.id)
     .eq("semester_id", semester.id)
-    .eq("status", "enrolled");
+    .in("course_id", courseIds);
 
-  const enrolledSectionIds = new Set((existingEnrollments || []).map((e: any) => e.section_id));
+  const enrolledCourseIds = new Set(
+    (enrollmentRows || [])
+      .filter((e: any) => e.status === "enrolled")
+      .map((e: any) => e.course_id)
+  );
 
-  // Get open parent (lecture) sections for this semester
-  const { data: sections } = await serviceClient
-    .from("sections")
-    .select("id, section_code, max_capacity, enrolled_count, section_type, course_id, courses(code, name, course_type, credit_hours)")
-    .eq("tenant_id", profile.tenant_id)
+  // 6. Get course_schedules for these courses + semester
+  const { data: scheduleRows } = await serviceClient
+    .from("course_schedules")
+    .select(`
+      study_plan_course_id,
+      component_type, day_of_week, start_time, end_time,
+      venues(name, code, venue_type),
+      instructors:profiles!fk_course_schedules_instructor(first_name, last_name)
+    `)
     .eq("semester_id", semester.id)
-    .eq("status", "open")
-    .is("parent_section_id", null)
-    .order("created_at", { ascending: false });
+    .eq("status", "published")
+    .in("study_plan_course_id", studyPlanCourses.map((spc: any) => spc.id));
 
-  // Filter out already-enrolled sections
-  const availableSections = (sections || []).filter((s: any) => !enrolledSectionIds.has(s.id));
+  // Build a map: course_id → schedules
+  const spcIdToCourseId = studyPlanCourses.reduce<Record<string, string>>((acc, spc: any) => {
+    acc[spc.id] = spc.course_id;
+    return acc;
+  }, {});
 
-  // Get all open lab sections for this semester (children)
-  const { data: labSections } = await serviceClient
-    .from("sections")
-    .select("id, section_code, max_capacity, enrolled_count, parent_section_id, profiles!sections_instructor_id_fkey(first_name, last_name)")
-    .eq("tenant_id", profile.tenant_id)
-    .eq("semester_id", semester.id)
-    .eq("status", "open")
-    .eq("section_type", "lab")
-    .order("section_code");
+  const scheduleMap: Record<string, any[]> = {};
+  for (const sched of scheduleRows || []) {
+    const cid = spcIdToCourseId[sched.study_plan_course_id];
+    if (!cid) continue;
+    if (!scheduleMap[cid]) scheduleMap[cid] = [];
+    scheduleMap[cid].push(sched);
+  }
+
+  // 7. Build the final course list
+  const courses = studyPlanCourses.map((spc: any) => ({
+    ...spc,
+    isEnrolled: enrolledCourseIds.has(spc.course_id),
+    schedules: scheduleMap[spc.course_id] || [],
+  }));
 
   return {
     semester,
-    sections: availableSections,
-    labSections: labSections || [],
+    courses,
+    enrollments: enrollmentRows || [],
   };
 }
 
+/**
+ * Check prerequisites for a course (direct course_id join, no sections).
+ */
 export async function checkPrerequisites(courseId: string) {
   const { profile } = await requireRole(["student"]);
   const serviceClient = createServiceClient();
@@ -79,16 +157,16 @@ export async function checkPrerequisites(courseId: string) {
     const minGrade = prereq.min_grade ?? 60;
     const prereqCourseId = prereq.prerequisite_id;
 
-    const { data: passedByCourse } = await serviceClient
+    // Direct course_id check — no sections join needed
+    const { data: passed } = await serviceClient
       .from("enrollments")
-      .select("id, final_grade, sections!enrollments_section_id_fkey(course_id)")
+      .select("id")
       .eq("student_id", profile.id)
+      .eq("course_id", prereqCourseId)
       .eq("status", "completed")
       .gte("final_grade", minGrade);
 
-    const met = (passedByCourse || []).some((e: any) => e.sections?.course_id === prereqCourseId);
-
-    if (!met) {
+    if (!passed || passed.length === 0) {
       const courseInfo = Array.isArray(prereq.courses) ? prereq.courses[0] : prereq.courses;
       unmet.push({
         code: courseInfo?.code || prereqCourseId,
@@ -101,65 +179,121 @@ export async function checkPrerequisites(courseId: string) {
   return { met: unmet.length === 0, unmet };
 }
 
-export async function selfEnroll(sectionId: string, labSectionId?: string) {
+/**
+ * Self-enroll in a course (by course_id, no sections).
+ */
+export async function selfEnroll(courseId: string) {
   const { profile } = await requireRole(["student"]);
   const serviceClient = createServiceClient();
 
-  // Get section info
-  const { data: section } = await serviceClient
-    .from("sections")
-    .select("semester_id, tenant_id, section_type, course_id, courses(course_type), semesters(self_reg_enabled, status)")
-    .eq("id", sectionId)
+  // Find the active registration semester
+  const { data: semester } = await serviceClient
+    .from("semesters")
+    .select("id, status, self_reg_enabled, semester_type")
+    .eq("tenant_id", profile.tenant_id)
+    .in("status", ["registration", "active"])
+    .eq("self_reg_enabled", true)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .single();
 
-  if (!section) throw new Error("الشعبة غير موجودة");
+  if (!semester) throw new Error("لا يوجد فصل دراسي مفتوح للتسجيل الذاتي حالياً");
+  if (!semester.self_reg_enabled) throw new Error("التسجيل الذاتي غير مفعّل في هذا الفصل");
+  if (!["registration", "active"].includes(semester.status)) throw new Error("الفصل الدراسي غير مفتوح للتسجيل");
 
-  const semRaw = section.semesters as any;
-  const sem = Array.isArray(semRaw) ? semRaw[0] : semRaw;
-  if (!sem?.self_reg_enabled) throw new Error("التسجيل الذاتي غير مفعّل في هذا الفصل");
-  if (!["registration", "active"].includes(sem?.status)) throw new Error("الفصل الدراسي غير مفتوح للتسجيل");
+  // Verify the course exists and is active
+  const { data: course } = await serviceClient
+    .from("courses")
+    .select("id, is_active")
+    .eq("id", courseId)
+    .single();
 
-  const coursesRaw = section.courses as any;
-  const courseType = (Array.isArray(coursesRaw) ? coursesRaw[0] : coursesRaw)?.course_type;
-  const isHybrid = section.section_type === "lecture" && courseType === "hybrid";
-  if (isHybrid && !labSectionId) throw new Error("هذا المقرر هجين — يجب اختيار شعبة معمل");
+  if (!course || !course.is_active) throw new Error("المادة غير موجودة أو غير نشطة");
+
+  // Check that this course is in the student's study plan for the current semester
+  // First find the student's primary major and level
+  const { data: primaryMajor } = await serviceClient
+    .from("student_majors")
+    .select("major_id")
+    .eq("student_id", profile.id)
+    .eq("is_primary", true)
+    .maybeSingle();
+
+  if (!primaryMajor) throw new Error("ليس لديك تخصص رئيسي — يرجى مراجعة إدارة التسجيل");
+
+  // Find academic level
+  let academicLevelId: string | null = null;
+  const { data: recentEnrollment } = await serviceClient
+    .from("enrollments")
+    .select("academic_level_id")
+    .eq("student_id", profile.id)
+    .not("academic_level_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (recentEnrollment?.academic_level_id) {
+    academicLevelId = recentEnrollment.academic_level_id;
+  } else {
+    const { data: firstLevel } = await serviceClient
+      .from("academic_levels")
+      .select("id")
+      .eq("major_id", primaryMajor.major_id)
+      .order("level_number", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (firstLevel) academicLevelId = firstLevel.id;
+  }
+
+  if (!academicLevelId) throw new Error("لا يمكن تحديد مستواك الدراسي — يرجى مراجعة إدارة التسجيل");
+
+  // Verify the course is in the study plan for this level + semester
+  const { data: spc } = await serviceClient
+    .from("study_plan_courses")
+    .select("id")
+    .eq("course_id", courseId)
+    .eq("academic_level_id", academicLevelId)
+    .eq("semester_type", semester.semester_type)
+    .maybeSingle();
+
+  if (!spc) throw new Error("هذه المادة ليست ضمن خطتك الدراسية لهذا الفصل");
+
+  // Check already enrolled
+  const { data: existing } = await serviceClient
+    .from("enrollments")
+    .select("id")
+    .eq("student_id", profile.id)
+    .eq("course_id", courseId)
+    .eq("semester_id", semester.id)
+    .eq("status", "enrolled")
+    .maybeSingle();
+
+  if (existing) throw new Error("أنت مسجل بالفعل في هذه المادة");
 
   // Check prerequisites
-  const { met, unmet } = await checkPrerequisites(section.course_id);
+  const { met, unmet } = await checkPrerequisites(courseId);
   if (!met) {
     const codes = unmet.map((u) => `${u.code} (درجة ${u.minGrade}+)`).join("، ");
     throw new Error(`لا يمكنك التسجيل: المتطلبات السابقة غير مكتملة — ${codes}`);
   }
 
-  // Enroll in lecture section
-  const { error: lectureError } = await serviceClient.from("enrollments").insert({
-    tenant_id: section.tenant_id,
+  // Enroll with course_id
+  const { error: insertError } = await serviceClient.from("enrollments").insert({
+    tenant_id: profile.tenant_id,
     student_id: profile.id,
-    section_id: sectionId,
-    semester_id: section.semester_id,
+    course_id: courseId,
+    semester_id: semester.id,
+    academic_level_id: academicLevelId,
+    major_id: primaryMajor.major_id,
     status: "enrolled",
   });
 
-  if (lectureError) {
-    if (lectureError.message.includes("duplicate") || lectureError.message.includes("unique"))
-      throw new Error("أنت مسجل بالفعل في هذه الشعبة");
-    if (lectureError.message.includes("ENROLLMENT_BLOCKED"))
+  if (insertError) {
+    if (insertError.message.includes("duplicate") || insertError.message.includes("unique"))
+      throw new Error("أنت مسجل بالفعل في هذه المادة");
+    if (insertError.message.includes("ENROLLMENT_BLOCKED"))
       throw new Error("التسجيل محظور: الفصل الدراسي ليس في مرحلة التسجيل");
-    throw new Error(lectureError.message);
-  }
-
-  // Enroll in lab section if hybrid
-  if (isHybrid && labSectionId) {
-    const { error: labError } = await serviceClient.from("enrollments").insert({
-      tenant_id: section.tenant_id,
-      student_id: profile.id,
-      section_id: labSectionId,
-      semester_id: section.semester_id,
-      status: "enrolled",
-    });
-    if (labError && !labError.message.includes("duplicate")) {
-      throw new Error(`تم التسجيل في النظري لكن فشل تسجيل المعمل: ${labError.message}`);
-    }
+    throw new Error(insertError.message);
   }
 
   revalidatePath("/student/register");

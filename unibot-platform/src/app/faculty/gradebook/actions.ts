@@ -4,38 +4,38 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 
-export async function getGradebookEntries(sectionId: string) {
+export async function getGradebookEntries(courseId: string) {
   await requireRole(["faculty"]);
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("gradebook_entries")
     .select("*, profiles!gradebook_entries_student_id_fkey(first_name, last_name, student_profiles(student_number)), enrollments(status)")
-    .eq("section_id", sectionId)
+    .eq("course_id", courseId)
     .order("created_at", { ascending: true });
 
   if (error) throw new Error(error.message);
   return data || [];
 }
 
-export async function initGradebook(sectionId: string) {
+export async function initGradebook(courseId: string) {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
   const { data: enrollments } = await supabase
     .from("enrollments")
     .select("id, student_id")
-    .eq("section_id", sectionId)
+    .eq("course_id", courseId)
     .eq("status", "enrolled");
 
   if (!enrollments || enrollments.length === 0) {
-    throw new Error("لا يوجد طلاب مسجلون في هذه الشعبة");
+    throw new Error("لا يوجد طلاب مسجلون في هذه المادة");
   }
 
   const { data: existing } = await supabase
     .from("gradebook_entries")
     .select("enrollment_id")
-    .eq("section_id", sectionId);
+    .eq("course_id", courseId);
 
   const existingIds = new Set((existing || []).map((e: any) => e.enrollment_id));
 
@@ -44,7 +44,7 @@ export async function initGradebook(sectionId: string) {
     .map((e: any) => ({
       tenant_id: profile.tenant_id,
       enrollment_id: e.id,
-      section_id: sectionId,
+      course_id: courseId,
       student_id: e.student_id,
       recorded_by: profile.id,
     }));
@@ -107,14 +107,14 @@ export async function saveGradeValues(
   revalidatePath("/faculty/gradebook");
 }
 
-export async function publishGrades(sectionId: string) {
+export async function publishGrades(courseId: string) {
   await requireRole(["faculty"]);
   const supabase = await createClient();
 
   const { error } = await supabase
     .from("gradebook_entries")
     .update({ is_published: true, published_at: new Date().toISOString() })
-    .eq("section_id", sectionId);
+    .eq("course_id", courseId);
 
   if (error) throw new Error(error.message);
   revalidatePath("/faculty/gradebook");

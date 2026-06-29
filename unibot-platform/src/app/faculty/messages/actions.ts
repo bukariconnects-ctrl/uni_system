@@ -10,7 +10,7 @@ export async function getChannels() {
 
   const { data } = await supabase
     .from("channel_members")
-    .select("is_admin, channels(id, name, channel_type, section_id, is_readonly, allow_student_messages, sections(section_code, courses(code, name)))")
+    .select("is_admin, channels(id, name, channel_type, course_id, is_readonly, allow_student_messages, courses(code, name))")
     .eq("profile_id", profile.id)
     .eq("tenant_id", profile.tenant_id);
 
@@ -173,14 +173,22 @@ export async function getChannelSettings(channelId: string) {
 
   const { data } = await supabase
     .from("channels")
-    .select("id, name, allow_student_messages, settings, section_id, sections(instructor_id)")
+    .select("id, name, allow_student_messages, settings, course_id")
     .eq("id", channelId)
     .single();
 
-  // Verify faculty is the instructor
-  const section = (data?.sections as unknown) as { instructor_id: string } | null;
-  if (section?.instructor_id !== profile.id) {
-    throw new Error("ليس لديك صلاحية إدارة هذه القناة");
+  // Verify faculty teaches the course
+  if (data?.course_id) {
+    const { data: schedule } = await supabase
+      .from("course_schedules")
+      .select("study_plan_courses!inner(course_id)")
+      .eq("study_plan_courses.course_id", data.course_id)
+      .eq("instructor_id", profile.id)
+      .maybeSingle();
+
+    if (!schedule) {
+      throw new Error("ليس لديك صلاحية إدارة هذه القناة");
+    }
   }
 
   return data;
@@ -190,16 +198,24 @@ export async function updateChannelSettings(channelId: string, settings: { allow
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
-  // Verify faculty is the instructor
+  // Verify faculty teaches the course
   const { data: channel } = await supabase
     .from("channels")
-    .select("section_id, sections(instructor_id)")
+    .select("course_id")
     .eq("id", channelId)
     .single();
 
-  const section = (channel?.sections as unknown) as { instructor_id: string } | null;
-  if (section?.instructor_id !== profile.id) {
-    throw new Error("ليس لديك صلاحية إدارة هذه القناة");
+  if (channel?.course_id) {
+    const { data: schedule } = await supabase
+      .from("course_schedules")
+      .select("study_plan_courses!inner(course_id)")
+      .eq("study_plan_courses.course_id", channel.course_id)
+      .eq("instructor_id", profile.id)
+      .maybeSingle();
+
+    if (!schedule) {
+      throw new Error("ليس لديك صلاحية إدارة هذه القناة");
+    }
   }
 
   const { error } = await supabase

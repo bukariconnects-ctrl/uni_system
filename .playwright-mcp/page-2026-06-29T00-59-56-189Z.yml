@@ -1,0 +1,10 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e6]: 🚫
+    - heading "غير مصرح" [level=1] [ref=e7]
+    - paragraph [ref=e8]: ليس لديك صلاحية للوصول إلى هذه الصفحة
+    - link "العودة للرئيسية" [ref=e9] [cursor=pointer]:
+      - /url: /
+  - button "Open Next.js Dev Tools" [ref=e15] [cursor=pointer]:
+    - img [ref=e16]
+  - alert [ref=e19]

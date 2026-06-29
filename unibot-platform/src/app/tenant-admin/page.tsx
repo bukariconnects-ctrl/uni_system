@@ -17,10 +17,11 @@ export default async function TenantAdminDashboard() {
     .select("id, role, tenant_id")
     .eq("tenant_id", profile.tenant_id);
 
-  const { data: sections } = await supabase
-    .from("sections")
-    .select("id, status, course_id, courses(code, name, department_id)")
-    .eq("tenant_id", profile.tenant_id);
+  const { data: courses } = await supabase
+    .from("courses")
+    .select("id, code, name, department_id, is_active")
+    .eq("tenant_id", profile.tenant_id)
+    .eq("is_active", true);
 
   const { data: departments } = await supabase
     .from("departments")
@@ -48,7 +49,7 @@ export default async function TenantAdminDashboard() {
       <TenantAdminDashboardClient
         data={{
           profiles: profiles || [],
-          sections: (sections || []) as any,
+          courses: (courses || []) as any,
           departments: departments || [],
           tenant,
           activeSemester,

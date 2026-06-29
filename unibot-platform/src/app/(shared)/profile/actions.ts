@@ -72,6 +72,10 @@ export async function updateProfile(formData: FormData) {
     super_admin: "/super-admin",
     tenant_admin: "/tenant-admin",
     academic_management: "/academic-management",
+    head_of_department: "/academic-management",
+    secretary: "/tenant-admin",
+    ticket_technician: "/tenant-admin",
+    lecturer: "/faculty",
     faculty: "/faculty",
     student: "/student",
   }[profile.role] || "";
@@ -132,6 +136,10 @@ export async function uploadAvatar(formData: FormData) {
     super_admin: "/super-admin",
     tenant_admin: "/tenant-admin",
     academic_management: "/academic-management",
+    head_of_department: "/academic-management",
+    secretary: "/tenant-admin",
+    ticket_technician: "/tenant-admin",
+    lecturer: "/faculty",
     faculty: "/faculty",
     student: "/student",
   }[profile.role] || "";

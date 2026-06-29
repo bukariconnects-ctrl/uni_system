@@ -30,7 +30,7 @@ export async function createTicket(formData: FormData) {
     priority: "medium",
     title: formData.get("title") as string,
     description: formData.get("description") as string,
-    related_section_id: (formData.get("section_id") as string) || null,
+    related_course_id: (formData.get("course_id") as string) || null,
     ai_attempted: formData.get("ai_attempted") === "true",
     ai_suggestion: (formData.get("ai_suggestion") as string) || null,
     status: formData.get("auto_close") === "true" ? "closed" : "open",
@@ -112,8 +112,8 @@ export async function getAiSuggestion(description: string) {
   }
 }
 
-export async function getStudentSections(): Promise<
-  { id: string; section_code: string; courses: { name: string } | null }[]
+export async function getStudentCourses(): Promise<
+  { id: string; code: string; name: string }[]
 > {
   const { profile } = await requireRole(["student", "faculty"]);
   const supabase = await createClient();
@@ -121,26 +121,29 @@ export async function getStudentSections(): Promise<
   if (profile.role === "student") {
     const { data } = await supabase
       .from("enrollments")
-      .select("sections(id, section_code, courses(name))")
+      .select("course_id, courses!inner(id, code, name)")
       .eq("student_id", profile.id)
       .eq("status", "enrolled");
 
-    return (data || [])
-      .map(
-        (e: Record<string, unknown>) =>
-          e.sections as { id: string; section_code: string; courses: { name: string } | null } | null
-      )
-      .filter(Boolean) as { id: string; section_code: string; courses: { name: string } | null }[];
+    return (data || []).map((e: any) => ({
+      id: e.courses?.id,
+      code: e.courses?.code,
+      name: e.courses?.name,
+    })).filter(Boolean);
   }
 
+  // faculty: get courses they teach via course_schedules
   const { data } = await supabase
-    .from("sections")
-    .select("id, section_code, courses(name)")
-    .eq("instructor_id", profile.id);
+    .from("course_schedules")
+    .select("study_plan_courses!inner(course_id, courses!inner(id, code, name))")
+    .eq("instructor_id", profile.id)
+    .eq("tenant_id", profile.tenant_id);
 
-  return (data || []).map((s: Record<string, unknown>) => ({
-    id: s.id as string,
-    section_code: s.section_code as string,
-    courses: Array.isArray(s.courses) ? (s.courses[0] as { name: string } | null) : (s.courses as { name: string } | null),
-  }));
+  const seen = new Set<string>();
+  return (data || []).map((s: any) => {
+    const c = s.study_plan_courses?.courses;
+    if (!c || seen.has(c.id)) return null;
+    seen.add(c.id);
+    return { id: c.id, code: c.code, name: c.name };
+  }).filter(Boolean) as { id: string; code: string; name: string }[];
 }

@@ -18,20 +18,20 @@ export async function getCirculars() {
   return data || [];
 }
 
-export async function getSectionsForCircular() {
+export async function getCoursesForCircular() {
   const { profile } = await requireRole(["academic_management"]);
   const supabase = await createClient();
 
   const { data } = await supabase
-    .from("sections")
-    .select("id, section_code, courses(code, name), semesters(name)")
+    .from("courses")
+    .select("id, code, name")
     .eq("tenant_id", profile.tenant_id)
-    .in("status", ["open", "closed"])
-    .order("section_code");
+    .eq("is_active", true)
+    .order("code");
 
-  return (data || []).map((s: any) => ({
-    id: s.id,
-    label: `${s.section_code} — ${s.courses?.name || ""} (${s.semesters?.name || ""})`,
+  return (data || []).map((c: any) => ({
+    id: c.id,
+    label: `${c.code} — ${c.name}`,
   }));
 }
 
@@ -142,25 +142,28 @@ export async function publishCircular(id: string) {
     userIds = (users || []).map((u: any) => u.id);
 
   } else if (target_type === "section" && target_id) {
-    // Get all students enrolled in this section
+    // target_id now holds course_id (sections concept replaced by courses)
+    // Get all students enrolled in this course
     const { data: enrollments } = await serviceClient
       .from("enrollments")
       .select("student_id")
-      .eq("section_id", target_id)
+      .eq("course_id", target_id)
       .eq("status", "enrolled");
-    
-    // Also get the section instructor
-    const { data: section } = await serviceClient
-      .from("sections")
-      .select("instructor_id")
-      .eq("id", target_id)
-      .single();
+
+    // Also get course instructors from course_schedules
+    const { data: schedules } = await serviceClient
+      .from("course_schedules")
+      .select("instructor_id, study_plan_courses!inner(course_id)")
+      .eq("study_plan_courses.course_id", target_id)
+      .not("instructor_id", "is", null);
+
+    const instructorIds = [...new Set((schedules || []).map((s: any) => s.instructor_id))];
 
     userIds = (enrollments || []).map((e: any) => e.student_id);
-    if (section?.instructor_id) userIds.push(section.instructor_id);
+    userIds.push(...instructorIds);
 
   } else if (target_type === "major" && target_id) {
-    // Students enrolled in sections of courses in this major's levels
+    // Students enrolled in courses of this major's levels
     const { data: levels } = await serviceClient
       .from("academic_levels")
       .select("id")
@@ -175,26 +178,17 @@ export async function publishCircular(id: string) {
       const courseIds = [...new Set((planCourses || []).map((pc: any) => pc.course_id))];
 
       if (courseIds.length > 0) {
-        const { data: sections } = await serviceClient
-          .from("sections")
-          .select("id")
-          .eq("tenant_id", tenant_id)
-          .in("course_id", courseIds as string[]);
-        const sectionIds = (sections || []).map((s: any) => s.id);
-
-        if (sectionIds.length > 0) {
-          const { data: enrollments } = await serviceClient
-            .from("enrollments")
-            .select("student_id")
-            .in("section_id", sectionIds)
-            .eq("status", "enrolled");
-          userIds = [...new Set((enrollments || []).map((e: any) => e.student_id))];
-        }
+        const { data: enrollments } = await serviceClient
+          .from("enrollments")
+          .select("student_id")
+          .in("course_id", courseIds)
+          .eq("status", "enrolled");
+        userIds = [...new Set((enrollments || []).map((e: any) => e.student_id))];
       }
     }
 
   } else if (target_type === "level" && target_id) {
-    // Students in sections of courses in this academic level
+    // Students in courses of this academic level
     const { data: planCourses } = await serviceClient
       .from("study_plan_courses")
       .select("course_id")
@@ -202,21 +196,12 @@ export async function publishCircular(id: string) {
     const courseIds = (planCourses || []).map((pc: any) => pc.course_id);
 
     if (courseIds.length > 0) {
-      const { data: sections } = await serviceClient
-        .from("sections")
-        .select("id")
-        .eq("tenant_id", tenant_id)
-        .in("course_id", courseIds);
-      const sectionIds = (sections || []).map((s: any) => s.id);
-
-      if (sectionIds.length > 0) {
-        const { data: enrollments } = await serviceClient
-          .from("enrollments")
-          .select("student_id")
-          .in("section_id", sectionIds)
-          .eq("status", "enrolled");
-        userIds = [...new Set((enrollments || []).map((e: any) => e.student_id))];
-      }
+      const { data: enrollments } = await serviceClient
+        .from("enrollments")
+        .select("student_id")
+        .in("course_id", courseIds)
+        .eq("status", "enrolled");
+      userIds = [...new Set((enrollments || []).map((e: any) => e.student_id))];
     }
 
   } else if (target_type === "department" && target_id) {
@@ -237,30 +222,28 @@ export async function publishCircular(id: string) {
       if (levelIds.length > 0) {
         const { data: planCourses } = await serviceClient
           .from("study_plan_courses")
-          .select("course_id")
+          .select("id, course_id")
           .in("academic_level_id", levelIds);
         const courseIds = [...new Set((planCourses || []).map((pc: any) => pc.course_id))];
 
         if (courseIds.length > 0) {
-          const { data: sections } = await serviceClient
-            .from("sections")
-            .select("id, instructor_id")
-            .eq("tenant_id", tenant_id)
-            .in("course_id", courseIds as string[]);
-          const sectionIds = (sections || []).map((s: any) => s.id);
-          const instructorIds = (sections || [])
-            .map((s: any) => s.instructor_id)
-            .filter(Boolean);
+          const { data: enrollments } = await serviceClient
+            .from("enrollments")
+            .select("student_id")
+            .in("course_id", courseIds)
+            .eq("status", "enrolled");
 
-          if (sectionIds.length > 0) {
-            const { data: enrollments } = await serviceClient
-              .from("enrollments")
-              .select("student_id")
-              .in("section_id", sectionIds)
-              .eq("status", "enrolled");
-            const studentIds = (enrollments || []).map((e: any) => e.student_id);
-            userIds = [...new Set([...studentIds, ...instructorIds])];
-          }
+          // Also get instructors for these courses
+          const spcIds = (planCourses || []).map((pc: any) => pc.id);
+          const { data: schedules } = await serviceClient
+            .from("course_schedules")
+            .select("instructor_id")
+            .in("study_plan_course_id", spcIds)
+            .not("instructor_id", "is", null);
+
+          const instructorIds = [...new Set((schedules || []).map((s: any) => s.instructor_id))];
+          const studentIds = (enrollments || []).map((e: any) => e.student_id);
+          userIds = [...new Set([...studentIds, ...instructorIds])];
         }
       }
     }

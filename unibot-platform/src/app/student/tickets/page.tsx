@@ -1,18 +1,18 @@
-import { getMyTickets, getStudentSections } from "./actions";
+import { getMyTickets, getStudentCourses } from "./actions";
 import { TicketsClient } from "./tickets-client";
 import { requireRole } from "@/lib/auth/get-user";
 
 export default async function TicketsPage() {
   const { profile } = await requireRole(["student"]);
-  const [tickets, sections] = await Promise.all([
+  const [tickets, courses] = await Promise.all([
     getMyTickets(),
-    getStudentSections(),
+    getStudentCourses(),
   ]);
 
   return (
     <TicketsClient
       tickets={tickets}
-      sections={sections}
+      courses={courses}
       profileId={profile.id}
       tenantId={profile.tenant_id!}
     />

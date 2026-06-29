@@ -1,0 +1,415 @@
+"filename", "language", "JavaScript", "JSON with Comments", "MS SQL", "TypeScript", "Markdown", "TypeScript JSX", "JSON", "XML", "PostCSS", "CSS", "comment", "blank", "total"
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\README.md", "Markdown", 0, 0, 0, 0, 23, 0, 0, 0, 0, 0, 0, 14, 37
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\SYSTEM_DOCUMENTATION.md", "Markdown", 0, 0, 0, 0, 613, 0, 0, 0, 0, 0, 0, 223, 836
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\change_log.md", "Markdown", 0, 0, 0, 0, 2708, 0, 0, 0, 0, 0, 0, 790, 3498
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\Academic_Structure_Architecture.md", "Markdown", 0, 0, 0, 0, 413, 0, 0, 0, 0, 0, 0, 114, 527
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\SEED_DATA.md", "Markdown", 0, 0, 0, 0, 332, 0, 0, 0, 0, 0, 0, 109, 441
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\Ticketing_System_Workflow.md", "Markdown", 0, 0, 0, 0, 416, 0, 0, 0, 0, 0, 0, 123, 539
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint0-core-foundation.md", "Markdown", 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 10, 42
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint1-subscription-plans.md", "Markdown", 0, 0, 0, 0, 26, 0, 0, 0, 0, 0, 0, 7, 33
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint10-course-content-syllabi.md", "Markdown", 0, 0, 0, 0, 34, 0, 0, 0, 0, 0, 0, 7, 41
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint11-assignments-submissions.md", "Markdown", 0, 0, 0, 0, 26, 0, 0, 0, 0, 0, 0, 6, 32
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint12-attendance-gradebook.md", "Markdown", 0, 0, 0, 0, 31, 0, 0, 0, 0, 0, 0, 7, 38
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint13-realtime-messaging.md", "Markdown", 0, 0, 0, 0, 27, 0, 0, 0, 0, 0, 0, 6, 33
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint14-circulars-notifications.md", "Markdown", 0, 0, 0, 0, 33, 0, 0, 0, 0, 0, 0, 9, 42
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint15-ai-data-ingestion.md", "Markdown", 0, 0, 0, 0, 29, 0, 0, 0, 0, 0, 0, 9, 38
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint16-unibot-chat.md", "Markdown", 0, 0, 0, 0, 28, 0, 0, 0, 0, 0, 0, 7, 35
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint17-predictive-analytics.md", "Markdown", 0, 0, 0, 0, 38, 0, 0, 0, 0, 0, 0, 8, 46
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint18-ticketing-ai-preresolution.md", "Markdown", 0, 0, 0, 0, 41, 0, 0, 0, 0, 0, 0, 9, 50
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint19-approval-workflows-ticket-processing.md", "Markdown", 0, 0, 0, 0, 47, 0, 0, 0, 0, 0, 0, 9, 56
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint2-tenant-provisioning.md", "Markdown", 0, 0, 0, 0, 35, 0, 0, 0, 0, 0, 0, 8, 43
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint20-ui-ux-dark-mode.md", "Markdown", 0, 0, 0, 0, 49, 0, 0, 0, 0, 0, 0, 10, 59
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint21-security-hardening.md", "Markdown", 0, 0, 0, 0, 34, 0, 0, 0, 0, 0, 0, 9, 43
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint22-gemini-migration.md", "Markdown", 0, 0, 0, 0, 40, 0, 0, 0, 0, 0, 0, 11, 51
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint23-e2e-testing.md", "Markdown", 0, 0, 0, 0, 57, 0, 0, 0, 0, 0, 0, 15, 72
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint3-dashboard-announcements.md", "Markdown", 0, 0, 0, 0, 36, 0, 0, 0, 0, 0, 0, 8, 44
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint4-tenant-admin-onboarding.md", "Markdown", 0, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 14, 62
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint5-academic-skeleton.md", "Markdown", 0, 0, 0, 0, 34, 0, 0, 0, 0, 0, 0, 7, 41
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint6-curriculum-study-plans.md", "Markdown", 0, 0, 0, 0, 29, 0, 0, 0, 0, 0, 0, 9, 38
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint7-user-population-rbac.md", "Markdown", 0, 0, 0, 0, 40, 0, 0, 0, 0, 0, 0, 9, 49
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint8-sections-enrollment.md", "Markdown", 0, 0, 0, 0, 47, 0, 0, 0, 0, 0, 0, 11, 58
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\docs\features\sprint9-scheduling-venues.md", "Markdown", 0, 0, 0, 0, 50, 0, 0, 0, 0, 0, 0, 13, 63
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\eslint.config.mjs", "JavaScript", 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 19
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\fix_faculty_circulars_rls.sql", "MS SQL", 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 7, 3, 31
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\next.config.ts", "TypeScript", 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 14, 3, 26
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\package-lock.json", "JSON", 0, 0, 0, 0, 0, 0, 9356, 0, 0, 0, 0, 1, 9357
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\package.json", "JSON", 0, 0, 0, 0, 0, 0, 47, 0, 0, 0, 0, 1, 48
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\playwright.config.ts", "TypeScript", 0, 0, 0, 31, 0, 0, 0, 0, 0, 0, 0, 2, 33
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\postcss.config.mjs", "JavaScript", 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 8
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\public\file.svg", "XML", 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\public\globe.svg", "XML", 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\public\next.svg", "XML", 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\public\vercel.svg", "XML", 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\public\window.svg", "XML", 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\apply-hook-fix.mjs", "JavaScript", 87, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 97
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\apply-migration.ts", "TypeScript", 0, 0, 0, 76, 0, 0, 0, 0, 0, 0, 24, 13, 113
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\apply-section-type-migration.mjs", "JavaScript", 89, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 14, 118
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\create-buckets.mjs", "JavaScript", 85, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 96
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\debug-document.ts", "TypeScript", 0, 0, 0, 247, 0, 0, 0, 0, 0, 0, 25, 55, 327
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\diagnose-auth.mjs", "JavaScript", 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 130
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\enable-hook-api.mjs", "JavaScript", 65, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 73
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\enable-hook.mjs", "JavaScript", 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 50
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\fix-all-users.mjs", "JavaScript", 46, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 54
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\reindex-all-documents.ts", "TypeScript", 0, 0, 0, 131, 0, 0, 0, 0, 0, 0, 16, 26, 173
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\reindex-material.ts", "TypeScript", 0, 0, 0, 69, 0, 0, 0, 0, 0, 0, 13, 16, 98
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\simulate-ingest.ts", "TypeScript", 0, 0, 0, 238, 0, 0, 0, 0, 0, 0, 29, 50, 317
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\simulate_academic_workflow.ts", "TypeScript", 0, 0, 0, 353, 0, 0, 0, 0, 0, 0, 47, 70, 470
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\test-conv.mjs", "JavaScript", 33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 40
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\test-ingest.ts", "TypeScript", 0, 0, 0, 401, 0, 0, 0, 0, 0, 0, 38, 59, 498
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\test-pdf-encoding.ts", "TypeScript", 0, 0, 0, 29, 0, 0, 0, 0, 0, 0, 8, 7, 44
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\test-rag.ts", "TypeScript", 0, 0, 0, 181, 0, 0, 0, 0, 0, 0, 21, 29, 231
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\test-results.json", "JSON", 0, 0, 0, 0, 0, 0, 130, 0, 0, 0, 0, 0, 130
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\test-rls.mjs", "JavaScript", 78, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 91
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\scripts\test-scenario.mjs", "JavaScript", 807, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 84, 971
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\(shared)\profile\actions.ts", "TypeScript", 0, 0, 0, 119, 0, 0, 0, 0, 0, 0, 0, 32, 151
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\(shared)\profile\profile-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 336, 0, 0, 0, 0, 0, 20, 356
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\academic-management-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 274, 0, 0, 0, 0, 5, 20, 299
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\analytics\actions.ts", "TypeScript", 0, 0, 0, 177, 0, 0, 0, 0, 0, 0, 2, 42, 221
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\analytics\analytics-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 462, 0, 0, 0, 0, 0, 22, 484
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\analytics\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 23, 0, 0, 0, 0, 0, 3, 26
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\circulars\actions.ts", "TypeScript", 0, 0, 0, 227, 0, 0, 0, 0, 0, 0, 11, 47, 285
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\circulars\circulars-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 393, 0, 0, 0, 0, 12, 28, 433
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\circulars\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 59, 0, 0, 0, 0, 1, 9, 69
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\components\sidebar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 91, 0, 0, 0, 0, 0, 9, 100
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\enrollments\actions.ts", "TypeScript", 0, 0, 0, 265, 0, 0, 0, 0, 0, 0, 36, 53, 354
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\enrollments\enrollments-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 626, 0, 0, 0, 0, 30, 50, 706
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\enrollments\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 67, 0, 0, 0, 0, 4, 7, 78
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 22, 0, 0, 0, 0, 0, 4, 26
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 90, 0, 0, 0, 0, 9, 16, 115
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\profile\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 3, 23
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\schedules\actions.ts", "TypeScript", 0, 0, 0, 195, 0, 0, 0, 0, 0, 0, 17, 43, 255
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\schedules\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 66, 0, 0, 0, 0, 2, 7, 75
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\schedules\schedules-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 895, 0, 0, 0, 0, 31, 68, 994
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\tickets\actions.ts", "TypeScript", 0, 0, 0, 194, 0, 0, 0, 0, 0, 0, 0, 36, 230
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\tickets\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 3, 12
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\academic-management\tickets\tickets-admin-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 600, 0, 0, 0, 0, 0, 35, 635
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\api\ai\chat\route.ts", "TypeScript", 0, 0, 0, 373, 0, 0, 0, 0, 0, 0, 37, 54, 464
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\api\ai\ingest\route.ts", "TypeScript", 0, 0, 0, 30, 0, 0, 0, 0, 0, 0, 8, 6, 44
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\api\analytics\compute-risk\route.ts", "TypeScript", 0, 0, 0, 247, 0, 0, 0, 0, 0, 0, 13, 41, 301
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\api\storage\download\route.ts", "TypeScript", 0, 0, 0, 35, 0, 0, 0, 0, 0, 0, 4, 11, 50
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\assignments\actions.ts", "TypeScript", 0, 0, 0, 105, 0, 0, 0, 0, 0, 0, 0, 29, 134
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\assignments\assignments-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 293, 0, 0, 0, 0, 0, 13, 306
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\assignments\loading.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 5
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\assignments\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 41, 0, 0, 0, 0, 1, 5, 47
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\attendance\actions.ts", "TypeScript", 0, 0, 0, 161, 0, 0, 0, 0, 0, 0, 6, 38, 205
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\attendance\attendance-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 344, 0, 0, 0, 0, 4, 19, 367
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\attendance\loading.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 5
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\attendance\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 43, 0, 0, 0, 0, 1, 5, 49
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\circulars\actions.ts", "TypeScript", 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 11, 22, 133
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\circulars\circulars-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 460, 0, 0, 0, 0, 5, 34, 499
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\circulars\loading.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 5
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\circulars\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 60, 0, 0, 0, 0, 3, 9, 72
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\components\sidebar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 101, 0, 0, 0, 0, 0, 9, 110
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\faculty-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 271, 0, 0, 0, 0, 4, 15, 290
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\gradebook\actions.ts", "TypeScript", 0, 0, 0, 95, 0, 0, 0, 0, 0, 0, 0, 27, 122
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\gradebook\gradebook-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 319, 0, 0, 0, 0, 0, 27, 346
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\gradebook\loading.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 5
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\gradebook\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 30, 0, 0, 0, 0, 1, 5, 36
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 22, 0, 0, 0, 0, 0, 4, 26
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\materials\actions.ts", "TypeScript", 0, 0, 0, 209, 0, 0, 0, 0, 0, 0, 6, 46, 261
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\materials\loading.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 5
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\materials\materials-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 416, 0, 0, 0, 0, 0, 23, 439
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\materials\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 51, 0, 0, 0, 0, 1, 5, 57
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\messages\actions.ts", "TypeScript", 0, 0, 0, 199, 0, 0, 0, 0, 0, 0, 6, 50, 255
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\messages\messages-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 444, 0, 0, 0, 0, 6, 36, 486
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\messages\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 24, 0, 0, 0, 0, 0, 3, 27
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 108, 0, 0, 0, 0, 6, 16, 130
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\profile\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 3, 23
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\risk-zone\actions.ts", "TypeScript", 0, 0, 0, 53, 0, 0, 0, 0, 0, 0, 0, 14, 67
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\risk-zone\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 3, 9
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\risk-zone\risk-zone-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 229, 0, 0, 0, 0, 0, 14, 243
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\faculty\tickets\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 3, 21
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\globals.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, 0, 106, 0, 9, 14, 129
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 43, 0, 0, 0, 0, 0, 4, 47
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\login\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 83, 0, 0, 0, 0, 0, 12, 95
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 2, 66
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\assignments\actions.ts", "TypeScript", 0, 0, 0, 112, 0, 0, 0, 0, 0, 0, 5, 31, 148
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\assignments\assignments-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 178, 0, 0, 0, 0, 0, 12, 190
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\assignments\loading.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 5
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\assignments\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 44, 0, 0, 0, 0, 0, 7, 51
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\attendance\actions.ts", "TypeScript", 0, 0, 0, 75, 0, 0, 0, 0, 0, 0, 8, 20, 103
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\attendance\attendance-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 401, 0, 0, 0, 0, 9, 33, 443
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\attendance\loading.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 5
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\attendance\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 4, 8, 76
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\circulars\circulars-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 173, 0, 0, 0, 0, 3, 15, 191
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\circulars\loading.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 5
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\circulars\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 35, 0, 0, 0, 0, 4, 7, 46
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\components\sidebar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 103, 0, 0, 0, 0, 0, 9, 112
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\grades\loading.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 5
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\grades\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 80, 0, 0, 0, 0, 0, 7, 87
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 22, 0, 0, 0, 0, 0, 4, 26
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\materials\loading.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 5
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\materials\materials-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 122, 0, 0, 0, 0, 0, 9, 131
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\materials\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 37, 0, 0, 0, 0, 0, 6, 43
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\messages\actions.ts", "TypeScript", 0, 0, 0, 126, 0, 0, 0, 0, 0, 0, 3, 31, 160
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\messages\messages-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 336, 0, 0, 0, 0, 0, 30, 366
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\messages\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 24, 0, 0, 0, 0, 0, 3, 27
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 65, 0, 0, 0, 0, 3, 9, 77
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\profile\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 3, 23
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\register\actions.ts", "TypeScript", 0, 0, 0, 223, 0, 0, 0, 0, 0, 0, 31, 47, 301
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\register\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 23, 0, 0, 0, 0, 0, 4, 27
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\register\register-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 367, 0, 0, 0, 0, 18, 31, 416
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\student-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 285, 0, 0, 0, 0, 7, 21, 313
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\tickets\actions.ts", "TypeScript", 0, 0, 0, 123, 0, 0, 0, 0, 0, 0, 1, 26, 150
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\tickets\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 3, 21
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\tickets\tickets-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 561, 0, 0, 0, 0, 0, 34, 595
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\unibot\actions.ts", "TypeScript", 0, 0, 0, 34, 0, 0, 0, 0, 0, 0, 0, 10, 44
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\unibot\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 3, 17
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\student\unibot\unibot-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 610, 0, 0, 0, 0, 18, 45, 673
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\super-admin\announcements\actions.ts", "TypeScript", 0, 0, 0, 50, 0, 0, 0, 0, 0, 0, 0, 15, 65
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\super-admin\announcements\announcements-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 237, 0, 0, 0, 0, 0, 13, 250
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\super-admin\announcements\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 22, 0, 0, 0, 0, 0, 4, 26
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\super-admin\components\sidebar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 87, 0, 0, 0, 0, 0, 9, 96
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\super-admin\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0, 3, 18
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\super-admin\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 40, 0, 0, 0, 0, 1, 8, 49
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\super-admin\plans\actions.ts", "TypeScript", 0, 0, 0, 78, 0, 0, 0, 0, 0, 0, 0, 18, 96
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\super-admin\plans\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 24, 0, 0, 0, 0, 0, 4, 28
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\super-admin\plans\plans-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 311, 0, 0, 0, 0, 0, 21, 332
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\super-admin\profile\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 3, 23
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\super-admin\super-admin-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 270, 0, 0, 0, 0, 7, 18, 295
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\super-admin\tenants\actions.ts", "TypeScript", 0, 0, 0, 128, 0, 0, 0, 0, 0, 0, 0, 26, 154
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\super-admin\tenants\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 27, 0, 0, 0, 0, 0, 5, 32
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\super-admin\tenants\tenants-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 595, 0, 0, 0, 0, 0, 30, 625
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\academic\academic-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 604, 0, 0, 0, 0, 17, 42, 663
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\academic\actions.ts", "TypeScript", 0, 0, 0, 231, 0, 0, 0, 0, 0, 0, 0, 58, 289
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\academic\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 42, 0, 0, 0, 0, 0, 5, 47
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\calendar\actions.ts", "TypeScript", 0, 0, 0, 90, 0, 0, 0, 0, 0, 0, 0, 17, 107
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\calendar\calendar-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 479, 0, 0, 0, 0, 0, 24, 503
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\calendar\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 23, 0, 0, 0, 0, 0, 4, 27
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\campuses\actions.ts", "TypeScript", 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 24, 104
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\campuses\campuses-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 314, 0, 0, 0, 0, 3, 16, 333
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\campuses\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 33, 0, 0, 0, 0, 0, 4, 37
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\components\sidebar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 175, 0, 0, 0, 0, 1, 15, 191
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\courses\actions.ts", "TypeScript", 0, 0, 0, 170, 0, 0, 0, 0, 0, 0, 1, 39, 210
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\courses\catalog-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 449, 0, 0, 0, 0, 0, 26, 475
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\courses\courses-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 547, 0, 0, 0, 0, 0, 34, 581
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\courses\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 33, 0, 0, 0, 0, 0, 4, 37
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\departments\staff\actions.ts", "TypeScript", 0, 0, 0, 98, 0, 0, 0, 0, 0, 0, 3, 26, 127
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\departments\staff\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 38, 0, 0, 0, 0, 1, 6, 45
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\departments\staff\staff-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 416, 0, 0, 0, 0, 11, 26, 453
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\knowledge\actions.ts", "TypeScript", 0, 0, 0, 79, 0, 0, 0, 0, 0, 0, 13, 25, 117
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\knowledge\knowledge-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 293, 0, 0, 0, 0, 0, 16, 309
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\knowledge\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 3, 9
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 22, 0, 0, 0, 0, 0, 4, 26
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 52, 0, 0, 0, 0, 0, 9, 61
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\profile\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 3, 23
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\settings\actions.ts", "TypeScript", 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 14, 62
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\settings\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 30, 0, 0, 0, 0, 0, 5, 35
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\settings\settings-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 264, 0, 0, 0, 0, 0, 20, 284
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\study-plans\actions.ts", "TypeScript", 0, 0, 0, 126, 0, 0, 0, 0, 0, 0, 0, 38, 164
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\study-plans\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 45, 0, 0, 0, 0, 0, 5, 50
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\study-plans\study-plan-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 711, 0, 0, 0, 0, 1, 55, 767
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\tenant-admin-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 256, 0, 0, 0, 0, 5, 18, 279
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\users\actions.ts", "TypeScript", 0, 0, 0, 558, 0, 0, 0, 0, 0, 0, 14, 106, 678
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\users\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 83, 0, 0, 0, 0, 8, 5, 96
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\users\users-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 1436, 0, 0, 0, 0, 14, 72, 1522
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\venues\actions.ts", "TypeScript", 0, 0, 0, 78, 0, 0, 0, 0, 0, 0, 0, 17, 95
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\venues\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 31, 0, 0, 0, 0, 0, 4, 35
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\tenant-admin\venues\venues-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 228, 0, 0, 0, 0, 0, 13, 241
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\app\unauthorized\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 22, 0, 0, 0, 0, 0, 2, 24
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\components\action-progress-enhancer.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 60, 0, 0, 0, 0, 6, 12, 78
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\components\analytics\chart-card.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 4, 25
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\components\analytics\index.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 3
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\components\analytics\kpi-card.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 59, 0, 0, 0, 0, 0, 6, 65
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\components\loading-button.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 61, 0, 0, 0, 0, 0, 8, 69
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\components\notification-bell.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 211, 0, 0, 0, 0, 0, 22, 233
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\components\realtime-page-refresher.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 87, 0, 0, 0, 0, 4, 12, 103
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\components\sidebar-shell.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 44, 0, 0, 0, 0, 8, 9, 61
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\components\skeleton.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 39, 0, 0, 0, 0, 1, 3, 43
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\components\theme-provider.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 3, 12
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\components\theme-toggle.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 6, 25
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\lib\ai\embedding.ts", "TypeScript", 0, 0, 0, 83, 0, 0, 0, 0, 0, 0, 47, 15, 145
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\lib\ai\ingest-service.ts", "TypeScript", 0, 0, 0, 110, 0, 0, 0, 0, 0, 0, 48, 26, 184
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\lib\ai\personal-context-aggregator.ts", "TypeScript", 0, 0, 0, 310, 0, 0, 0, 0, 0, 0, 9, 32, 351
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\lib\auth\get-user.ts", "TypeScript", 0, 0, 0, 34, 0, 0, 0, 0, 0, 0, 0, 10, 44
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\lib\security\file-validator.ts", "TypeScript", 0, 0, 0, 101, 0, 0, 0, 0, 0, 0, 0, 12, 113
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\lib\supabase\client.ts", "TypeScript", 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 2, 9
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\lib\supabase\middleware.ts", "TypeScript", 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 14, 114
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\lib\supabase\server.ts", "TypeScript", 0, 0, 0, 59, 0, 0, 0, 0, 0, 0, 9, 6, 74
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\lib\supabase\supabase.ts", "TypeScript", 0, 0, 0, 3784, 0, 0, 0, 0, 0, 0, 2, 10, 3796
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\lib\types\database.ts", "TypeScript", 0, 0, 0, 187, 0, 0, 0, 0, 0, 0, 0, 25, 212
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\lib\types\supabase.ts", "TypeScript", 0, 0, 0, 3773, 0, 0, 0, 0, 0, 0, 2, 10, 3785
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\src\middleware.ts", "TypeScript", 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 3, 13
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260307022710_part1_core_system.sql", "MS SQL", 0, 0, 909, 0, 0, 0, 0, 0, 0, 0, 141, 201, 1251
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260307022727_part2_lms_messaging.sql", "MS SQL", 0, 0, 1242, 0, 0, 0, 0, 0, 0, 0, 119, 206, 1567
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260308000000_custom_access_token_hook.sql", "MS SQL", 0, 0, 39, 0, 0, 0, 0, 0, 0, 0, 0, 8, 47
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260308000100_fix_hook_and_rls_helpers.sql", "MS SQL", 0, 0, 61, 0, 0, 0, 0, 0, 0, 0, 0, 8, 69
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260308000200_fix_rls_helpers_fallback.sql", "MS SQL", 0, 0, 31, 0, 0, 0, 0, 0, 0, 0, 0, 3, 34
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260308000300_fix_rls_recursion.sql", "MS SQL", 0, 0, 42, 0, 0, 0, 0, 0, 0, 0, 0, 5, 47
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260308000400_fix_inline_jwt_policies.sql", "MS SQL", 0, 0, 50, 0, 0, 0, 0, 0, 0, 0, 0, 5, 55
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260308000500_fix_channel_members_recursion.sql", "MS SQL", 0, 0, 52, 0, 0, 0, 0, 0, 0, 0, 0, 6, 58
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260308000600_fix_message_attachments_recursion.sql", "MS SQL", 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 1, 16
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260308000700_student_read_tenant_profiles.sql", "MS SQL", 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 2, 9
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260308000800_storage_policies.sql", "MS SQL", 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 10, 30
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260308000900_enable_realtime_messages.sql", "MS SQL", 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260308001000_match_chunks_function.sql", "MS SQL", 0, 0, 34, 0, 0, 0, 0, 0, 0, 0, 0, 1, 35
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260308002000_gemini_embedding_768.sql", "MS SQL", 0, 0, 37, 0, 0, 0, 0, 0, 0, 0, 0, 5, 42
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260309003000_chatbot_conversation_title.sql", "MS SQL", 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 1, 4
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260309200752_add_missing_notifications_triggers.sql", "MS SQL", 0, 0, 41, 0, 0, 0, 0, 0, 0, 0, 5, 5, 51
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260309204403_enable_realtime_notifications.sql", "MS SQL", 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 5, 3, 9
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260309210247_fix_realtime_notifications_complete.sql", "MS SQL", 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 3, 15
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260309211613_enable_realtime_for_notifications.sql", "MS SQL", 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 1, 13
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260309212443_enable_realtime_for_notifications.sql", "MS SQL", 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 1, 13
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260310194306_fix_ticket_number_generation.sql", "MS SQL", 0, 0, 13, 0, 0, 0, 0, 0, 0, 0, 0, 2, 15
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260310195358_fix_ticket_number_rls_bypass.sql", "MS SQL", 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 4, 3, 24
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260310200156_fix_duplicate_ticket_with_lock.sql", "MS SQL", 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 5, 3, 26
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260311202018_fix_ticket_number_without_for_update.sql", "MS SQL", 0, 0, 33, 0, 0, 0, 0, 0, 0, 0, 8, 7, 48
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260313222415_intra_tenant_isolation.sql", "MS SQL", 0, 0, 78, 0, 0, 0, 0, 0, 0, 0, 0, 17, 95
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260314032500_fix_missing_columns.sql", "MS SQL", 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 6, 5, 18
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260314050200_fix_tenant_admin_rls.sql", "MS SQL", 0, 0, 50, 0, 0, 0, 0, 0, 0, 0, 8, 9, 67
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260314054800_fix_profiles_rls_final.sql", "MS SQL", 0, 0, 111, 0, 0, 0, 0, 0, 0, 0, 16, 27, 154
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260318001114_align_academic_workflow.sql", "MS SQL", 0, 0, 238, 0, 0, 0, 0, 0, 0, 0, 84, 69, 391
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260410210000_fix_channel_members_insert_rls.sql", "MS SQL", 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 5, 6, 59
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260410220000_add_instructor_to_channel.sql", "MS SQL", 0, 0, 96, 0, 0, 0, 0, 0, 0, 0, 15, 15, 126
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260410230000_fix_attendance_dismissal.sql", "MS SQL", 0, 0, 85, 0, 0, 0, 0, 0, 0, 0, 8, 11, 104
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260411010000_clear_attendance_data.sql", "MS SQL", 0, 0, 79, 0, 0, 0, 0, 0, 0, 0, 6, 12, 97
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260411020000_auto_restore_dismissed_enrollment.sql", "MS SQL", 0, 0, 83, 0, 0, 0, 0, 0, 0, 0, 5, 10, 98
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260411180000_fix_attendance_summary_count.sql", "MS SQL", 0, 0, 92, 0, 0, 0, 0, 0, 0, 0, 6, 11, 109
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260411180100_recalculate_all_summaries.sql", "MS SQL", 0, 0, 22, 0, 0, 0, 0, 0, 0, 0, 1, 2, 25
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260411190000_enable_realtime_attendance.sql", "MS SQL", 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3, 3, 8
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260412190000_faculty_circulars_rls.sql", "MS SQL", 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 22, 6, 47
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260416000001_fix_embedding_dimensions_768.sql", "MS SQL", 0, 0, 43, 0, 0, 0, 0, 0, 0, 0, 27, 8, 78
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260419000001_create_missing_buckets.sql", "MS SQL", 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 4, 2, 26
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260419000002_add_assignment_attachment.sql", "MS SQL", 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 1, 4
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260419010000_complete_realtime_notifications.sql", "MS SQL", 0, 0, 196, 0, 0, 0, 0, 0, 0, 0, 31, 26, 253
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260420010000_fix_rag_similarity_threshold.sql", "MS SQL", 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 5, 2, 39
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260426000001_fix_college_absence_threshold.sql", "MS SQL", 0, 0, 103, 0, 0, 0, 0, 0, 0, 0, 12, 13, 128
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260426000002_section_auto_close_when_full.sql", "MS SQL", 0, 0, 53, 0, 0, 0, 0, 0, 0, 0, 7, 8, 68
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260426000003_fix_dismissal_restore_logic.sql", "MS SQL", 0, 0, 102, 0, 0, 0, 0, 0, 0, 0, 10, 14, 126
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260426100000_fix_campuses_rls.sql", "MS SQL", 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 13, 4, 34
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260628000001_create_course_schedules.sql", "MS SQL", 0, 0, 129, 0, 0, 0, 0, 0, 0, 0, 14, 22, 165
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260628000002_modify_enrollments_add_staff.sql", "MS SQL", 0, 0, 114, 0, 0, 0, 0, 0, 0, 0, 49, 32, 195
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260628000003_migrate_data.sql", "MS SQL", 0, 0, 194, 0, 0, 0, 0, 0, 0, 0, 53, 37, 284
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260628000004_drop_old_tables.sql", "MS SQL", 0, 0, 82, 0, 0, 0, 0, 0, 0, 0, 15, 11, 108
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260628000005_update_rls_policies.sql", "MS SQL", 0, 0, 77, 0, 0, 0, 0, 0, 0, 0, 8, 11, 96
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260628000006_update_functions.sql", "MS SQL", 0, 0, 31, 0, 0, 0, 0, 0, 0, 0, 10, 4, 45
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260628000007_final_cleanup.sql", "MS SQL", 0, 0, 41, 0, 0, 0, 0, 0, 0, 0, 12, 11, 64
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\migrations\20260628000008_allow_enrollment_during_planning.sql", "MS SQL", 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 10, 6, 32
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\supabase\seed.sql", "MS SQL", 0, 0, 195, 0, 0, 0, 0, 0, 0, 0, 148, 69, 412
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\sync_emails.sql", "MS SQL", 0, 0, 57, 0, 0, 0, 0, 0, 0, 0, 19, 8, 84
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\tests\auth.spec.ts", "TypeScript", 0, 0, 0, 43, 0, 0, 0, 0, 0, 0, 0, 7, 50
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\tests\student-journey.spec.ts", "TypeScript", 0, 0, 0, 84, 0, 0, 0, 0, 0, 0, 0, 15, 99
+"d:\IT - 3rd year\IT 4\ibrahim\UniBot\uni_system\unibot-platform\tsconfig.json", "JSON with Comments", 0, 34, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 35
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\README.md", "Markdown", 0, 0, 0, 0, -23, 0, 0, 0, 0, 0, 0, -14, -37
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\change_log.md", "Markdown", 0, 0, 0, 0, -226, 0, 0, 0, 0, 0, 0, -70, -296
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\docs\features\sprint0-core-foundation.md", "Markdown", 0, 0, 0, 0, -32, 0, 0, 0, 0, 0, 0, -10, -42
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\docs\features\sprint1-subscription-plans.md", "Markdown", 0, 0, 0, 0, -26, 0, 0, 0, 0, 0, 0, -7, -33
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\docs\features\sprint10-course-content-syllabi.md", "Markdown", 0, 0, 0, 0, -34, 0, 0, 0, 0, 0, 0, -7, -41
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\docs\features\sprint11-assignments-submissions.md", "Markdown", 0, 0, 0, 0, -26, 0, 0, 0, 0, 0, 0, -6, -32
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\docs\features\sprint12-attendance-gradebook.md", "Markdown", 0, 0, 0, 0, -31, 0, 0, 0, 0, 0, 0, -7, -38
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\docs\features\sprint13-realtime-messaging.md", "Markdown", 0, 0, 0, 0, -27, 0, 0, 0, 0, 0, 0, -6, -33
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\docs\features\sprint14-circulars-notifications.md", "Markdown", 0, 0, 0, 0, -33, 0, 0, 0, 0, 0, 0, -9, -42
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\docs\features\sprint2-tenant-provisioning.md", "Markdown", 0, 0, 0, 0, -35, 0, 0, 0, 0, 0, 0, -8, -43
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\docs\features\sprint3-dashboard-announcements.md", "Markdown", 0, 0, 0, 0, -36, 0, 0, 0, 0, 0, 0, -8, -44
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\docs\features\sprint4-tenant-admin-onboarding.md", "Markdown", 0, 0, 0, 0, -48, 0, 0, 0, 0, 0, 0, -14, -62
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\docs\features\sprint5-academic-skeleton.md", "Markdown", 0, 0, 0, 0, -34, 0, 0, 0, 0, 0, 0, -7, -41
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\docs\features\sprint6-curriculum-study-plans.md", "Markdown", 0, 0, 0, 0, -29, 0, 0, 0, 0, 0, 0, -9, -38
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\docs\features\sprint7-user-population-rbac.md", "Markdown", 0, 0, 0, 0, -40, 0, 0, 0, 0, 0, 0, -9, -49
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\docs\features\sprint8-sections-enrollment.md", "Markdown", 0, 0, 0, 0, -47, 0, 0, 0, 0, 0, 0, -11, -58
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\docs\features\sprint9-scheduling-venues.md", "Markdown", 0, 0, 0, 0, -50, 0, 0, 0, 0, 0, 0, -13, -63
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\eslint.config.mjs", "JavaScript", -14, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2, -3, -19
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\next.config.ts", "TypeScript", 0, 0, 0, -5, 0, 0, 0, 0, 0, 0, -1, -3, -9
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\package-lock.json", "JSON", 0, 0, 0, 0, 0, 0, -7061, 0, 0, 0, 0, -1, -7062
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\package.json", "JSON", 0, 0, 0, 0, 0, 0, -31, 0, 0, 0, 0, -1, -32
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\postcss.config.mjs", "JavaScript", -6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2, -8
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\public\file.svg", "XML", 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\public\globe.svg", "XML", 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\public\next.svg", "XML", 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\public\vercel.svg", "XML", 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\public\window.svg", "XML", 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\academic-management\circulars\actions.ts", "TypeScript", 0, 0, 0, -49, 0, 0, 0, 0, 0, 0, 0, -13, -62
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\academic-management\circulars\circulars-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -155, 0, 0, 0, 0, 0, -10, -165
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\academic-management\circulars\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -21, 0, 0, 0, 0, 0, -4, -25
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\academic-management\components\sidebar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -84, 0, 0, 0, 0, 0, -9, -93
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\academic-management\enrollments\actions.ts", "TypeScript", 0, 0, 0, -90, 0, 0, 0, 0, 0, 0, 0, -20, -110
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\academic-management\enrollments\enrollments-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -276, 0, 0, 0, 0, 0, -24, -300
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\academic-management\enrollments\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -41, 0, 0, 0, 0, 0, -4, -45
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\academic-management\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -15, 0, 0, 0, 0, 0, -3, -18
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\academic-management\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -61, 0, 0, 0, 0, 0, -9, -70
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\academic-management\schedules\actions.ts", "TypeScript", 0, 0, 0, -113, 0, 0, 0, 0, 0, 0, 0, -31, -144
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\academic-management\schedules\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -42, 0, 0, 0, 0, 0, -4, -46
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\academic-management\schedules\schedules-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -313, 0, 0, 0, 0, 0, -18, -331
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\academic-management\sections\actions.ts", "TypeScript", 0, 0, 0, -99, 0, 0, 0, 0, 0, 0, 0, -26, -125
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\academic-management\sections\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -47, 0, 0, 0, 0, 0, -4, -51
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\academic-management\sections\sections-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -212, 0, 0, 0, 0, 0, -15, -227
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\assignments\actions.ts", "TypeScript", 0, 0, 0, -90, 0, 0, 0, 0, 0, 0, 0, -23, -113
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\assignments\assignments-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -270, 0, 0, 0, 0, 0, -13, -283
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\assignments\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -33, 0, 0, 0, 0, 0, -4, -37
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\attendance\actions.ts", "TypeScript", 0, 0, 0, -117, 0, 0, 0, 0, 0, 0, 0, -27, -144
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\attendance\attendance-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -251, 0, 0, 0, 0, 0, -15, -266
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\attendance\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -35, 0, 0, 0, 0, 0, -4, -39
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\components\sidebar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -88, 0, 0, 0, 0, 0, -9, -97
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\gradebook\actions.ts", "TypeScript", 0, 0, 0, -75, 0, 0, 0, 0, 0, 0, 0, -22, -97
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\gradebook\gradebook-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -192, 0, 0, 0, 0, 0, -13, -205
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\gradebook\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -22, 0, 0, 0, 0, 0, -4, -26
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -15, 0, 0, 0, 0, 0, -3, -18
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\materials\actions.ts", "TypeScript", 0, 0, 0, -154, 0, 0, 0, 0, 0, 0, 0, -37, -191
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\materials\materials-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -356, 0, 0, 0, 0, 0, -19, -375
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\materials\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -43, 0, 0, 0, 0, 0, -4, -47
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\messages\actions.ts", "TypeScript", 0, 0, 0, -104, 0, 0, 0, 0, 0, 0, 0, -27, -131
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\messages\messages-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -288, 0, 0, 0, 0, 0, -27, -315
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\messages\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -24, 0, 0, 0, 0, 0, -3, -27
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\faculty\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -87, 0, 0, 0, 0, 0, -8, -95
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\globals.css", "CSS", 0, 0, 0, 0, 0, 0, 0, 0, 0, -24, 0, -3, -27
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -24, 0, 0, 0, 0, 0, -4, -28
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\login\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -83, 0, 0, 0, 0, 0, -12, -95
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -64, 0, 0, 0, 0, 0, -2, -66
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\student\assignments\actions.ts", "TypeScript", 0, 0, 0, -83, 0, 0, 0, 0, 0, 0, 0, -27, -110
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\student\assignments\assignments-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -153, 0, 0, 0, 0, 0, -12, -165
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\student\assignments\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -44, 0, 0, 0, 0, 0, -7, -51
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\student\attendance\attendance-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -158, 0, 0, 0, 0, 0, -12, -170
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\student\attendance\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -46, 0, 0, 0, 0, 0, -7, -53
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\student\components\sidebar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -88, 0, 0, 0, 0, 0, -9, -97
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\student\grades\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -80, 0, 0, 0, 0, 0, -7, -87
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\student\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -15, 0, 0, 0, 0, 0, -3, -18
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\student\materials\materials-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -122, 0, 0, 0, 0, 0, -9, -131
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\student\materials\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -36, 0, 0, 0, 0, 0, -6, -42
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\student\messages\actions.ts", "TypeScript", 0, 0, 0, -103, 0, 0, 0, 0, 0, 0, 0, -26, -129
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\student\messages\messages-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -288, 0, 0, 0, 0, 0, -27, -315
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\student\messages\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -24, 0, 0, 0, 0, 0, -3, -27
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\student\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -91, 0, 0, 0, 0, 0, -8, -99
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\super-admin\announcements\actions.ts", "TypeScript", 0, 0, 0, -50, 0, 0, 0, 0, 0, 0, 0, -15, -65
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\super-admin\announcements\announcements-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -237, 0, 0, 0, 0, 0, -13, -250
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\super-admin\announcements\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -22, 0, 0, 0, 0, 0, -4, -26
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\super-admin\components\sidebar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -83, 0, 0, 0, 0, 0, -9, -92
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\super-admin\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -15, 0, 0, 0, 0, 0, -3, -18
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\super-admin\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -165, 0, 0, 0, 0, 0, -14, -179
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\super-admin\plans\actions.ts", "TypeScript", 0, 0, 0, -79, 0, 0, 0, 0, 0, 0, 0, -18, -97
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\super-admin\plans\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -24, 0, 0, 0, 0, 0, -4, -28
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\super-admin\plans\plans-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -311, 0, 0, 0, 0, 0, -21, -332
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\super-admin\tenants\actions.ts", "TypeScript", 0, 0, 0, -128, 0, 0, 0, 0, 0, 0, 0, -26, -154
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\super-admin\tenants\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -27, 0, 0, 0, 0, 0, -5, -32
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\super-admin\tenants\tenants-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -593, 0, 0, 0, 0, 0, -30, -623
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\academic\academic-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -515, 0, 0, 0, 0, 0, -37, -552
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\academic\actions.ts", "TypeScript", 0, 0, 0, -190, 0, 0, 0, 0, 0, 0, 0, -52, -242
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\academic\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -33, 0, 0, 0, 0, 0, -5, -38
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\calendar\actions.ts", "TypeScript", 0, 0, 0, -86, 0, 0, 0, 0, 0, 0, 0, -17, -103
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\calendar\calendar-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -477, 0, 0, 0, 0, 0, -24, -501
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\calendar\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -23, 0, 0, 0, 0, 0, -4, -27
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\components\sidebar.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -88, 0, 0, 0, 0, 0, -9, -97
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\courses\actions.ts", "TypeScript", 0, 0, 0, -161, 0, 0, 0, 0, 0, 0, 0, -35, -196
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\courses\courses-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -539, 0, 0, 0, 0, 0, -32, -571
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\courses\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -50, 0, 0, 0, 0, 0, -4, -54
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\layout.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -15, 0, 0, 0, 0, 0, -3, -18
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -150, 0, 0, 0, 0, 0, -13, -163
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\settings\actions.ts", "TypeScript", 0, 0, 0, -48, 0, 0, 0, 0, 0, 0, 0, -14, -62
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\settings\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -30, 0, 0, 0, 0, 0, -5, -35
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\settings\settings-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -264, 0, 0, 0, 0, 0, -20, -284
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\users\actions.ts", "TypeScript", 0, 0, 0, -247, 0, 0, 0, 0, 0, 0, 0, -51, -298
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\users\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -45, 0, 0, 0, 0, 0, -4, -49
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\users\users-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -413, 0, 0, 0, 0, 0, -36, -449
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\venues\actions.ts", "TypeScript", 0, 0, 0, -64, 0, 0, 0, 0, 0, 0, 0, -14, -78
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\venues\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -23, 0, 0, 0, 0, 0, -4, -27
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\tenant-admin\venues\venues-client.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -203, 0, 0, 0, 0, 0, -12, -215
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\app\unauthorized\page.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -22, 0, 0, 0, 0, 0, -2, -24
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\components\notification-bell.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, -146, 0, 0, 0, 0, 0, -17, -163
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\lib\auth\get-user.ts", "TypeScript", 0, 0, 0, -34, 0, 0, 0, 0, 0, 0, 0, -10, -44
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\lib\supabase\client.ts", "TypeScript", 0, 0, 0, -7, 0, 0, 0, 0, 0, 0, 0, -2, -9
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\lib\supabase\middleware.ts", "TypeScript", 0, 0, 0, -85, 0, 0, 0, 0, 0, 0, 0, -11, -96
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\lib\supabase\server.ts", "TypeScript", 0, 0, 0, -46, 0, 0, 0, 0, 0, 0, -2, -5, -53
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\lib\types\database.ts", "TypeScript", 0, 0, 0, -570, 0, 0, 0, 0, 0, 0, 0, -65, -635
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\src\middleware.ts", "TypeScript", 0, 0, 0, -10, 0, 0, 0, 0, 0, 0, 0, -3, -13
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\supabase\migrations\20260307022710_part1_core_system.sql", "MS SQL", 0, 0, -909, 0, 0, 0, 0, 0, 0, 0, -141, -201, -1251
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\supabase\migrations\20260307022727_part2_lms_messaging.sql", "MS SQL", 0, 0, -1242, 0, 0, 0, 0, 0, 0, 0, -119, -206, -1567
+"d:\IT - 3rd year\IT 4\ibrahim\التوثيقات\UniBot\unibot-platform\tsconfig.json", "JSON with Comments", 0, -34, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -35
+"Total", "-", 1449, 0, 3085, 12854, 4619, 11257, 2441, 0, 106, -24, 1637, 4056, 41480

@@ -1,0 +1,156 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e23] [cursor=pointer]:
+    - img [ref=e24]
+  - alert [ref=e27]
+  - generic [ref=e43]:
+    - complementary [ref=e44]:
+      - generic [ref=e45]:
+        - generic [ref=e47]: 🏫
+        - generic [ref=e48]:
+          - paragraph [ref=e49]: UniBot
+          - paragraph [ref=e50]: مدير الجامعة
+          - paragraph [ref=e51]: UST uni
+      - navigation [ref=e52]:
+        - link "لوحة المعلومات" [ref=e53] [cursor=pointer]:
+          - /url: /tenant-admin
+          - img [ref=e54]
+          - text: لوحة المعلومات
+        - link "إعدادات الجامعة" [ref=e59] [cursor=pointer]:
+          - /url: /tenant-admin/settings
+          - img [ref=e60]
+          - text: إعدادات الجامعة
+        - link "الفروع والأحرم" [ref=e63] [cursor=pointer]:
+          - /url: /tenant-admin/campuses
+          - img [ref=e64]
+          - text: الفروع والأحرم
+        - link "القاعات والمباني" [ref=e68] [cursor=pointer]:
+          - /url: /tenant-admin/venues
+          - img [ref=e69]
+          - text: القاعات والمباني
+        - link "الهيكل التنظيمي" [ref=e72] [cursor=pointer]:
+          - /url: /tenant-admin/academic
+          - img [ref=e73]
+          - text: الهيكل التنظيمي
+        - button "الخطط والمقررات" [ref=e78]:
+          - img [ref=e79]
+          - generic [ref=e81]: الخطط والمقررات
+          - img [ref=e82]
+        - link "إدارة المستخدمين" [ref=e84] [cursor=pointer]:
+          - /url: /tenant-admin/users
+          - img [ref=e85]
+          - text: إدارة المستخدمين
+        - link "قاعدة المعرفة" [ref=e90] [cursor=pointer]:
+          - /url: /tenant-admin/knowledge
+          - img [ref=e91]
+          - text: قاعدة المعرفة
+        - link "التقويم الأكاديمي" [ref=e103] [cursor=pointer]:
+          - /url: /tenant-admin/calendar
+          - img [ref=e104]
+          - text: التقويم الأكاديمي
+      - generic [ref=e106]:
+        - link "aa ahmed ahmed ahmednazn2020@gmail.com" [ref=e107] [cursor=pointer]:
+          - /url: /tenant-admin/profile
+          - generic [ref=e108]: aa
+          - generic [ref=e109]:
+            - paragraph [ref=e110]: ahmed ahmed
+            - paragraph [ref=e111]: ahmednazn2020@gmail.com
+        - button "تسجيل الخروج" [ref=e112]:
+          - img [ref=e113]
+          - text: تسجيل الخروج
+      - button "تبديل الوضع" [ref=e117]:
+        - img [ref=e118]
+    - main [ref=e120]:
+      - generic [ref=e121]:
+        - generic [ref=e122]:
+          - heading "مرحباً، ahmed" [level=1] [ref=e123]
+          - paragraph [ref=e124]: UST uni
+        - generic [ref=e125]:
+          - generic [ref=e126]:
+            - generic [ref=e128]:
+              - generic [ref=e129]:
+                - paragraph [ref=e130]: إجمالي الطلاب
+                - paragraph [ref=e131]: "3"
+                - generic [ref=e132]:
+                  - img [ref=e133]
+                  - generic [ref=e136]: 2%
+                  - generic [ref=e137]: من السعة
+              - img [ref=e139]
+            - generic [ref=e143]:
+              - generic [ref=e144]:
+                - paragraph [ref=e145]: أعضاء هيئة التدريس
+                - paragraph [ref=e146]: "1"
+                - generic [ref=e147]:
+                  - generic [ref=e148]: "6"
+                  - generic [ref=e149]: إجمالي المستخدمين
+              - img [ref=e151]
+            - generic [ref=e157]:
+              - generic [ref=e158]:
+                - paragraph [ref=e159]: المواد النشطة
+                - paragraph [ref=e160]: "2"
+                - generic [ref=e161]:
+                  - generic [ref=e162]: "2"
+                  - generic [ref=e163]: إجمالي المواد
+              - img [ref=e165]
+            - generic [ref=e168]:
+              - generic [ref=e169]:
+                - paragraph [ref=e170]: التخزين المستخدم
+                - paragraph [ref=e171]: 0.0 GB
+                - generic [ref=e172]:
+                  - img [ref=e173]
+                  - generic [ref=e176]: 0.0%
+                  - generic [ref=e177]: من السعة
+              - img [ref=e179]
+          - generic [ref=e181]:
+            - generic [ref=e182]:
+              - generic [ref=e183]:
+                - heading "توزيع المستخدمين" [level=3] [ref=e184]
+                - paragraph [ref=e185]: طلاب، هيئة تدريس، وإداريون
+              - generic [ref=e188]:
+                - list [ref=e190]:
+                  - listitem [ref=e191]:
+                    - img "إداريون legend icon" [ref=e192]
+                    - text: إداريون
+                  - listitem [ref=e194]:
+                    - img "طلاب legend icon" [ref=e195]
+                    - text: طلاب
+                  - listitem [ref=e197]:
+                    - img "هيئة تدريس legend icon" [ref=e198]
+                    - text: هيئة تدريس
+                - application [ref=e200]
+            - generic [ref=e213]:
+              - generic [ref=e214]:
+                - heading "المواد حسب القسم" [level=3] [ref=e215]
+                - paragraph [ref=e216]: Top 10 أقسام
+              - application [ref=e220]:
+                - generic [ref=e236]:
+                  - generic [ref=e237]:
+                    - generic [ref=e239]: "0"
+                    - generic [ref=e241]: "0.25"
+                    - generic [ref=e243]: "0.5"
+                    - generic [ref=e245]: "0.75"
+                    - generic [ref=e247]: "1"
+                  - generic [ref=e248]:
+                    - generic [ref=e250]: الهندسةوالحاسبات
+                    - generic [ref=e252]: علوم ادارية
+          - generic [ref=e253]:
+            - heading "معلومات الجامعة" [level=2] [ref=e254]
+            - generic [ref=e255]:
+              - generic [ref=e256]:
+                - paragraph [ref=e257]: النطاق
+                - paragraph [ref=e258]: UST uni
+              - generic [ref=e259]:
+                - paragraph [ref=e260]: التخزين
+                - paragraph [ref=e261]: 0 / 20 GB (0.0%)
+              - generic [ref=e263]:
+                - paragraph [ref=e264]: المستخدمين
+                - paragraph [ref=e265]: 6 / 200
+              - generic [ref=e266]:
+                - paragraph [ref=e267]: الحالة
+                - generic [ref=e268]: نشطة
+              - generic [ref=e269]:
+                - paragraph [ref=e270]: الفصل الحالي
+                - paragraph [ref=e271]: الترم الثاني 2025 - 2026
+              - generic [ref=e272]:
+                - paragraph [ref=e273]: المواد النشطة
+                - paragraph [ref=e274]: "2"
+  - generic [ref=e275]: الهندسة والحاسبات

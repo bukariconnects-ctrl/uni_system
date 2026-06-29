@@ -9,12 +9,12 @@ export default async function StudyPlansPage() {
   const [majorsRes, coursesRes] = await Promise.all([
     supabase
       .from("majors")
-      .select("id, name, code, departments(name, colleges(name)), academic_levels(id, level_number, name)")
+      .select("id, name, code, department_id, departments(name, colleges(name)), academic_levels(id, level_number, name)")
       .eq("tenant_id", profile.tenant_id)
       .order("name"),
     supabase
       .from("courses")
-      .select("id, code, name, credit_hours, course_type")
+      .select("id, code, name, credit_hours, course_type, department_id")
       .eq("tenant_id", profile.tenant_id)
       .eq("is_active", true)
       .order("code"),

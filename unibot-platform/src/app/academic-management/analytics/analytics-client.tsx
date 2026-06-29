@@ -24,28 +24,27 @@ const riskColors: Record<string, { bg: string; text: string; label: string }> = 
 interface RiskScore {
   id: string;
   student_id: string;
-  section_id: string;
+  course_id: string;
   risk_level: string;
   risk_score: number;
   absence_factor: number;
   grade_factor: number;
   engagement_factor: number;
   profiles?: { first_name: string; last_name: string; email: string };
-  sections?: { section_code: string; courses: { name: string } | null };
+  courses?: { code: string; name: string } | null;
 }
 
 interface CourseFlag {
   id: string;
-  section_id: string;
+  course_id: string;
   avg_risk_score: number;
   high_risk_count: number;
   failure_rate_pct: number;
   flagged: boolean;
-  sections?: {
-    section_code: string;
-    courses: { name: string } | null;
-    profiles?: { first_name: string; last_name: string } | null;
-  };
+  courses?: {
+    code: string;
+    name: string;
+  } | null;
 }
 
 interface Semester {
@@ -73,7 +72,7 @@ export function AnalyticsClient({
     null
   );
   const [recStudentName, setRecStudentName] = useState("");
-  const [recSectionId, setRecSectionId] = useState("");
+  const [recCourseId, setRecCourseId] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -267,13 +266,9 @@ export function AnalyticsClient({
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-bold text-text-primary">
-                      {flag.sections?.courses?.name || ""} —{" "}
-                      {flag.sections?.section_code || ""}
+                      {flag.courses?.code || ""} —{" "}
+                      {flag.courses?.name || ""}
                     </h3>
-                    <p className="text-xs text-text-secondary">
-                      المحاضر: {flag.sections?.profiles?.first_name}{" "}
-                      {flag.sections?.profiles?.last_name}
-                    </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-center">
@@ -348,8 +343,8 @@ export function AnalyticsClient({
                       </span>
                     </div>
                     <p className="text-xs text-text-secondary">
-                      {score.sections?.courses?.name} —{" "}
-                      {score.sections?.section_code}
+                      {score.courses?.code} —{" "}
+                      {score.courses?.name}
                     </p>
                   </div>
 
@@ -400,7 +395,7 @@ export function AnalyticsClient({
                         setRecStudentName(
                           `${score.profiles?.first_name} ${score.profiles?.last_name}`
                         );
-                        setRecSectionId(score.section_id);
+                        setRecCourseId(score.course_id);
                       }}
                       className="flex items-center gap-1 rounded-lg bg-action-blue/20 px-3 py-1.5 text-xs font-medium text-action-blue transition-colors hover:bg-action-blue/20"
                     >
@@ -431,7 +426,7 @@ export function AnalyticsClient({
             </div>
             <form action={handleSendRecommendation} className="space-y-4">
               <input type="hidden" name="student_id" value={showRecommendation} />
-              <input type="hidden" name="section_id" value={recSectionId} />
+              <input type="hidden" name="course_id" value={recCourseId} />
               <div>
                 <label className="mb-1 block text-sm font-medium text-text-primary">
                   عنوان التوصية

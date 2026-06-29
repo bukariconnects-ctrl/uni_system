@@ -1,0 +1,127 @@
+- generic [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e23] [cursor=pointer]:
+    - img [ref=e24]
+  - alert [ref=e27]
+  - generic [ref=e43]:
+    - complementary [ref=e44]:
+      - generic [ref=e45]:
+        - generic [ref=e47]: 🏫
+        - generic [ref=e48]:
+          - paragraph [ref=e49]: UniBot
+          - paragraph [ref=e50]: مدير الجامعة
+          - paragraph [ref=e51]: UST uni
+      - navigation [ref=e52]:
+        - link "لوحة المعلومات" [ref=e53] [cursor=pointer]:
+          - /url: /tenant-admin
+          - img [ref=e54]
+          - text: لوحة المعلومات
+        - link "إعدادات الجامعة" [active] [ref=e59] [cursor=pointer]:
+          - /url: /tenant-admin/settings
+          - img [ref=e60]
+          - text: إعدادات الجامعة
+        - link "الفروع والأحرم" [ref=e63] [cursor=pointer]:
+          - /url: /tenant-admin/campuses
+          - img [ref=e64]
+          - text: الفروع والأحرم
+        - link "القاعات والمباني" [ref=e68] [cursor=pointer]:
+          - /url: /tenant-admin/venues
+          - img [ref=e69]
+          - text: القاعات والمباني
+        - link "الهيكل التنظيمي" [ref=e72] [cursor=pointer]:
+          - /url: /tenant-admin/academic
+          - img [ref=e73]
+          - text: الهيكل التنظيمي
+        - button "الخطط والمقررات" [ref=e78]:
+          - img [ref=e79]
+          - generic [ref=e81]: الخطط والمقررات
+          - img [ref=e82]
+        - link "إدارة المستخدمين" [ref=e84] [cursor=pointer]:
+          - /url: /tenant-admin/users
+          - img [ref=e85]
+          - text: إدارة المستخدمين
+        - link "قاعدة المعرفة" [ref=e90] [cursor=pointer]:
+          - /url: /tenant-admin/knowledge
+          - img [ref=e91]
+          - text: قاعدة المعرفة
+        - link "التقويم الأكاديمي" [ref=e103] [cursor=pointer]:
+          - /url: /tenant-admin/calendar
+          - img [ref=e104]
+          - text: التقويم الأكاديمي
+      - generic [ref=e106]:
+        - link "aa ahmed ahmed ahmednazn2020@gmail.com" [ref=e107] [cursor=pointer]:
+          - /url: /tenant-admin/profile
+          - generic [ref=e108]: aa
+          - generic [ref=e109]:
+            - paragraph [ref=e110]: ahmed ahmed
+            - paragraph [ref=e111]: ahmednazn2020@gmail.com
+        - button "تسجيل الخروج" [ref=e112]:
+          - img [ref=e113]
+          - text: تسجيل الخروج
+      - button "تبديل الوضع" [ref=e117]:
+        - img [ref=e118]
+    - main [ref=e120]:
+      - generic [ref=e276]:
+        - generic [ref=e277]:
+          - heading "إعدادات الجامعة" [level=1] [ref=e278]
+          - paragraph [ref=e279]: تخصيص العلامة التجارية والإعدادات العامة
+        - generic [ref=e280]:
+          - generic [ref=e281]:
+            - generic [ref=e282]:
+              - img [ref=e284]
+              - generic [ref=e290]:
+                - heading "العلامة التجارية" [level=2] [ref=e291]
+                - paragraph [ref=e292]: تخصيص مظهر الجامعة (الشعار والألوان)
+            - generic [ref=e293]:
+              - generic [ref=e294]:
+                - generic [ref=e295]: رابط الشعار (URL)
+                - textbox "https://example.com/logo.png" [ref=e296]
+              - generic [ref=e297]:
+                - generic [ref=e298]: اللون الأساسي
+                - generic [ref=e299]:
+                  - textbox [ref=e300] [cursor=pointer]: "#1e40af"
+                  - textbox [ref=e301]: "#1E40AF"
+              - generic [ref=e302]:
+                - generic [ref=e303]: اللون الثانوي
+                - generic [ref=e304]:
+                  - textbox [ref=e305] [cursor=pointer]: "#3b82f6"
+                  - textbox [ref=e306]: "#3B82F6"
+              - generic [ref=e307]:
+                - generic [ref=e308]: رسالة الترحيب
+                - textbox "مرحباً بكم في نظام الجامعة الذكي..." [ref=e309]
+              - button "حفظ التغييرات" [ref=e311]
+          - generic [ref=e312]:
+            - generic [ref=e313]:
+              - img [ref=e315]
+              - generic [ref=e318]:
+                - heading "اللغة والمنطقة الزمنية" [level=2] [ref=e319]
+                - paragraph [ref=e320]: إعدادات التوطين والمنطقة الزمنية
+            - generic [ref=e321]:
+              - generic [ref=e322]:
+                - generic [ref=e323]: المنطقة الزمنية
+                - combobox [ref=e324]:
+                  - option "الرياض (UTC+3)" [selected]
+                  - option "دبي (UTC+4)"
+                  - option "القاهرة (UTC+2)"
+                  - option "عمّان (UTC+3)"
+                  - option "بغداد (UTC+3)"
+                  - option "الكويت (UTC+3)"
+                  - option "لندن (UTC+0)"
+              - generic [ref=e325]:
+                - generic [ref=e326]: اللغة الافتراضية
+                - combobox [ref=e327]:
+                  - option "العربية" [selected]
+                  - option "English"
+              - button "حفظ التغييرات" [ref=e329]
+          - generic [ref=e330]:
+            - generic [ref=e331]:
+              - img [ref=e333]
+              - generic [ref=e335]:
+                - heading "نسبة الحرمان" [level=2] [ref=e336]
+                - paragraph [ref=e337]: النسبة المئوية للغياب التي تؤدي لحرمان الطالب تلقائياً
+            - generic [ref=e338]:
+              - generic [ref=e339]:
+                - generic [ref=e340]: نسبة الحرمان (%)
+                - spinbutton [ref=e341]: "25"
+                - paragraph [ref=e342]: "القيمة الحالية في DB: CHECK (absence_threshold BETWEEN 0 AND 100)"
+              - button "حفظ التغييرات" [ref=e343]
+  - generic [ref=e275]: الهندسة والحاسبات

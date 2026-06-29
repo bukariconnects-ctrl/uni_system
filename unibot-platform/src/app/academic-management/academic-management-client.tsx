@@ -21,26 +21,25 @@ import {
   TrendingDown,
 } from "lucide-react";
 
-interface Section {
+interface Course {
   id: string;
-  section_code: string;
-  status: string;
-  course_id: string;
-  courses?: { code: string; name: string }[];
-  semester_id: string;
-  enrolled_count: number;
+  code: string;
+  name: string;
+  credit_hours: number;
 }
 
 interface Enrollment {
   id: string;
   student_id: string;
-  section_id: string;
+  course_id: string;
+  section_id: string | null;
   status: string;
 }
 
 interface AttendanceSummary {
   student_id: string;
   section_id: string;
+  course_id: string | null;
   absence_percentage: number;
   attended_sessions: number;
   total_sessions: number;
@@ -57,7 +56,7 @@ interface StudentProfile {
 }
 
 interface DashboardData {
-  sections: Section[];
+  courses: Course[];
   enrollments: Enrollment[];
   attendanceSummaries: AttendanceSummary[];
   riskStudents: StudentProfile[];
@@ -72,10 +71,10 @@ const CHART_COLORS = {
 };
 
 export function AcademicManagementDashboardClient({ data }: { data: DashboardData }) {
-  const { sections, enrollments, attendanceSummaries, riskStudents } = data;
+  const { courses, enrollments, attendanceSummaries, riskStudents } = data;
 
   const enrolledCount = enrollments.filter((e) => e.status === "enrolled").length;
-  const activeSections = sections.filter((s) => s.status === "open").length;
+  const activeCourseCount = courses.length;
 
   // Average absence rate
   const avgAbsence =
@@ -89,36 +88,38 @@ export function AcademicManagementDashboardClient({ data }: { data: DashboardDat
     (s) => s.risk_level === "high" || s.risk_level === "critical"
   );
 
-  // Attendance vs Risk by section
-  const sectionMap = new Map(sections.map((s) => [s.id, s]));
-  const sectionStats: Record<string, { absences: number[]; riskScores: number[]; name: string }> = {};
+  // Attendance vs Risk by course (using course_id from enrollments)
+  const courseMap = new Map(courses.map((c) => [c.id, c]));
+  const courseStats: Record<string, { absences: number[]; riskScores: number[]; name: string }> = {};
 
   attendanceSummaries.forEach((a) => {
-    const sec = sectionMap.get(a.section_id);
-    if (!sec) return;
-    const name = sec.courses?.[0]?.code || sec.section_code;
-    if (!sectionStats[sec.id]) {
-      sectionStats[sec.id] = { absences: [], riskScores: [], name };
+    const courseId = a.course_id;
+    if (!courseId) return;
+    const course = courseMap.get(courseId);
+    if (!course) return;
+    const name = course.code;
+    if (!courseStats[courseId]) {
+      courseStats[courseId] = { absences: [], riskScores: [], name };
     }
-    sectionStats[sec.id].absences.push(a.absence_percentage || 0);
+    courseStats[courseId].absences.push(a.absence_percentage || 0);
   });
 
   riskStudents.forEach((s) => {
-    // Find which section this student is in
     const enrollment = enrollments.find((e) => e.student_id === s.profile_id);
     if (!enrollment) return;
-    const sec = sectionMap.get(enrollment.section_id);
-    if (!sec) return;
-    if (!sectionStats[sec.id]) {
-      const name = sec.courses?.[0]?.code || sec.section_code;
-      sectionStats[sec.id] = { absences: [], riskScores: [], name };
+    const courseId = enrollment.course_id;
+    const course = courseMap.get(courseId);
+    if (!course) return;
+    if (!courseStats[courseId]) {
+      const name = course.code;
+      courseStats[courseId] = { absences: [], riskScores: [], name };
     }
     if (s.risk_score !== null) {
-      sectionStats[sec.id].riskScores.push(s.risk_score);
+      courseStats[courseId].riskScores.push(s.risk_score);
     }
   });
 
-  const composedData = Object.values(sectionStats)
+  const composedData = Object.values(courseStats)
     .map((s) => ({
       name: s.name,
       avgAbsence: s.absences.length > 0 ? Math.round(s.absences.reduce((a, b) => a + b, 0) / s.absences.length) : 0,
@@ -143,14 +144,14 @@ export function AcademicManagementDashboardClient({ data }: { data: DashboardDat
           value={enrolledCount}
           icon={Users}
           iconColor="bg-academic-navy/10 text-academic-navy"
-          trend={{ value: `${activeSections}`, direction: "up", label: "شعبة نشطة" }}
+          trend={{ value: `${activeCourseCount}`, direction: "up", label: "مادة نشطة" }}
         />
         <KpiCard
-          title="الشعب النشطة"
-          value={activeSections}
+          title="المواد النشطة"
+          value={activeCourseCount}
           icon={BookCopy}
           iconColor="bg-success/10 text-success"
-          trend={{ value: `${sections.length}`, direction: "neutral", label: "إجمالي الشعب" }}
+          trend={{ value: `${courses.length}`, direction: "neutral", label: "إجمالي المواد" }}
         />
         <KpiCard
           title="معدل الغياب"
@@ -180,7 +181,7 @@ export function AcademicManagementDashboardClient({ data }: { data: DashboardDat
       <div className="grid gap-4 lg:grid-cols-2">
         <ChartCard
           title="نسبة الغياب مقابل المخاطر"
-          subtitle="للشعب النشطة (متوسط الغياب % vs متوسط Risk Score)"
+          subtitle="للمواد النشطة (متوسط الغياب % vs متوسط Risk Score)"
         >
           <ResponsiveContainer width="100%" height={260}>
             <ComposedChart data={composedData}>

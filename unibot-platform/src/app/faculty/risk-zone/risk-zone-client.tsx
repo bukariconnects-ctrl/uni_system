@@ -12,14 +12,14 @@ const riskColors: Record<string, { bg: string; text: string; label: string }> = 
 interface RiskScore {
   id: string;
   student_id: string;
-  section_id: string;
+  course_id: string;
   risk_level: string;
   risk_score: number;
   absence_factor: number;
   grade_factor: number;
   engagement_factor: number;
   profiles?: { first_name: string; last_name: string; email: string };
-  sections?: { section_code: string; courses: { name: string } | null };
+  courses?: { code: string; name: string } | null;
 }
 
 export function RiskZoneClient({
@@ -29,7 +29,7 @@ export function RiskZoneClient({
 }) {
   const [showRec, setShowRec] = useState<string | null>(null);
   const [recName, setRecName] = useState("");
-  const [recSectionId, setRecSectionId] = useState("");
+  const [recCourseId, setRecCourseId] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -104,7 +104,7 @@ export function RiskZoneClient({
                     </span>
                   </div>
                   <p className="text-xs text-text-secondary">
-                    {score.sections?.courses?.name} — {score.sections?.section_code}
+                    {score.courses?.code} — {score.courses?.name || ""}
                   </p>
                 </div>
 
@@ -155,7 +155,7 @@ export function RiskZoneClient({
                       setRecName(
                         `${score.profiles?.first_name} ${score.profiles?.last_name}`
                       );
-                      setRecSectionId(score.section_id);
+                      setRecCourseId(score.course_id);
                     }}
                     className="flex items-center gap-1 rounded-lg bg-action-blue/20 px-3 py-1.5 text-xs font-medium text-action-blue transition-colors hover:bg-action-blue/20"
                   >
@@ -185,7 +185,7 @@ export function RiskZoneClient({
             </div>
             <form action={handleSend} className="space-y-4">
               <input type="hidden" name="student_id" value={showRec} />
-              <input type="hidden" name="section_id" value={recSectionId} />
+              <input type="hidden" name="course_id" value={recCourseId} />
               <div>
                 <label className="mb-1 block text-sm font-medium text-text-primary">
                   عنوان التوصية

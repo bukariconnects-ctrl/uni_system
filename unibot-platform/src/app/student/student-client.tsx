@@ -22,7 +22,9 @@ import {
 
 interface Enrollment {
   id: string;
-  sections?: { id: string; section_code: string; courses?: { code: string; name: string } };
+  course_id?: string;
+  courses?: { code: string; name: string };
+  semesters?: { name: string; status: string };
 }
 
 interface StudentProfile {
@@ -37,7 +39,8 @@ interface Assignment {
   due_date: string;
   max_grade: number;
   is_published: boolean;
-  sections?: { id: string; courses?: { code: string; name: string } };
+  course_id?: string;
+  courses?: { code: string; name: string };
 }
 
 interface Submission {
@@ -278,8 +281,8 @@ export function StudentDashboardClient({ data }: { data: DashboardData }) {
                     <div>
                       <p className="text-sm font-bold text-text-primary">{assignment.title}</p>
                       <p className="text-xs text-text-secondary">
-                        {assignment.sections?.courses?.code} —{" "}
-                        {assignment.sections?.courses?.name}
+                        {assignment.courses?.code} —{" "}
+                        {assignment.courses?.name}
                       </p>
                     </div>
                     <div className="text-left">

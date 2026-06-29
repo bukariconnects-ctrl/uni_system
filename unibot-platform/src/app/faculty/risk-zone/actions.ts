@@ -8,23 +8,23 @@ export async function getFacultyRiskScores() {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
-  const { data: sections } = await supabase
-    .from("sections")
-    .select("id")
+  const { data: schedules } = await supabase
+    .from("course_schedules")
+    .select("study_plan_courses!inner(course_id)")
     .eq("instructor_id", profile.id)
     .eq("tenant_id", profile.tenant_id);
 
-  if (!sections || sections.length === 0) return [];
+  if (!schedules || schedules.length === 0) return [];
 
-  const sectionIds = sections.map((s) => s.id);
+  const courseIds = [...new Set(schedules.map((s: any) => s.study_plan_courses?.course_id).filter(Boolean))];
 
   const { data } = await supabase
     .from("student_risk_scores")
     .select(
-      "*, profiles!student_risk_scores_student_id_fkey(first_name, last_name, email), sections!student_risk_scores_section_id_fkey(section_code, courses(name))"
+      "*, profiles!student_risk_scores_student_id_fkey(first_name, last_name, email), courses!student_risk_scores_course_id_fkey(code, name)"
     )
     .eq("tenant_id", profile.tenant_id)
-    .in("section_id", sectionIds)
+    .in("course_id", courseIds)
     .in("risk_level", ["high", "critical"])
     .order("risk_score", { ascending: false });
 
@@ -36,7 +36,7 @@ export async function sendFacultyRecommendation(formData: FormData) {
   const supabase = await createClient();
 
   const studentId = formData.get("student_id") as string;
-  const sectionId = (formData.get("section_id") as string) || null;
+  const courseId = (formData.get("course_id") as string) || null;
   const title = formData.get("title") as string;
   const body = formData.get("body") as string;
   const materialUrl = (formData.get("material_url") as string) || null;
@@ -44,7 +44,7 @@ export async function sendFacultyRecommendation(formData: FormData) {
   const { error } = await supabase.from("student_recommendations").insert({
     tenant_id: profile.tenant_id,
     student_id: studentId,
-    section_id: sectionId,
+    course_id: courseId,
     sent_by: profile.id,
     title,
     body,

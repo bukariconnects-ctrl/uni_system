@@ -1,7 +1,11 @@
-export type UserRole = 
+export type UserRole =
   | "super_admin"
   | "tenant_admin"
   | "academic_management"
+  | "head_of_department"
+  | "secretary"
+  | "ticket_technician"
+  | "lecturer"
   | "faculty"
   | "student";
 

@@ -52,20 +52,20 @@ const categoryLabels: Record<TicketCategory, string> = {
   other: "أخرى",
 };
 
-interface Section {
+interface Course {
   id: string;
-  section_code: string;
-  courses: { name: string } | null;
+  code: string;
+  name: string;
 }
 
 export function TicketsClient({
   tickets,
-  sections,
+  courses,
   profileId,
   tenantId,
 }: {
   tickets: TicketType[];
-  sections: Section[];
+  courses: Course[];
   profileId: string;
   tenantId: string;
 }) {
@@ -279,16 +279,16 @@ export function TicketsClient({
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-text-primary">
-                  الشعبة ذات الصلة (اختياري)
+                  المقرر ذو الصلة (اختياري)
                 </label>
                 <select
-                  name="section_id"
+                  name="course_id"
                   className="w-full rounded-lg border border-border bg-app-bg px-3 py-2 text-sm text-text-primary outline-none focus:border-action-blue"
                 >
                   <option value="">بدون تحديد</option>
-                  {sections.map((s: Section) => (
-                    <option key={s.id} value={s.id}>
-                      {s.courses?.name} — {s.section_code}
+                  {courses.map((c: Course) => (
+                    <option key={c.id} value={c.id}>
+                      {c.code} — {c.name}
                     </option>
                   ))}
                 </select>

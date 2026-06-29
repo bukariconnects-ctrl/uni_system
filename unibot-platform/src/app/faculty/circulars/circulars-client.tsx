@@ -40,7 +40,7 @@ interface Circular {
   sender?: SenderProfile | null;
 }
 
-interface Section {
+interface Course {
   id: string;
   label: string;
 }
@@ -56,8 +56,8 @@ const TARGET_LABELS: Record<string, string> = {
 };
 
 const FACULTY_TARGET_TYPES = [
-  { value: "students", label: "🎓 كل طلابي (جميع الشعب)" },
-  { value: "section", label: "📋 شعبة محددة" },
+  { value: "students", label: "🎓 كل طلابي (جميع المواد)" },
+  { value: "section", label: "📋 مادة محددة" },
 ];
 
 export function FacultyCircularsClient({
@@ -65,13 +65,13 @@ export function FacultyCircularsClient({
   sentCirculars: initialSent,
   userId,
   tenantId,
-  taughtSections,
+  taughtCourses,
 }: {
   receivedCirculars: Circular[];
   sentCirculars: Circular[];
   userId: string;
   tenantId: string;
-  taughtSections: Section[];
+  taughtCourses: Course[];
 }) {
   const [activeTab, setActiveTab] = useState<"received" | "sent">("received");
   const [received, setReceived] = useState<Circular[]>(initialReceived);
@@ -260,20 +260,20 @@ export function FacultyCircularsClient({
             {targetType === "section" && (
               <div>
                 <label className="mb-1 block text-xs font-medium text-text-primary">
-                  اختر الشعبة
+                  اختر المادة
                 </label>
                 <select
                   name="target_id"
                   required
                   className="w-full rounded-lg border border-border bg-app-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
                 >
-                  <option value="">-- اختر الشعبة --</option>
-                  {taughtSections.length === 0 && (
-                    <option disabled>لا توجد شعب مسندة اليك</option>
+                  <option value="">-- اختر المادة --</option>
+                  {taughtCourses.length === 0 && (
+                    <option disabled>لا توجد مواد مسندة اليك</option>
                   )}
-                  {taughtSections.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.label}
+                  {taughtCourses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
                     </option>
                   ))}
                 </select>

@@ -3517,6 +3517,10 @@ export type Database = {
         | "super_admin"
         | "tenant_admin"
         | "academic_management"
+        | "head_of_department"
+        | "secretary"
+        | "ticket_technician"
+        | "lecturer"
         | "faculty"
         | "student"
       venue_type: "lecture_hall" | "lab" | "auditorium" | "other"
@@ -3767,6 +3771,10 @@ export const Constants = {
         "super_admin",
         "tenant_admin",
         "academic_management",
+        "head_of_department",
+        "secretary",
+        "ticket_technician",
+        "lecturer",
         "faculty",
         "student",
       ],

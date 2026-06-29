@@ -1,0 +1,22 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e111] [cursor=pointer]:
+    - generic [ref=e114]:
+      - text: Rendering
+      - generic [ref=e115]:
+        - generic [ref=e116]: .
+        - generic [ref=e117]: .
+        - generic [ref=e118]: .
+  - alert [ref=e95]
+  - generic [ref=e97]:
+    - generic [ref=e98]:
+      - generic [ref=e100]: 🎓
+      - heading "UniBot" [level=1] [ref=e101]
+      - paragraph [ref=e102]: المنصة الأكاديمية الذكية
+    - generic [ref=e103]:
+      - generic [ref=e104]:
+        - generic [ref=e105]: البريد الإلكتروني
+        - textbox "admin@university.edu" [ref=e106]: ahmednazn2020@gmail.com
+      - generic [ref=e107]:
+        - generic [ref=e108]: كلمة المرور
+        - textbox "••••••••" [ref=e109]: "123456"
+      - button "جاري تسجيل الدخول..." [disabled] [ref=e119]

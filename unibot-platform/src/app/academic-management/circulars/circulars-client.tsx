@@ -27,17 +27,17 @@ const TARGET_TYPES = [
   { value: "department", label: "قسم محدد", icon: "🏛️" },
   { value: "major", label: "تخصص محدد", icon: "📚" },
   { value: "level", label: "مستوى محدد", icon: "📊" },
-  { value: "section", label: "شعبة محددة", icon: "📋" },
+  { value: "section", label: "مادة محددة", icon: "📋" },
 ];
 
-interface Section { id: string; label: string; }
+interface CourseItem { id: string; label: string; }
 interface Major { id: string; name: string; }
 interface Level { id: string; name: string; level_number: number; major_id: string; }
 interface Department { id: string; name: string; }
 
 interface CircularsClientProps {
   circulars: any[];
-  sections: Section[];
+  courses: CourseItem[];
   majors: Major[];
   levels: Level[];
   departments: Department[];
@@ -45,7 +45,7 @@ interface CircularsClientProps {
 
 export function CircularsClient({
   circulars,
-  sections,
+  courses,
   majors,
   levels,
   departments,
@@ -156,24 +156,24 @@ export function CircularsClient({
               </select>
             </div>
 
-            {/* Secondary: Section dropdown */}
+            {/* Secondary: Course dropdown (replaces old section dropdown) */}
             {targetType === "section" && (
               <div>
                 <label className="mb-1 block text-xs font-medium text-text-primary">
-                  اختر الشعبة
+                  اختر المادة
                 </label>
                 <select
                   name="target_id"
                   required
                   className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
                 >
-                  <option value="">-- اختر الشعبة --</option>
-                  {sections.length === 0 && (
-                    <option disabled>لا توجد شعب</option>
+                  <option value="">-- اختر المادة --</option>
+                  {courses.length === 0 && (
+                    <option disabled>لا توجد مواد</option>
                   )}
-                  {sections.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.label}
+                  {courses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
                     </option>
                   ))}
                 </select>

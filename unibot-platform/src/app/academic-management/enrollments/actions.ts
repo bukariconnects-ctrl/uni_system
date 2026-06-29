@@ -4,38 +4,36 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 
-export async function getOpenSections() {
+/**
+ * Get study plan courses for a specific academic level and semester type.
+ * Used for batch enrollment — shows all courses in the study plan that
+ * students of that (major, level, semester) should be enrolled in.
+ */
+export async function getStudyPlanCoursesForEnrollment(
+  academicLevelId: string,
+  semesterType: string
+) {
   const { profile } = await requireRole(["academic_management"]);
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("sections")
-    .select("id, section_code, section_type, parent_section_id, max_capacity, enrolled_count, courses(code, name, course_type), semesters(name, status)")
-    .eq("tenant_id", profile.tenant_id)
-    .eq("status", "open")
-    .is("parent_section_id", null) // only parent/standalone sections for enrollment UI
-    .order("created_at", { ascending: false });
+    .from("study_plan_courses")
+    .select(`
+      id,
+      course_id,
+      plan_course_type,
+      min_grade_to_pass,
+      courses(id, code, name, credit_hours, course_type)
+    `)
+    .eq("academic_level_id", academicLevelId)
+    .eq("semester_type", semesterType)
+    .eq("courses.is_active", true);
 
   if (error) throw new Error(error.message);
   return data || [];
 }
 
-export async function getLabSectionsForEnrollment(parentSectionId: string) {
-  const { profile } = await requireRole(["academic_management"]);
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("sections")
-    .select("id, section_code, max_capacity, enrolled_count, profiles!sections_instructor_id_fkey(first_name, last_name)")
-    .eq("tenant_id", profile.tenant_id)
-    .eq("parent_section_id", parentSectionId)
-    .eq("status", "open")
-    .order("section_code");
-
-  if (error) throw new Error(error.message);
-  return data || [];
-}
-
+/** Get active students for the tenant */
 export async function getStudents() {
   const { profile } = await requireRole(["academic_management"]);
   const supabase = await createClient();
@@ -52,59 +50,31 @@ export async function getStudents() {
   return data || [];
 }
 
+/**
+ * Batch enroll students in a specific course.
+ * Uses course_id directly (no sections).
+ */
 export async function batchEnroll(
-  sectionId: string,
+  courseId: string,
   semesterId: string,
-  studentIds: string[],
-  labSectionId?: string // مطلوب للمقررات الهجينة
+  studentIds: string[]
 ) {
   const { profile } = await requireRole(["academic_management"]);
   const serviceClient = createServiceClient();
-
-  // تحقق من نوع الشعبة والمقرر
-  const { data: sectionInfo } = await serviceClient
-    .from("sections")
-    .select("section_type, tenant_id, courses(course_type)")
-    .eq("id", sectionId)
-    .single();
-
-  const coursesData = sectionInfo?.courses as unknown as { course_type: string } | null;
-  const isHybridLecture =
-    sectionInfo?.section_type === "lecture" &&
-    coursesData?.course_type === "hybrid";
-
-  if (isHybridLecture && !labSectionId) {
-    throw new Error(
-      "HYBRID_LAB_REQUIRED: هذا المقرر هجين — يجب تحديد شعبة معمل لكل طالب عند التسجيل"
-    );
-  }
-
-  // Use section's tenant_id to ensure consistency
-  const tenantId = sectionInfo?.tenant_id || profile.tenant_id;
 
   const results: { success: number; errors: string[] } = {
     success: 0,
     errors: [],
   };
 
-  // Fetch prerequisites for the target course once (shared across all students)
-  const { data: sectionCourseRow } = await serviceClient
-    .from("sections")
-    .select("course_id")
-    .eq("id", sectionId)
-    .single();
-
-  const targetCourseId = sectionCourseRow?.course_id;
-
-  type PrerequisiteRow = { prerequisite_id: string; min_grade: number | null; courses: { code: string }[] };
-  let prerequisites: PrerequisiteRow[] = [];
-  if (targetCourseId) {
-    const { data: prereqRows } = await serviceClient
-      .from("course_prerequisites")
-      .select("prerequisite_id, min_grade, courses!course_prerequisites_prerequisite_id_fkey(code)")
-      .eq("course_id", targetCourseId);
-    prerequisites = (prereqRows || []) as unknown as PrerequisiteRow[];
-  }
+  // Fetch course prerequisites
+  type PrereqRow = { prerequisite_id: string; min_grade: number | null; courses: { code: string }[] };
+  let prerequisites: PrereqRow[] = [];
+  const { data: prereqRows } = await serviceClient
+    .from("course_prerequisites")
+    .select("prerequisite_id, min_grade, courses!course_prerequisites_prerequisite_id_fkey(code)")
+    .eq("course_id", courseId);
+  prerequisites = (prereqRows || []) as unknown as PrereqRow[];
 
   // Pre-fetch student names for meaningful error messages
   const { data: studentProfiles } = await serviceClient
@@ -125,19 +95,15 @@ export async function batchEnroll(
       for (const prereq of prerequisites) {
         const minGrade = prereq.min_grade ?? 60;
 
-        // Check by course_id across any completed section for this student
-        const { data: passedByCourse } = await serviceClient
+        const { data: passed } = await serviceClient
           .from("enrollments")
-          .select("id, final_grade, sections!enrollments_section_id_fkey(course_id)")
+          .select("id")
           .eq("student_id", studentId)
+          .eq("course_id", prereq.prerequisite_id)
           .eq("status", "completed")
           .gte("final_grade", minGrade);
 
-        const metByCourse = (passedByCourse || []).some(
-          (e: any) => e.sections?.course_id === prereq.prerequisite_id
-        );
-
-        if (!metByCourse) {
+        if (!passed || passed.length === 0) {
           const courseCode = prereq.courses?.[0]?.code || prereq.prerequisite_id;
           results.errors.push(
             `${studentName}: لم يجتز المتطلب السابق (${courseCode}) بدرجة ${minGrade} على الأقل`
@@ -149,39 +115,24 @@ export async function batchEnroll(
     }
     if (prereqBlocked) continue;
 
-    // تسجيل في شعبة النظري
-    const { error: lectureError } = await serviceClient.from("enrollments").insert({
-      tenant_id: tenantId,
+    // Insert enrollment with course_id directly
+    const { error: insertError } = await serviceClient.from("enrollments").insert({
+      tenant_id: profile.tenant_id,
       student_id: studentId,
-      section_id: sectionId,
+      course_id: courseId,
       semester_id: semesterId,
       status: "enrolled",
     });
 
-    if (lectureError) {
-      if (lectureError.message.includes("duplicate") || lectureError.message.includes("unique")) {
-        results.errors.push(`الطالب مسجل بالفعل في هذه الشعبة`);
-      } else if (lectureError.message.includes("ENROLLMENT_BLOCKED")) {
-        results.errors.push(`التسجيل محظور: الفصل الدراسي ليس في مرحلة التسجيل`);
+    if (insertError) {
+      if (insertError.message.includes("duplicate") || insertError.message.includes("unique")) {
+        results.errors.push(`${studentName}: مسجل بالفعل في هذه المادة`);
+      } else if (insertError.message.includes("ENROLLMENT_BLOCKED")) {
+        results.errors.push(`${studentName}: التسجيل محظور — الفصل الدراسي ليس في مرحلة التسجيل`);
       } else {
-        results.errors.push(lectureError.message);
+        results.errors.push(`${studentName}: ${insertError.message}`);
       }
       continue;
-    }
-
-    // تسجيل تلقائي في شعبة المعمل إذا كان المقرر هجيناً
-    if (isHybridLecture && labSectionId) {
-      const { error: labError } = await serviceClient.from("enrollments").insert({
-        tenant_id: tenantId,
-        student_id: studentId,
-        section_id: labSectionId,
-        semester_id: semesterId,
-        status: "enrolled",
-      });
-
-      if (labError && !labError.message.includes("duplicate")) {
-        results.errors.push(`تحذير: تم تسجيل الطالب في النظري لكن فشل التسجيل في المعمل: ${labError.message}`);
-      }
     }
 
     results.success++;
@@ -191,21 +142,39 @@ export async function batchEnroll(
   return results;
 }
 
-export async function getEnrollments() {
+/**
+ * Get enrollments with course info (no longer through sections).
+ * Optionally filter by course_id and/or semester_id.
+ */
+export async function getEnrollments(courseId?: string, semesterId?: string) {
   const { profile } = await requireRole(["academic_management"]);
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("enrollments")
-    .select("id, status, enrolled_at, profiles!enrollments_student_id_fkey(first_name, last_name, student_profiles(student_number)), sections(section_code, courses(code, name)), semesters(name)")
+    .select(`
+      id, status, enrolled_at, student_id, course_id,
+      profiles!enrollments_student_id_fkey(
+        first_name, last_name, student_profiles(student_number)
+      ),
+      courses(code, name, credit_hours),
+      semesters(name)
+    `)
     .eq("tenant_id", profile.tenant_id)
-    .order("enrolled_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(200);
 
+  if (courseId) query = query.eq("course_id", courseId);
+  if (semesterId) query = query.eq("semester_id", semesterId);
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data || [];
 }
 
+/**
+ * Update enrollment status (enrolled / dropped).
+ */
 export async function updateEnrollmentStatus(
   id: string,
   status: "enrolled" | "dropped"
@@ -225,4 +194,160 @@ export async function updateEnrollmentStatus(
 
   if (error) throw new Error(error.message);
   revalidatePath("/academic-management/enrollments");
+}
+
+/**
+ * Auto-enroll a student in all courses of their study plan.
+ * Finds the student's primary major → academic level → study plan courses
+ * for the given semester type, then enrolls in each.
+ */
+export async function autoEnrollStudent(
+  studentId: string,
+  semesterId: string,
+  semesterType: "first" | "second" | "summer"
+) {
+  const { profile } = await requireRole(["academic_management"]);
+  const serviceClient = createServiceClient();
+
+  // Fetch the student's tenant_id
+  const { data: studentProfile } = await serviceClient
+    .from("profiles")
+    .select("tenant_id, first_name, last_name")
+    .eq("id", studentId)
+    .single();
+
+  if (!studentProfile) {
+    throw new Error("الطالب غير موجود");
+  }
+
+  const tenantId = studentProfile.tenant_id;
+
+  // Find the student's primary major
+  const { data: primaryMajor } = await serviceClient
+    .from("student_majors")
+    .select("major_id")
+    .eq("student_id", studentId)
+    .eq("is_primary", true)
+    .single();
+
+  if (!primaryMajor) {
+    throw new Error("الطالب ليس لديه تخصص رئيسي — يرجى تعيين تخصص أولاً");
+  }
+
+  // Find the student's current academic level
+  // We use the highest-level enrollments or the first available level for their major
+  const { data: academicLevel } = await serviceClient
+    .from("academic_levels")
+    .select("id")
+    .eq("major_id", primaryMajor.major_id)
+    .order("level_number", { ascending: true })
+    .limit(1)
+    .single();
+
+  if (!academicLevel) {
+    throw new Error("لا توجد مستويات دراسية لهذا التخصص");
+  }
+
+  // Fetch all study plan courses for this major + level + semester type
+  const { data: spcData } = await serviceClient
+    .from("study_plan_courses")
+    .select("id, course_id")
+    .eq("academic_level_id", academicLevel.id)
+    .eq("semester_type", semesterType);
+
+  const studyPlanCourses = spcData || [];
+
+  if (studyPlanCourses.length === 0) {
+    throw new Error("لا توجد مواد في الخطة الدراسية لهذا المستوى والفصل");
+  }
+
+  const results: { success: number; errors: string[] } = {
+    success: 0,
+    errors: [],
+  };
+
+  const studentName = `${studentProfile.first_name} ${studentProfile.last_name}`;
+
+  // Check prerequisites and enroll
+  for (const spc of studyPlanCourses) {
+    // Skip if already enrolled in this course this semester
+    const { data: existing } = await serviceClient
+      .from("enrollments")
+      .select("id")
+      .eq("student_id", studentId)
+      .eq("course_id", spc.course_id)
+      .eq("semester_id", semesterId)
+      .maybeSingle();
+
+    if (existing) {
+      results.errors.push(`${studentName}: مسجل بالفعل في المادة`);
+      continue;
+    }
+
+    // Check prerequisites for this course
+    type PrereqRow = { prerequisite_id: string; min_grade: number | null; courses: { code: string }[] };
+    const { data: prereqRows } = await serviceClient
+      .from("course_prerequisites")
+      .select("prerequisite_id, min_grade, courses!course_prerequisites_prerequisite_id_fkey(code)")
+      .eq("course_id", spc.course_id);
+    const prerequisites = (prereqRows || []) as unknown as PrereqRow[];
+
+    let prereqBlocked = false;
+    for (const prereq of prerequisites) {
+      const minGrade = prereq.min_grade ?? 60;
+      const { data: passed } = await serviceClient
+        .from("enrollments")
+        .select("id")
+        .eq("student_id", studentId)
+        .eq("course_id", prereq.prerequisite_id)
+        .eq("status", "completed")
+        .gte("final_grade", minGrade);
+
+      if (!passed || passed.length === 0) {
+        const courseCode = prereq.courses?.[0]?.code || prereq.prerequisite_id;
+        results.errors.push(
+          `${studentName}: لم يجتز المتطلب السابق (${courseCode}) — تخطي مادة`
+        );
+        prereqBlocked = true;
+        break;
+      }
+    }
+    if (prereqBlocked) continue;
+
+    // Enroll
+    const { error: insertError } = await serviceClient.from("enrollments").insert({
+      tenant_id: tenantId,
+      student_id: studentId,
+      course_id: spc.course_id,
+      semester_id: semesterId,
+      status: "enrolled",
+    });
+
+    if (insertError) {
+      if (!insertError.message.includes("duplicate")) {
+        results.errors.push(`${studentName}: ${insertError.message}`);
+      }
+      continue;
+    }
+
+    results.success++;
+  }
+
+  revalidatePath("/academic-management/enrollments");
+  return results;
+}
+
+/** Get semesters for the enrollment filter */
+export async function getSemestersForEnrollment() {
+  const { profile } = await requireRole(["academic_management"]);
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("semesters")
+    .select("id, name, status, semester_type")
+    .eq("tenant_id", profile.tenant_id)
+    .in("status", ["planning", "registration", "active"])
+    .order("created_at", { ascending: false });
+
+  return data || [];
 }

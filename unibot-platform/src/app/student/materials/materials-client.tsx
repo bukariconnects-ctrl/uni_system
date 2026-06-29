@@ -28,10 +28,10 @@ export function StudentMaterialsClient({
   enrollments: any[];
   materials: any[];
 }) {
-  const [filterSection, setFilterSection] = useState("");
+  const [filterCourse, setFilterCourse] = useState("");
 
-  const filtered = filterSection
-    ? materials.filter((m: any) => m.section_id === filterSection)
+  const filtered = filterCourse
+    ? materials.filter((m: any) => m.course_id === filterCourse)
     : materials;
 
   const grouped = filtered.reduce((acc: Record<number, any[]>, m: any) => {
@@ -45,14 +45,14 @@ export function StudentMaterialsClient({
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <select
-          value={filterSection}
-          onChange={(e) => setFilterSection(e.target.value)}
+          value={filterCourse}
+          onChange={(e) => setFilterCourse(e.target.value)}
           className="rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
         >
           <option value="">كل المقررات</option>
           {enrollments.map((e: any) => (
-            <option key={e.section_id} value={e.section_id}>
-              {e.sections?.courses?.code} ({e.sections?.section_code})
+            <option key={e.course_id} value={e.course_id}>
+              {e.courses?.code}
             </option>
           ))}
         </select>
@@ -96,7 +96,7 @@ export function StudentMaterialsClient({
                             )}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-text-secondary">
-                            <span>{material.sections?.courses?.code} ({material.sections?.section_code})</span>
+                            <span>{material.courses?.code}</span>
                             {material.file_size_bytes && (
                               <span>{(material.file_size_bytes / 1024 / 1024).toFixed(1)} MB</span>
                             )}
