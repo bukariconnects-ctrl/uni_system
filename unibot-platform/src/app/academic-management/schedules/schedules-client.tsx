@@ -143,7 +143,7 @@ export function SchedulesClient({
     try {
       const semesterType = (selectedSemesterObj?.semester_type || "first") as "first" | "second" | "summer";
       const result = await getStudyPlanCoursesForScheduling(selectedMajor, selectedLevel, semesterType);
-      setSpcList(result.studyPlanCourses);
+      setSpcList(result.studyPlanCourses as unknown as StudyPlanCourse[]);
 
       // Build grid from existing schedules
       const newGrid: Record<string, Record<string, CellSchedule | null>> = {};
@@ -179,8 +179,9 @@ export function SchedulesClient({
 
         const studyPlanCourse = result.studyPlanCourses.find(
           (spc: any) => spc.id === s.study_plan_course_id
-        );
-        const course = studyPlanCourse?.courses;
+        ) as any;
+        const rawCourse = studyPlanCourse?.courses;
+        const course = Array.isArray(rawCourse) ? rawCourse[0] : rawCourse;
 
         // Only add to grid if slot is empty (prefer theoretical over practical)
         if (!newGrid[day][slotId]) {

@@ -302,6 +302,7 @@ interface CsvRow {
   national_id?: string;
   phone?: string;
   gender?: string;
+  academic_level_id?: string;
 }
 
 export async function bulkImportUsers(rows: CsvRow[]) {
