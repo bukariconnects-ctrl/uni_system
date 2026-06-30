@@ -126,6 +126,12 @@ export function EnrollmentsClient({
 
   /* ── Students (batch tab) ── */
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [studentSearch, setStudentSearch] = useState("");
+
+  const filteredStudents = students.filter(student => 
+    `${student.first_name} ${student.last_name}`.toLowerCase().includes(studentSearch.toLowerCase()) ||
+    student.student_profiles?.[0]?.student_number?.includes(studentSearch)
+  );
 
   function toggleStudent(id: string) {
     setSelectedStudents((prev) =>
@@ -134,10 +140,10 @@ export function EnrollmentsClient({
   }
 
   function selectAllStudents() {
-    if (selectedStudents.length === students.length) {
+    if (selectedStudents.length === filteredStudents.length && filteredStudents.length > 0) {
       setSelectedStudents([]);
     } else {
-      setSelectedStudents(students.map((s) => s.id));
+      setSelectedStudents(filteredStudents.map((s) => s.id));
     }
   }
 
@@ -394,7 +400,7 @@ export function EnrollmentsClient({
             {courses.length > 0 && !loadingCourses && (
               <div className="space-y-2">
                 {courses.map((spc) => {
-                  const course = spc.courses?.[0];
+                  const course = Array.isArray(spc.courses) ? spc.courses[0] : spc.courses;
                   const isHybrid = course?.course_type === "hybrid";
                   return (
                     <label
@@ -453,18 +459,29 @@ export function EnrollmentsClient({
                   onClick={selectAllStudents}
                   className="rounded-lg border border-action-blue/30 px-3 py-1.5 text-xs font-medium text-action-blue hover:bg-action-blue/5"
                 >
-                  {selectedStudents.length === students.length ? "إلغاء الكل" : "تحديد الكل"}
+                  {selectedStudents.length === filteredStudents.length && filteredStudents.length > 0 ? "إلغاء الكل" : "تحديد الكل"}
                 </button>
               </div>
             </div>
 
-            {students.length === 0 ? (
+            <div className="mb-4 relative">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-secondary" />
+              <input
+                type="text"
+                placeholder="ابحث باسم الطالب أو الرقم الجامعي..."
+                value={studentSearch}
+                onChange={(e) => setStudentSearch(e.target.value)}
+                className="w-full rounded-lg border border-border bg-app-bg pr-10 pl-3 py-2 text-sm outline-none focus:border-action-blue focus:ring-1 focus:ring-action-blue"
+              />
+            </div>
+
+            {filteredStudents.length === 0 ? (
               <p className="py-4 text-center text-sm text-text-secondary">
-                لا يوجد طلاب نشطون
+                {students.length === 0 ? "لا يوجد طلاب نشطون" : "لا توجد نتائج مطابقة للبحث"}
               </p>
             ) : (
-              <div className="max-h-80 space-y-1 overflow-y-auto">
-                {students.map((student) => (
+              <div className="max-h-80 space-y-1 overflow-y-auto pr-1">
+                {filteredStudents.map((student) => (
                   <label
                     key={student.id}
                     className={`flex cursor-pointer items-center gap-3 rounded-lg p-3 transition-colors ${

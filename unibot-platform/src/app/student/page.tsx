@@ -7,10 +7,10 @@ export default async function StudentDashboard() {
   const supabase = await createClient();
   const serviceClient = createServiceClient();
 
-  const [enrollmentsRes, profileRes] = await Promise.all([
+  const [enrollmentsRes, profileRes, studentMajorRes] = await Promise.all([
     serviceClient
       .from("enrollments")
-      .select("id, status, course_id, courses(code, name), semesters(name, status)")
+      .select("id, status, course_id, semester_id, courses(code, name), semesters(name, status)")
       .eq("student_id", profile.id)
       .eq("status", "enrolled")
       .order("created_at", { ascending: false }),
@@ -19,11 +19,30 @@ export default async function StudentDashboard() {
       .select("cumulative_gpa, earned_credit_hours, total_credit_hours")
       .eq("profile_id", profile.id)
       .single(),
+    supabase
+      .from("student_majors")
+      .select("academic_level_id")
+      .eq("student_id", profile.id)
+      .eq("is_primary", true)
+      .single(),
   ]);
 
   const enrollments = (enrollmentsRes.data || []) as any[];
   const studentProfile = profileRes.data;
+  const studentMajor = studentMajorRes.data;
   const courseIds = enrollments.map((e: any) => e.course_id).filter(Boolean);
+  const semesterIds = [...new Set(enrollments.map((e: any) => e.semester_id).filter(Boolean))];
+
+  // Fetch course_schedules for enrolled courses
+  const { data: courseSchedules } =
+    semesterIds.length > 0 && studentMajor?.academic_level_id
+      ? await supabase
+          .from("course_schedules")
+          .select("id, day_of_week, start_time, end_time, semester_id, venues(name), study_plan_courses!inner(course_id, academic_level_id)")
+          .in("semester_id", semesterIds)
+          .eq("study_plan_courses.academic_level_id", studentMajor.academic_level_id)
+          .eq("status", "published")
+      : { data: [] };
 
   // Fetch upcoming assignments for enrolled courses
   const { data: upcomingAssignments } =
@@ -65,6 +84,7 @@ export default async function StudentDashboard() {
       <StudentDashboardClient
         data={{
           enrollments: enrollments as any,
+          courseSchedules: (courseSchedules || []) as any,
           studentProfile,
           upcomingAssignments: (upcomingAssignments || []) as any,
           submissions: (submissions || []) as any,

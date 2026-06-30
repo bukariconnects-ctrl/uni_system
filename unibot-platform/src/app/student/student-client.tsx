@@ -27,6 +27,16 @@ interface Enrollment {
   semesters?: { name: string; status: string };
 }
 
+interface CourseSchedule {
+  id: string;
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+  semester_id: string;
+  venues?: { name: string };
+  study_plan_courses?: { course_id: string };
+}
+
 interface StudentProfile {
   cumulative_gpa: number | null;
   earned_credit_hours: number | null;
@@ -59,6 +69,7 @@ interface AttendanceSummary {
 
 interface DashboardData {
   enrollments: Enrollment[];
+  courseSchedules: CourseSchedule[];
   studentProfile: StudentProfile | null;
   upcomingAssignments: Assignment[];
   submissions: Submission[];
@@ -73,7 +84,7 @@ const CHART_COLORS = {
 };
 
 export function StudentDashboardClient({ data }: { data: DashboardData }) {
-  const { enrollments, studentProfile, upcomingAssignments, submissions, attendanceSummaries } = data;
+  const { enrollments, courseSchedules, studentProfile, upcomingAssignments, submissions, attendanceSummaries } = data;
 
   const gpa = studentProfile?.cumulative_gpa ?? 0;
   const earnedCredits = studentProfile?.earned_credit_hours ?? 0;
@@ -102,24 +113,30 @@ export function StudentDashboardClient({ data }: { data: DashboardData }) {
   const gpaBg = gpa >= 3.5 ? "bg-success/10 border-success/30" : gpa >= 2.5 ? "bg-academic-navy/10 border-academic-navy/30" : gpa >= 2.0 ? "bg-warning/10 border-warning/30" : "bg-danger/10 border-danger/30";
   const gpaLabel = gpa >= 3.5 ? "ممتاز" : gpa >= 2.5 ? "جيد جداً" : gpa >= 2.0 ? "جيد" : "ضعيف";
 
+  // Group schedules by day
+  const daysOrder = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  
+  const enrichedSchedules = courseSchedules.map(schedule => {
+     const enrollment = enrollments.find(e => 
+       e.course_id === (schedule.study_plan_courses as any)?.course_id && 
+       (e as any).semester_id === schedule.semester_id
+     );
+     return { ...schedule, course: enrollment?.courses };
+  }).filter(s => s.course);
+
+  const schedulesByDay = enrichedSchedules.reduce((acc, schedule) => {
+    const day = schedule.day_of_week;
+    if (!acc[day]) acc[day] = [];
+    acc[day].push(schedule);
+    return acc;
+  }, {} as Record<string, typeof enrichedSchedules>);
+
+  const activeDays = Object.keys(schedulesByDay).sort((a, b) => daysOrder.indexOf(a) - daysOrder.indexOf(b));
+
   return (
     <div className="space-y-6">
       {/* KPIs */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard
-          title="المعدل التراكمي"
-          value={gpa.toFixed(2)}
-          icon={Award}
-          iconColor={gpa >= 2.0 ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}
-          trend={{ value: gpaLabel, direction: gpa >= 2.0 ? "up" : "down", label: "" }}
-        />
-        <KpiCard
-          title="الساعات المكتسبة"
-          value={earnedCredits}
-          icon={BookOpen}
-          iconColor="bg-academic-navy/10 text-academic-navy"
-          trend={{ value: `${progressPct}%`, direction: "up", label: "من الإجمالي" }}
-        />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
         <KpiCard
           title="نسبة الحضور"
           value={`${attendanceRate}%`}
@@ -138,53 +155,67 @@ export function StudentDashboardClient({ data }: { data: DashboardData }) {
 
       {/* Progress + Grades */}
       <div className="grid gap-4 lg:grid-cols-2">
-        {/* Study Path */}
-        <div className="rounded-2xl border border-border bg-card-bg p-6 shadow-sm">
-          <div className="mb-5 flex items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-action-blue" />
-                <h2 className="text-base font-bold text-text-primary">مساري الدراسي</h2>
-              </div>
-              <p className="mt-0.5 text-xs text-text-secondary">التقدم نحو التخرج</p>
-            </div>
-            <div className={`rounded-xl border px-4 py-2.5 text-center ${gpaBg}`}>
-              <p className={`text-2xl font-bold tabular-nums ${gpaColor}`}>{gpa.toFixed(2)}</p>
-              <p className="text-[10px] text-text-secondary">المعدل التراكمي</p>
-              <p className={`text-[10px] font-bold ${gpaColor}`}>{gpaLabel}</p>
-            </div>
+        {/* Class Schedule */}
+        <div className="rounded-2xl border border-border bg-card-bg p-6 shadow-sm flex flex-col max-h-[400px]">
+          <div className="mb-5 flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-action-blue" />
+            <h2 className="text-base font-bold text-text-primary">الجدول الدراسي</h2>
           </div>
+          
+          <div className="flex-1 overflow-y-auto pr-1 space-y-3">
+            {activeDays.length === 0 ? (
+              <p className="text-sm text-text-secondary text-center py-4">لا توجد مقررات مجدولة حالياً</p>
+            ) : (
+              activeDays.map((day) => {
+                const dayMap: Record<string, string> = {
+                  sunday: "الأحد",
+                  monday: "الإثنين",
+                  tuesday: "الثلاثاء",
+                  wednesday: "الأربعاء",
+                  thursday: "الخميس",
+                  friday: "الجمعة",
+                  saturday: "السبت",
+                };
+                const dayAr = dayMap[day] || day;
+                const daySchedules = schedulesByDay[day].sort((a, b) => a.start_time.localeCompare(b.start_time));
+                
+                const formatTime = (timeStr?: string) => {
+                  if (!timeStr) return "";
+                  const [h, m] = timeStr.split(':');
+                  const d = new Date();
+                  d.setHours(parseInt(h, 10), parseInt(m, 10));
+                  return d.toLocaleTimeString("ar-SA", { hour: "numeric", minute: "2-digit" });
+                };
 
-          <div className="mb-2 flex items-center justify-between text-xs">
-            <span className="text-text-secondary">{earnedCredits} ساعة مكتسبة</span>
-            <span className="text-lg font-bold text-action-blue">{progressPct}%</span>
-            <span className="text-text-secondary">{totalCredits} ساعة إجمالية</span>
-          </div>
-
-          <div className="relative h-5 w-full overflow-hidden rounded-full bg-app-bg shadow-inner">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-academic-navy to-action-blue transition-all duration-700"
-              style={{ width: `${progressPct}%` }}
-            />
-            {[25, 50, 75].map((m) => (
-              <div key={m} className="absolute top-0 h-full w-px bg-white/50" style={{ left: `${m}%` }} />
-            ))}
-          </div>
-          <div className="mt-1 flex justify-between text-[10px] text-text-secondary/50">
-            <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-3">
-            <div className="flex items-center gap-1.5 rounded-xl bg-app-bg/50 px-3 py-1.5 text-xs">
-              <BookOpen className="h-3.5 w-3.5 text-action-blue" />
-              <span className="font-bold text-text-primary">{enrollments.length}</span>
-              <span className="text-text-secondary">مقررات حالية</span>
-            </div>
-            <div className="flex items-center gap-1.5 rounded-xl bg-app-bg/50 px-3 py-1.5 text-xs">
-              <Award className="h-3.5 w-3.5 text-purple" />
-              <span className="font-bold text-text-primary">{earnedCredits}</span>
-              <span className="text-text-secondary">ساعة معتمدة</span>
-            </div>
+                return (
+                  <div key={day} className="mb-4 last:mb-0">
+                    <h3 className="text-sm font-bold text-action-blue mb-3 flex items-center gap-1.5 border-b border-border pb-2">
+                      <Calendar className="h-4 w-4" />
+                      {dayAr}
+                    </h3>
+                    <div className="space-y-2">
+                      {daySchedules.map((schedule) => (
+                        <div key={schedule.id} className="rounded-xl border border-border bg-app-bg/50 p-3">
+                          <p className="font-bold text-sm text-text-primary mb-2">
+                            {schedule.course?.name} <span className="text-xs text-text-secondary font-normal">({schedule.course?.code})</span>
+                          </p>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-text-secondary">
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="h-3.5 w-3.5 text-action-blue" />
+                              <span>{schedule.start_time ? `${formatTime(schedule.start_time)} - ${formatTime(schedule.end_time)}` : ""}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="h-3.5 w-3.5 text-purple" />
+                              <span>القاعة: {schedule.venues?.name || "غير محددة"}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 

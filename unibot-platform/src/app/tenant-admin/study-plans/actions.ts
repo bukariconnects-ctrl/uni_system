@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 import type { SemesterType, PlanCourseType } from "@/lib/types/database";
@@ -113,6 +113,63 @@ export async function addStudyPlanCourse(formData: FormData) {
       throw new Error("هذا المقرر مُضاف بالفعل لنفس المستوى والفصل");
     throw new Error(error.message);
   }
+
+  // --- Auto-Enrollment Logic ---
+  const academic_level_id = formData.get("academic_level_id") as string;
+  const course_id = formData.get("course_id") as string;
+  const semester_type = formData.get("semester_type") as SemesterType;
+
+  const serviceClient = createServiceClient();
+  
+  // 1. Find active semester of this type
+  const { data: activeSemester } = await serviceClient
+    .from("semesters")
+    .select("id")
+    .eq("tenant_id", profile.tenant_id)
+    .eq("semester_type", semester_type)
+    .in("status", ["registration", "active"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (activeSemester) {
+    // 2. Find all students currently in this academic_level
+    const { data: studentsInLevel } = await serviceClient
+      .from("student_majors")
+      .select("student_id")
+      .eq("tenant_id", profile.tenant_id)
+      .eq("academic_level_id", academic_level_id)
+      .eq("is_primary", true);
+
+    if (studentsInLevel && studentsInLevel.length > 0) {
+      const studentIds = studentsInLevel.map(s => s.student_id);
+
+      // 3. Find existing enrollments to avoid duplicates
+      const { data: existingEnrollments } = await serviceClient
+        .from("enrollments")
+        .select("student_id")
+        .eq("tenant_id", profile.tenant_id)
+        .eq("semester_id", activeSemester.id)
+        .eq("course_id", course_id)
+        .in("student_id", studentIds);
+
+      const enrolledIds = new Set(existingEnrollments?.map(e => e.student_id) || []);
+      const studentsToEnroll = studentIds.filter(id => !enrolledIds.has(id));
+
+      if (studentsToEnroll.length > 0) {
+        const enrollmentsToInsert = studentsToEnroll.map(id => ({
+          tenant_id: profile.tenant_id,
+          student_id: id,
+          course_id: course_id,
+          semester_id: activeSemester.id,
+          status: "enrolled",
+        }));
+
+        await serviceClient.from("enrollments").insert(enrollmentsToInsert);
+      }
+    }
+  }
+
   revalidatePath("/tenant-admin/study-plans");
 }
 
