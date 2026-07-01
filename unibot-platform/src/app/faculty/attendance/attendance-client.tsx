@@ -104,16 +104,15 @@ export function AttendanceClient({
   useEffect(() => {
     if (!activeQrSessionId) return;
     const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          handleGenerateQr(activeQrSessionId);
-          return 10;
-        }
-        return prev - 1;
-      });
+      setCountdown((prev) => prev - 1);
     }, 1000);
     return () => clearInterval(timer);
   }, [activeQrSessionId, qrData?.token]);
+
+  useEffect(() => {
+    if (!activeQrSessionId || countdown > 0) return;
+    handleGenerateQr(activeQrSessionId);
+  }, [countdown]);
 
   async function handleStatusChange(recordId: string, status: "present" | "absent" | "late" | "excused") {
     setLoading(true);
