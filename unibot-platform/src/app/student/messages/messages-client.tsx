@@ -7,6 +7,8 @@ import {
   sendMessage,
   searchUsers,
   startConversation,
+  markChannelRead,
+  markConversationRead,
 } from "./actions";
 import {
   MessageSquare,
@@ -167,6 +169,9 @@ export function StudentMessagesClient({
     if (typeof window !== "undefined" && window.innerWidth < 768) {
       setSidebarOpen(false);
     }
+    // Mark as read
+    if (t.type === "channel") markChannelRead(t.id);
+    else markConversationRead(t.id);
   }
 
   const ROLE_LABELS: Record<string, string> = { faculty: "محاضر", student: "طالب" };
@@ -227,12 +232,17 @@ export function StudentMessagesClient({
               {channels.map((ch: any) => (
                 <button
                   key={ch.id}
-                  onClick={() => selectTarget({ type: "channel", id: ch.id, name: ch.courses?.code ? `${ch.courses.code} — ${ch.courses.name}` : ch.name, can_send: ch.can_send })}
+                  onClick={() => selectTarget({ type: "channel", id: ch.id, name: ch.name, can_send: ch.can_send })}
                   className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-right text-sm transition-colors ${target?.id === ch.id ? "bg-action-blue/20 text-action-blue" : "text-text-secondary hover:bg-app-bg hover:text-text-primary"}`}
                 >
-                  <Hash className="h-4 w-4" />
-                  <span className="truncate">{ch.courses?.code ? `${ch.courses.code} — ${ch.courses.name}` : ch.name}</span>
-                  {ch.can_send === false && <MessageCircleOff className="h-3 w-3 text-danger" />}
+                  <Hash className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{ch.name}</span>
+                  {ch.can_send === false && <MessageCircleOff className="h-3 w-3 text-danger shrink-0" />}
+                  {ch.unread_count > 0 && (
+                    <span className="mr-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-action-blue px-1.5 text-xs font-bold text-white">
+                      {ch.unread_count}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -253,6 +263,11 @@ export function StudentMessagesClient({
                   <div className="min-w-0 flex-1 text-right">
                     <span className="truncate">{conv.other_user?.first_name} {conv.other_user?.last_name}</span>
                   </div>
+                  {conv.unread_count > 0 && (
+                    <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-action-blue px-1.5 text-xs font-bold text-white">
+                      {conv.unread_count}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>

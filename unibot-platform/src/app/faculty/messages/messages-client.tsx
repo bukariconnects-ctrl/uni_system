@@ -10,6 +10,8 @@ import {
   getChannelMembers,
   updateChannelSettings,
   muteChannelMember,
+  markChannelRead,
+  markConversationRead,
 } from "./actions";
 import {
   MessageSquare,
@@ -268,11 +270,16 @@ export function MessagesClient({
               {channels.map((ch: any) => (
                 <button
                   key={ch.id}
-                  onClick={() => setTarget({ type: "channel", id: ch.id, name: ch.courses?.code ? `${ch.courses.code} — ${ch.courses.name}` : ch.name })}
+                  onClick={() => { setTarget({ type: "channel", id: ch.id, name: ch.name }); markChannelRead(ch.id); }}
                   className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-right text-sm transition-colors ${target?.id === ch.id ? "bg-action-blue/20 text-action-blue" : "text-text-secondary hover:bg-app-bg hover:text-text-primary"}`}
                 >
-                  <Hash className="h-4 w-4" />
-                  <span className="truncate">{ch.courses?.code ? `${ch.courses.code} — ${ch.courses.name}` : ch.name}</span>
+                  <Hash className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{ch.name}</span>
+                  {ch.unread_count > 0 && (
+                    <span className="mr-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-action-blue px-1.5 text-xs font-bold text-white">
+                      {ch.unread_count}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -284,7 +291,7 @@ export function MessagesClient({
               {conversations.map((conv: any) => (
                 <button
                   key={conv.id}
-                  onClick={() => setTarget({ type: "conversation", id: conv.id, name: `${conv.other_user?.first_name} ${conv.other_user?.last_name}` })}
+                  onClick={() => { setTarget({ type: "conversation", id: conv.id, name: `${conv.other_user?.first_name} ${conv.other_user?.last_name}` }); markConversationRead(conv.id); }}
                   className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-right text-sm transition-colors ${target?.id === conv.id ? "bg-action-blue/20 text-action-blue" : "text-text-secondary hover:bg-app-bg hover:text-text-primary"}`}
                 >
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-academic-navy text-xs font-bold text-white">
@@ -293,6 +300,11 @@ export function MessagesClient({
                   <div className="min-w-0 flex-1 text-right">
                     <span className="truncate">{conv.other_user?.first_name} {conv.other_user?.last_name}</span>
                   </div>
+                  {conv.unread_count > 0 && (
+                    <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-action-blue px-1.5 text-xs font-bold text-white">
+                      {conv.unread_count}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>

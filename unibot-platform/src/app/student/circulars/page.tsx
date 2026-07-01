@@ -1,21 +1,23 @@
 import { requireRole } from "@/lib/auth/get-user";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { StudentCircularsClient } from "./circulars-client";
+
+export const dynamic = 'force-dynamic';
 
 export default async function StudentCircularsPage() {
   const { profile } = await requireRole(["student"]);
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
-  // Get courses the student is enrolled in
+  // Get courses the student is enrolled in — include major_id and academic_level_id for group matching
   const { data: enrollments } = await supabase
     .from("enrollments")
-    .select("course_id")
+    .select("course_id, major_id, academic_level_id")
     .eq("student_id", profile.id)
     .eq("status", "enrolled");
 
-  const enrolledCourseIds = (enrollments || []).map((e: any) => e.course_id).filter(Boolean);
+  const enrollmentList = (enrollments || []) as any[];
 
-  // Fetch circulars that apply to this student — include sender profile
+  // Fetch published circulars
   const { data: allCirculars } = await supabase
     .from("circulars")
     .select("*, sender:profiles!circulars_created_by_fkey(first_name, last_name, role)")
@@ -23,11 +25,22 @@ export default async function StudentCircularsPage() {
     .eq("is_published", true)
     .order("created_at", { ascending: false });
 
-  // Filter circulars relevant to this student
-  // Covers admin circulars (all, students) + faculty circulars (section = specific course)
   const circulars = (allCirculars || []).filter((c: any) => {
+    // Admin/global circulars
     if (c.target_type === "all" || c.target_type === "students") return true;
-    if (c.target_type === "section" && enrolledCourseIds.includes(c.target_id)) return true;
+
+    // Course-specific circulars
+    if (c.target_type === "section" && c.target_id) {
+      const matchingEnrollments = enrollmentList.filter((e: any) => {
+        if (e.course_id !== c.target_id) return false;
+        // If the circular has a group filter, check student matches it
+        if (c.major_id && e.major_id !== c.major_id) return false;
+        if (c.academic_level_id && e.academic_level_id !== c.academic_level_id) return false;
+        return true;
+      });
+      return matchingEnrollments.length > 0;
+    }
+
     return false;
   });
 

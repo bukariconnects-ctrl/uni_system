@@ -33,6 +33,8 @@ interface Circular {
   body: string;
   target_type: string;
   target_id: string | null;
+  major_id?: string | null;
+  academic_level_id?: string | null;
   is_mandatory: boolean;
   is_published: boolean;
   created_at: string;
@@ -43,6 +45,16 @@ interface Circular {
 interface Course {
   id: string;
   label: string;
+}
+
+interface CourseGroup {
+  study_plan_course_id: string;
+  course_id: string;
+  academic_level_id: string | null;
+  academic_level_name: string | null;
+  level_number: number | null;
+  major_id: string | null;
+  major_name: string | null;
 }
 
 const TARGET_LABELS: Record<string, string> = {
@@ -66,12 +78,14 @@ export function FacultyCircularsClient({
   userId,
   tenantId,
   taughtCourses,
+  courseGroups,
 }: {
   receivedCirculars: Circular[];
   sentCirculars: Circular[];
   userId: string;
   tenantId: string;
   taughtCourses: Course[];
+  courseGroups: CourseGroup[];
 }) {
   const [activeTab, setActiveTab] = useState<"received" | "sent">("received");
   const [received, setReceived] = useState<Circular[]>(initialReceived);
@@ -80,7 +94,13 @@ export function FacultyCircularsClient({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [targetType, setTargetType] = useState("students");
+  const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [selectedGroupId, setSelectedGroupId] = useState("");
   const supabase = createClient();
+
+  const availableGroups = selectedCourseId
+    ? courseGroups.filter((g: any) => g.course_id === selectedCourseId)
+    : [];
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search).get("tab");
@@ -239,14 +259,18 @@ export function FacultyCircularsClient({
               />
             </div>
 
-            <div className={targetType === "section" ? "" : "sm:col-span-2"}>
+            <div>
               <label className="mb-1 block text-xs font-medium text-text-primary">
                 الفئة المستهدفة
               </label>
               <select
                 name="target_type"
                 value={targetType}
-                onChange={(e) => setTargetType(e.target.value)}
+                onChange={(e) => {
+                  setTargetType(e.target.value);
+                  setSelectedCourseId("");
+                  setSelectedGroupId("");
+                }}
                 className="w-full rounded-lg border border-border bg-app-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
               >
                 {FACULTY_TARGET_TYPES.map((t) => (
@@ -258,26 +282,54 @@ export function FacultyCircularsClient({
             </div>
 
             {targetType === "section" && (
-              <div>
-                <label className="mb-1 block text-xs font-medium text-text-primary">
-                  اختر المادة
-                </label>
-                <select
-                  name="target_id"
-                  required
-                  className="w-full rounded-lg border border-border bg-app-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
-                >
-                  <option value="">-- اختر المادة --</option>
-                  {taughtCourses.length === 0 && (
-                    <option disabled>لا توجد مواد مسندة اليك</option>
-                  )}
-                  {taughtCourses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-text-primary">
+                    اختر المادة
+                  </label>
+                  <select
+                    name="target_id"
+                    required
+                    value={selectedCourseId}
+                    onChange={(e) => {
+                      setSelectedCourseId(e.target.value);
+                      setSelectedGroupId("");
+                    }}
+                    className="w-full rounded-lg border border-border bg-app-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
+                  >
+                    <option value="">-- اختر المادة --</option>
+                    {taughtCourses.length === 0 && (
+                      <option disabled>لا توجد مواد مسندة اليك</option>
+                    )}
+                    {taughtCourses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {availableGroups.length > 0 && (
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-text-primary">
+                      التخصص / المستوى (اختياري — اتركه للجميع)
+                    </label>
+                    <select
+                      name="group_id"
+                      value={selectedGroupId}
+                      onChange={(e) => setSelectedGroupId(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-app-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
+                    >
+                      <option value="">-- جميع التخصصات --</option>
+                      {availableGroups.map((g: any) => (
+                        <option key={g.study_plan_course_id} value={g.study_plan_course_id}>
+                          {g.major_name || "تخصص"} — {g.academic_level_name || `مستوى ${g.level_number || ''}`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </>
             )}
 
             <div>
