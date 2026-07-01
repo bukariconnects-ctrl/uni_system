@@ -10,7 +10,7 @@ export default async function StudentDashboard() {
   const [enrollmentsRes, profileRes, studentMajorRes] = await Promise.all([
     serviceClient
       .from("enrollments")
-      .select("id, status, course_id, semester_id, courses(code, name), semesters(name, status)")
+      .select("id, status, course_id, major_id, academic_level_id, semester_id, courses(code, name), semesters(name, status)")
       .eq("student_id", profile.id)
       .eq("status", "enrolled")
       .order("created_at", { ascending: false }),
@@ -49,13 +49,25 @@ export default async function StudentDashboard() {
     courseIds.length > 0
       ? await supabase
           .from("assignments")
-          .select("id, title, due_date, max_grade, is_published, course_id, courses(code, name)")
+          .select("id, title, due_date, max_grade, is_published, course_id, major_id, academic_level_id, courses(code, name)")
           .in("course_id", courseIds)
           .eq("is_published", true)
           .gte("due_date", new Date().toISOString())
           .order("due_date", { ascending: true })
-          .limit(10)
+          .limit(20)
       : { data: [] };
+
+  // Filter assignments by group: only show if no group restriction or matches student enrollment
+  const filteredAssignments = (upcomingAssignments || []).filter((a: any) =>
+    !a.major_id && !a.academic_level_id
+      ? true
+      : enrollments.some(
+          (e: any) =>
+            e.course_id === a.course_id &&
+            (a.major_id === null || a.major_id === e.major_id) &&
+            (a.academic_level_id === null || a.academic_level_id === e.academic_level_id)
+        )
+  ).slice(0, 10);
 
   // Fetch submissions with grades
   const { data: submissions } = await supabase
@@ -86,7 +98,7 @@ export default async function StudentDashboard() {
           enrollments: enrollments as any,
           courseSchedules: (courseSchedules || []) as any,
           studentProfile,
-          upcomingAssignments: (upcomingAssignments || []) as any,
+          upcomingAssignments: filteredAssignments as any,
           submissions: (submissions || []) as any,
           attendanceSummaries: (attendanceSummaries || []) as any,
         }}

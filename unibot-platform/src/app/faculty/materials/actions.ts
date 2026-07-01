@@ -1,60 +1,40 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 import type { ContentType } from "@/lib/types/database";
 import { validateFile } from "@/lib/security/file-validator";
 import { performIngest } from "@/lib/ai/ingest-service";
 
-export async function getFacultyCourses() {
-  const { profile } = await requireRole(["faculty"]);
-  const supabase = await createClient();
-
-  const { data } = await supabase
-    .from("course_schedules")
-    .select("study_plan_courses!inner(course_id, courses!inner(id, code, name)), semesters!inner(name, status)")
-    .eq("instructor_id", profile.id)
-    .eq("tenant_id", profile.tenant_id);
-
-  // Deduplicate courses
-  const seen = new Set<string>();
-  const courses = (data || []).reduce((acc: any[], s: any) => {
-    const c = s.study_plan_courses?.courses;
-    if (c && !seen.has(c.id)) {
-      seen.add(c.id);
-      acc.push(c);
-    }
-    return acc;
-  }, []);
-
-  return courses;
-}
-
-export async function getMaterials(courseId?: string) {
-  const { profile } = await requireRole(["faculty"]);
-  const supabase = await createClient();
-
-  let query = supabase
-    .from("course_materials")
-    .select("*")
-    .eq("tenant_id", profile.tenant_id)
-    .eq("uploaded_by", profile.id)
-    .order("week_number", { ascending: true })
-    .order("created_at", { ascending: false });
-
-  if (courseId) {
-    query = query.eq("course_id", courseId);
-  }
-
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data || [];
-}
-
 export async function uploadMaterial(formData: FormData) {
   const { profile } = await requireRole(["faculty"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
+
+  const courseId = formData.get("course_id") as string;
+  const groupId = formData.get("group_id") as string;
+
+  // Resolve major_id and academic_level_id from group
+  let majorId: string | null = null;
+  let academicLevelId: string | null = null;
+
+  if (groupId) {
+    const { data: spc } = await serviceClient
+      .from("study_plan_courses")
+      .select("academic_level_id")
+      .eq("id", groupId)
+      .single();
+
+    if (spc) {
+      academicLevelId = spc.academic_level_id;
+      const { data: al } = await serviceClient
+        .from("academic_levels")
+        .select("major_id")
+        .eq("id", academicLevelId)
+        .single();
+      if (al) majorId = al.major_id;
+    }
+  }
 
   const file = formData.get("file") as File | null;
   let fileUrl: string | null = null;
@@ -67,13 +47,13 @@ export async function uploadMaterial(formData: FormData) {
     const ext = file.name.split(".").pop();
     const filePath = `${profile.tenant_id}/${profile.id}/${Date.now()}.${ext}`;
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await serviceClient.storage
       .from("course-materials")
       .upload(filePath, file);
 
     if (uploadError) throw new Error("فشل رفع الملف: " + uploadError.message);
 
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = serviceClient.storage
       .from("course-materials")
       .getPublicUrl(filePath);
 
@@ -81,9 +61,11 @@ export async function uploadMaterial(formData: FormData) {
     fileSize = file.size;
   }
 
-  const { error } = await supabase.from("course_materials").insert({
+  const { error } = await serviceClient.from("course_materials").insert({
     tenant_id: profile.tenant_id,
-    course_id: formData.get("course_id") as string,
+    course_id: courseId,
+    major_id: majorId,
+    academic_level_id: academicLevelId,
     uploaded_by: profile.id,
     title: formData.get("title") as string,
     description: (formData.get("description") as string) || null,
@@ -101,9 +83,9 @@ export async function uploadMaterial(formData: FormData) {
 
 export async function togglePublish(id: string, published: boolean) {
   await requireRole(["faculty"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
-  const { error } = await supabase
+  const { error } = await serviceClient
     .from("course_materials")
     .update({ is_published: published })
     .eq("id", id);
@@ -114,9 +96,9 @@ export async function togglePublish(id: string, published: boolean) {
 
 export async function toggleAiApproved(id: string, approved: boolean) {
   const { profile } = await requireRole(["faculty"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
-  const { error } = await supabase
+  const { error } = await serviceClient
     .from("course_materials")
     .update({ is_ai_approved: approved })
     .eq("id", id);
@@ -124,15 +106,14 @@ export async function toggleAiApproved(id: string, approved: boolean) {
   if (error) throw new Error(error.message);
 
   if (approved) {
-    const { data: material } = await supabase
+    const { data: material } = await serviceClient
       .from("course_materials")
       .select("*")
       .eq("id", id)
       .single();
 
     if (material) {
-      // Check if an ai_knowledge_documents record already exists for this material
-      const { data: existingDoc } = await supabase
+      const { data: existingDoc } = await serviceClient
         .from("ai_knowledge_documents")
         .select("id")
         .eq("material_id", id)
@@ -141,15 +122,13 @@ export async function toggleAiApproved(id: string, approved: boolean) {
       let docId: string;
 
       if (existingDoc) {
-        // Reactivate & re-index existing record
-        await supabase
+        await serviceClient
           .from("ai_knowledge_documents")
           .update({ is_active: true })
           .eq("id", existingDoc.id);
         docId = existingDoc.id;
       } else {
-        // Create new knowledge document record
-        const { data: newDoc, error: docError } = await supabase
+        const { data: newDoc, error: docError } = await serviceClient
           .from("ai_knowledge_documents")
           .insert({
             tenant_id: profile.tenant_id,
@@ -170,12 +149,10 @@ export async function toggleAiApproved(id: string, approved: boolean) {
         docId = newDoc.id;
       }
 
-      // ✅ Call performIngest directly (no HTTP loopback — avoids auth failure)
       await performIngest(docId, profile);
     }
   } else {
-    // Deactivate knowledge document without deleting chunks
-    await supabase
+    await serviceClient
       .from("ai_knowledge_documents")
       .update({ is_active: false })
       .eq("material_id", id);
@@ -186,73 +163,54 @@ export async function toggleAiApproved(id: string, approved: boolean) {
 
 export async function deleteMaterial(id: string) {
   await requireRole(["faculty"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
-  const { error } = await supabase.from("course_materials").delete().eq("id", id);
-
+  const { error } = await serviceClient.from("course_materials").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/faculty/materials");
 }
 
-export async function getSyllabi() {
-  const { profile } = await requireRole(["faculty"]);
-  const supabase = await createClient();
-
-  const { data } = await supabase
-    .from("syllabi")
-    .select("*, courses(code, name)")
-    .eq("tenant_id", profile.tenant_id)
-    .eq("instructor_id", profile.id)
-    .order("created_at", { ascending: false });
-
-  return data || [];
-}
-
 export async function upsertSyllabus(formData: FormData) {
   const { profile } = await requireRole(["faculty"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
   const courseId = formData.get("course_id") as string;
-  const contentRaw = formData.get("content") as string;
-  let content;
-  try {
-    content = JSON.parse(contentRaw);
-  } catch {
-    content = [{ week: 1, topics: [contentRaw], objectives: [] }];
-  }
+  const content = formData.get("content") as string;
 
-  const { data: existing } = await supabase
+  // Find existing syllabus for this course
+  const { data: existing } = await serviceClient
     .from("syllabi")
     .select("id")
     .eq("course_id", courseId)
+    .eq("tenant_id", profile.tenant_id)
     .maybeSingle();
 
   if (existing) {
-    const { error } = await supabase
+    const { error } = await serviceClient
       .from("syllabi")
-      .update({ content, status: "draft" })
+      .update({ content: JSON.parse(content) })
       .eq("id", existing.id);
     if (error) throw new Error(error.message);
   } else {
-    const { error } = await supabase.from("syllabi").insert({
+    const { error } = await serviceClient.from("syllabi").insert({
       tenant_id: profile.tenant_id,
       course_id: courseId,
-      instructor_id: profile.id,
-      content,
+      content: JSON.parse(content),
       status: "draft",
     });
     if (error) throw new Error(error.message);
   }
+
   revalidatePath("/faculty/materials");
 }
 
 export async function submitSyllabus(id: string) {
   await requireRole(["faculty"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
-  const { error } = await supabase
+  const { error } = await serviceClient
     .from("syllabi")
-    .update({ status: "submitted", submitted_at: new Date().toISOString() })
+    .update({ status: "submitted" })
     .eq("id", id);
 
   if (error) throw new Error(error.message);

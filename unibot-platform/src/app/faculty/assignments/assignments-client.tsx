@@ -35,17 +35,25 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 
 export function AssignmentsClient({
   courses,
+  courseGroups,
   assignments,
 }: {
   courses: any[];
+  courseGroups: any[];
   assignments: any[];
 }) {
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [gradingId, setGradingId] = useState<string | null>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [selectedGroupId, setSelectedGroupId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const availableGroups = selectedCourseId
+    ? courseGroups.filter((g: any) => g.course_id === selectedCourseId)
+    : [];
 
   async function handleAction(action: () => Promise<void>) {
     setLoading(true);
@@ -100,13 +108,37 @@ export function AssignmentsClient({
           <form action={(fd) => handleAction(() => createAssignment(fd))} className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-text-primary">المقرر</label>
-              <select name="course_id" required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
+              <select
+                name="course_id"
+                required
+                value={selectedCourseId}
+                onChange={(e) => { setSelectedCourseId(e.target.value); setSelectedGroupId(""); }}
+                className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
+              >
                 <option value="">-- اختر --</option>
                 {courses.map((c: any) => (
                   <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
                 ))}
               </select>
             </div>
+            {availableGroups.length > 0 && (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-text-primary">التخصص / المستوى (اختياري)</label>
+                <select
+                  name="group_id"
+                  value={selectedGroupId}
+                  onChange={(e) => setSelectedGroupId(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
+                >
+                  <option value="">-- جميع التخصصات --</option>
+                  {availableGroups.map((g: any) => (
+                    <option key={g.study_plan_course_id} value={g.study_plan_course_id}>
+                      {g.major_name || "تخصص"} — مستوى {g.level_number ?? ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="mb-1 block text-xs font-medium text-text-primary">العنوان</label>
               <input type="text" name="title" required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue" />

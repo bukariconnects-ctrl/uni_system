@@ -1,14 +1,14 @@
 import { requireRole } from "@/lib/auth/get-user";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { StudentAssignmentsClient } from "./assignments-client";
 
 export default async function StudentAssignmentsPage() {
   const { profile } = await requireRole(["student"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
-  const { data: enrollments } = await supabase
+  const { data: enrollments } = await serviceClient
     .from("enrollments")
-    .select("course_id")
+    .select("course_id, major_id, academic_level_id")
     .eq("student_id", profile.id)
     .eq("status", "enrolled");
 
@@ -19,19 +19,26 @@ export default async function StudentAssignmentsPage() {
 
   if (courseIds.length > 0) {
     const [aRes, sRes] = await Promise.all([
-      supabase
+      serviceClient
         .from("assignments")
         .select("*, attachment_url, courses(code, name)")
         .in("course_id", courseIds)
         .eq("is_published", true)
         .order("due_date", { ascending: true }),
-      supabase
+      serviceClient
         .from("submissions")
         .select("*")
         .eq("student_id", profile.id)
         .order("submitted_at", { ascending: false }),
     ]);
-    assignments = aRes.data || [];
+    assignments = (aRes.data || []).filter((a: any) => {
+      if (!a.major_id && !a.academic_level_id) return true;
+      return (enrollments || []).some((e: any) =>
+        e.course_id === a.course_id &&
+        (a.major_id === null || a.major_id === e.major_id) &&
+        (a.academic_level_id === null || a.academic_level_id === e.academic_level_id)
+      );
+    });
     submissions = sRes.data || [];
   }
 

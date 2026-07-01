@@ -1,30 +1,36 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 
-export async function getAssignments(courseId?: string) {
-  const { profile } = await requireRole(["faculty"]);
-  const supabase = await createClient();
-
-  let query = supabase
-    .from("assignments")
-    .select("*, courses(code, name)")
-    .eq("tenant_id", profile.tenant_id)
-    .eq("created_by", profile.id)
-    .order("due_date", { ascending: true });
-
-  if (courseId) query = query.eq("course_id", courseId);
-
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data || [];
-}
-
 export async function createAssignment(formData: FormData) {
   const { profile } = await requireRole(["faculty"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
+
+  const groupId = formData.get("group_id") as string;
+
+  // Resolve major_id and academic_level_id from group
+  let majorId: string | null = null;
+  let academicLevelId: string | null = null;
+
+  if (groupId) {
+    const { data: spc } = await serviceClient
+      .from("study_plan_courses")
+      .select("academic_level_id")
+      .eq("id", groupId)
+      .single();
+
+    if (spc) {
+      academicLevelId = spc.academic_level_id;
+      const { data: al } = await serviceClient
+        .from("academic_levels")
+        .select("major_id")
+        .eq("id", academicLevelId)
+        .single();
+      if (al) majorId = al.major_id;
+    }
+  }
 
   let attachmentUrl: string | null = null;
 
@@ -33,22 +39,24 @@ export async function createAssignment(formData: FormData) {
     const ext = file.name.split(".").pop();
     const filePath = `${profile.tenant_id}/assignments/${profile.id}/${Date.now()}.${ext}`;
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await serviceClient.storage
       .from("course-materials")
       .upload(filePath, file);
 
     if (uploadError) throw new Error("فشل رفع الملف: " + uploadError.message);
 
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = serviceClient.storage
       .from("course-materials")
       .getPublicUrl(filePath);
 
     attachmentUrl = urlData.publicUrl;
   }
 
-  const { error } = await supabase.from("assignments").insert({
+  const { error } = await serviceClient.from("assignments").insert({
     tenant_id: profile.tenant_id,
     course_id: formData.get("course_id") as string,
+    major_id: majorId,
+    academic_level_id: academicLevelId,
     created_by: profile.id,
     title: formData.get("title") as string,
     description: (formData.get("description") as string) || null,
@@ -66,9 +74,9 @@ export async function createAssignment(formData: FormData) {
 
 export async function toggleAssignmentPublish(id: string, published: boolean) {
   await requireRole(["faculty"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
-  const { error } = await supabase
+  const { error } = await serviceClient
     .from("assignments")
     .update({ is_published: published })
     .eq("id", id);
@@ -79,18 +87,18 @@ export async function toggleAssignmentPublish(id: string, published: boolean) {
 
 export async function deleteAssignment(id: string) {
   await requireRole(["faculty"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
-  const { error } = await supabase.from("assignments").delete().eq("id", id);
+  const { error } = await serviceClient.from("assignments").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/faculty/assignments");
 }
 
 export async function getSubmissions(assignmentId: string) {
   await requireRole(["faculty"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await serviceClient
     .from("submissions")
     .select("*, profiles!submissions_student_id_fkey(first_name, last_name, student_profiles(student_number))")
     .eq("assignment_id", assignmentId)
@@ -102,9 +110,9 @@ export async function getSubmissions(assignmentId: string) {
 
 export async function gradeSubmission(id: string, formData: FormData) {
   const { profile } = await requireRole(["faculty"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
-  const { error } = await supabase
+  const { error } = await serviceClient
     .from("submissions")
     .update({
       grade: parseFloat(formData.get("grade") as string),
@@ -121,9 +129,9 @@ export async function gradeSubmission(id: string, formData: FormData) {
 
 export async function requestResubmission(id: string) {
   await requireRole(["faculty"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
-  const { error } = await supabase
+  const { error } = await serviceClient
     .from("submissions")
     .update({ status: "resubmit_requested" })
     .eq("id", id);

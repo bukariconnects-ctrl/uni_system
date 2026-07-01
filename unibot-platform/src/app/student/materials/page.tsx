@@ -1,15 +1,14 @@
 import { requireRole } from "@/lib/auth/get-user";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { StudentMaterialsClient } from "./materials-client";
 
 export default async function StudentMaterialsPage() {
   const { profile } = await requireRole(["student"]);
-  const supabase = await createClient();
   const serviceClient = createServiceClient();
 
   const { data: enrollments } = await serviceClient
     .from("enrollments")
-    .select("course_id, courses(code, name)")
+    .select("course_id, major_id, academic_level_id, courses(code, name)")
     .eq("student_id", profile.id)
     .eq("status", "enrolled");
 
@@ -17,14 +16,23 @@ export default async function StudentMaterialsPage() {
 
   let materials: any[] = [];
   if (courseIds.length > 0) {
-    const { data } = await supabase
+    const { data } = await serviceClient
       .from("course_materials")
       .select("*, courses(code, name)")
       .in("course_id", courseIds)
       .eq("is_published", true)
       .order("week_number", { ascending: true })
       .order("created_at", { ascending: false });
-    materials = data || [];
+    materials = (data || []).filter((m: any) => {
+      // No group restriction — visible to everyone
+      if (!m.major_id && !m.academic_level_id) return true;
+      // Match against any of the student's enrollments
+      return (enrollments || []).some((e: any) =>
+        e.course_id === m.course_id &&
+        (m.major_id === null || m.major_id === e.major_id) &&
+        (m.academic_level_id === null || m.academic_level_id === e.academic_level_id)
+      );
+    });
   }
 
   return (
