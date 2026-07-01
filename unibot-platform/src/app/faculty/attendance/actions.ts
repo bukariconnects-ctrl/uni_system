@@ -1,17 +1,17 @@
 "use server";
 
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 
 export async function getAttendanceSessions(courseId?: string) {
   const { profile } = await requireRole(["faculty"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
-  let query = supabase
+  let query = serviceClient
     .from("attendance_sessions")
-    .select("*, courses(code, name)")
+    .select("id, tenant_id, course_id, major_id, academic_level_id, session_date, start_time, title, is_open, created_by, created_at")
     .eq("tenant_id", profile.tenant_id)
     .eq("created_by", profile.id)
     .order("session_date", { ascending: false })
@@ -21,24 +21,102 @@ export async function getAttendanceSessions(courseId?: string) {
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  return data || [];
+
+  const sessions = data || [];
+
+  // Enrich with course names
+  const courseIds = [...new Set(sessions.map((s: any) => s.course_id).filter(Boolean))];
+  const courseLookup: Record<string, { code: string; name: string }> = {};
+  if (courseIds.length > 0) {
+    const { data: courses } = await serviceClient
+      .from("courses")
+      .select("id, code, name")
+      .in("id", courseIds);
+    if (courses) {
+      for (const c of courses) {
+        courseLookup[c.id] = { code: c.code, name: c.name };
+      }
+    }
+  }
+
+  // Enrich with major/level names
+  const levelIds = [...new Set(sessions.map((s: any) => s.academic_level_id).filter(Boolean))];
+  const majorIds = [...new Set(sessions.map((s: any) => s.major_id).filter(Boolean))];
+
+  const levelLookup: Record<string, any> = {};
+  if (levelIds.length > 0) {
+    const { data: levels } = await serviceClient
+      .from("academic_levels")
+      .select("id, name")
+      .in("id", levelIds);
+    if (levels) {
+      for (const l of levels) levelLookup[l.id] = l;
+    }
+  }
+
+  const majorNameLookup: Record<string, string> = {};
+  if (majorIds.length > 0) {
+    const { data: majors } = await serviceClient
+      .from("majors")
+      .select("id, name")
+      .in("id", majorIds);
+    if (majors) {
+      for (const m of majors) majorNameLookup[m.id] = m.name;
+    }
+  }
+
+  return sessions.map((s: any) => ({
+    ...s,
+    courses: s.course_id ? courseLookup[s.course_id] || null : null,
+    major_name: s.major_id ? majorNameLookup[s.major_id] || null : null,
+    academic_level_name: s.academic_level_id ? levelLookup[s.academic_level_id]?.name || null : null,
+  }));
 }
 
 export async function createAttendanceSession(formData: FormData) {
   const { profile } = await requireRole(["faculty"]);
-  const supabase = await createClient();
 
   const courseId = formData.get("course_id") as string;
   const sessionDate = formData.get("session_date") as string;
   const startTime = formData.get("start_time") as string;
+  const title = formData.get("title") as string;
+  const groupId = formData.get("group_id") as string;
 
-  const { data: session, error } = await supabase
+  const serviceClient = createServiceClient();
+
+  let majorId: string | null = null;
+  let academicLevelId: string | null = null;
+
+  // Look up the study_plan_course to get major_id and academic_level_id
+  if (groupId) {
+    const { data: spc } = await serviceClient
+      .from("study_plan_courses")
+      .select("academic_level_id")
+      .eq("id", groupId)
+      .single();
+
+    if (spc) {
+      academicLevelId = spc.academic_level_id;
+      // Get major_id from academic_levels
+      const { data: al } = await serviceClient
+        .from("academic_levels")
+        .select("major_id")
+        .eq("id", academicLevelId)
+        .single();
+      if (al) majorId = al.major_id;
+    }
+  }
+
+  const { data: session, error } = await serviceClient
     .from("attendance_sessions")
     .insert({
       tenant_id: profile.tenant_id,
       course_id: courseId,
+      major_id: majorId,
+      academic_level_id: academicLevelId,
       session_date: sessionDate,
       start_time: startTime,
+      title: title || null,
       is_open: false,
       created_by: profile.id,
     })
@@ -51,14 +129,18 @@ export async function createAttendanceSession(formData: FormData) {
     throw new Error(error.message);
   }
 
-  // Use service client to bypass RLS for fetching enrollments and inserting records
-  const serviceClient = createServiceClient();
-
-  const { data: enrolledStudents, error: enrollError } = await serviceClient
+  // Create attendance records for enrolled students in this specific group
+  let query = serviceClient
     .from("enrollments")
     .select("student_id")
     .eq("course_id", courseId)
     .eq("status", "enrolled");
+
+  if (majorId && academicLevelId) {
+    query = query.eq("major_id", majorId).eq("academic_level_id", academicLevelId);
+  }
+
+  const { data: enrolledStudents } = await query;
 
   if (enrolledStudents && enrolledStudents.length > 0) {
     const records = enrolledStudents.map((e: any) => ({
@@ -66,26 +148,24 @@ export async function createAttendanceSession(formData: FormData) {
       session_id: session.id,
       student_id: e.student_id,
       course_id: courseId,
-      status: "present" as const,
+      status: "absent" as const,
     }));
 
     const { error: insertError } = await serviceClient.from("attendance_records").insert(records);
-    if (insertError) {
-      console.error("Error inserting attendance records:", insertError);
-    }
+    if (insertError) throw new Error("فشل إنشاء سجلات الحضور: " + insertError.message);
   }
 
   revalidatePath("/faculty/attendance");
 }
 
 export async function generateQrCode(sessionId: string) {
-  const { profile } = await requireRole(["faculty"]);
-  const supabase = await createClient();
+  await requireRole(["faculty"]);
+  const serviceClient = createServiceClient();
 
   const token = crypto.randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 10000).toISOString();
 
-  const { error } = await supabase
+  const { error } = await serviceClient
     .from("attendance_sessions")
     .update({
       qr_code: token,
@@ -101,9 +181,9 @@ export async function generateQrCode(sessionId: string) {
 
 export async function closeSession(sessionId: string) {
   await requireRole(["faculty"]);
-  const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
-  const { error } = await supabase
+  const { error } = await serviceClient
     .from("attendance_sessions")
     .update({ is_open: false, qr_code: null, qr_expires_at: null })
     .eq("id", sessionId);
@@ -126,59 +206,107 @@ export async function reopenSession(sessionId: string) {
 }
 
 export async function getSessionRecords(sessionId: string) {
-  const { profile } = await requireRole(["faculty"]);
+  await requireRole(["faculty"]);
   const serviceClient = createServiceClient();
 
-  // First check if records exist
-  let { data, error } = await serviceClient
+  // Fetch records for this session
+  const { data: records, error } = await serviceClient
     .from("attendance_records")
-    .select("*, profiles!attendance_records_student_id_fkey(first_name, last_name, student_profiles(student_number))")
+    .select("id, session_id, student_id, status, created_at")
     .eq("session_id", sessionId)
     .order("created_at", { ascending: true });
 
   if (error) throw new Error(error.message);
 
   // If no records exist, create them from enrollments
-  if (!data || data.length === 0) {
-    // Get session info
+  if (!records || records.length === 0) {
     const { data: session } = await serviceClient
       .from("attendance_sessions")
-      .select("course_id, tenant_id")
+      .select("course_id, tenant_id, major_id, academic_level_id")
       .eq("id", sessionId)
       .single();
 
     if (session) {
-      // Get enrolled students
-      const { data: enrolledStudents } = await serviceClient
+      let query = serviceClient
         .from("enrollments")
         .select("student_id")
         .eq("course_id", session.course_id)
         .eq("status", "enrolled");
 
+      if (session.major_id && session.academic_level_id) {
+        query = query.eq("major_id", session.major_id).eq("academic_level_id", session.academic_level_id);
+      }
+
+      const { data: enrolledStudents } = await query;
+
       if (enrolledStudents && enrolledStudents.length > 0) {
-        const records = enrolledStudents.map((e: any) => ({
+        const newRecords = enrolledStudents.map((e: any) => ({
           tenant_id: session.tenant_id,
           session_id: sessionId,
           student_id: e.student_id,
           course_id: session.course_id,
-          status: "present" as const,
+          status: "absent" as const,
         }));
 
-        await serviceClient.from("attendance_records").insert(records);
+        const { error: insertError } = await serviceClient.from("attendance_records").insert(newRecords);
+        if (insertError) throw new Error("فشل إنشاء سجلات الحضور: " + insertError.message);
 
-        // Fetch the newly created records
-        const { data: newData } = await serviceClient
+        const { data: newData, error: fetchError } = await serviceClient
           .from("attendance_records")
-          .select("*, profiles!attendance_records_student_id_fkey(first_name, last_name, student_profiles(student_number))")
+          .select("id, session_id, student_id, status, created_at")
           .eq("session_id", sessionId)
           .order("created_at", { ascending: true });
 
-        return newData || [];
+        if (fetchError) throw new Error(fetchError.message);
+
+        return await enrichWithStudentNames(serviceClient, newData || []);
       }
     }
+    return [];
   }
 
-  return data || [];
+  return await enrichWithStudentNames(serviceClient, records);
+}
+
+async function enrichWithStudentNames(serviceClient: any, records: any[]) {
+  const studentIds = [...new Set(records.map((r: any) => r.student_id).filter(Boolean))];
+
+  if (studentIds.length === 0) return records;
+
+  const { data: profiles } = await serviceClient
+    .from("profiles")
+    .select("id, first_name, last_name")
+    .in("id", studentIds);
+
+  const { data: studentProfiles } = await serviceClient
+    .from("student_profiles")
+    .select("profile_id, student_number")
+    .in("profile_id", studentIds);
+
+  const profileMap: Record<string, any> = {};
+  if (profiles) {
+    for (const p of profiles) profileMap[p.id] = p;
+  }
+
+  const spMap: Record<string, any> = {};
+  if (studentProfiles) {
+    for (const sp of studentProfiles) spMap[sp.profile_id] = sp;
+  }
+
+  return records.map((r: any) => {
+    const profile = profileMap[r.student_id];
+    return {
+      ...r,
+      profiles: profile
+        ? {
+            ...profile,
+            student_profiles: r.student_id && spMap[r.student_id]
+              ? { student_number: spMap[r.student_id].student_number }
+              : null,
+          }
+        : null,
+    };
+  });
 }
 
 export async function updateAttendanceRecord(

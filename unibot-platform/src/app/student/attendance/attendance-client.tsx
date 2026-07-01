@@ -15,7 +15,7 @@ import {
   CameraOff,
   RefreshCw,
 } from "lucide-react";
-import { submitAttendanceByQr } from "./actions";
+import { submitAttendanceByQr, fetchStudentRecords, fetchStudentSummaries } from "./actions";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 
@@ -79,18 +79,9 @@ export function StudentAttendanceClient({
           table: 'attendance_records',
           filter: `student_id=eq.${studentId}`,
         },
-        async (payload) => {
-          // Refetch records when there's a change
-          const { data: newRecords } = await supabase
-            .from("attendance_records")
-            .select("*, attendance_sessions!inner(session_date, start_time, course_id, courses!inner(code, name))")
-            .eq("student_id", studentId)
-            .order("created_at", { ascending: false })
-            .limit(100);
-          
-          if (newRecords) {
-            setRecords(newRecords);
-          }
+        async () => {
+          const result = await fetchStudentRecords();
+          if (result.records) setRecords(result.records);
         }
       )
       .subscribe();
@@ -106,25 +97,9 @@ export function StudentAttendanceClient({
           table: 'attendance_summaries',
           filter: `student_id=eq.${studentId}`,
         },
-        async (payload) => {
-          // Refetch summaries when there's a change
-          const sectionIds = enrollments.map((e: any) => e.section_id).filter(Boolean);
-          if (sectionIds.length > 0) {
-            const { data: newSummaries } = await supabase
-              .from("attendance_summaries")
-              .select("*, section_id")
-              .eq("student_id", studentId)
-              .in("section_id", sectionIds);
-
-            if (newSummaries) {
-              // Build section→course map from enrollments for the new data
-              const s2c: Record<string, string> = {};
-              for (const en of enrollments) {
-                if (en.section_id && en.course_id) s2c[en.section_id] = en.course_id;
-              }
-              setSummaries(newSummaries.map((s: any) => ({ ...s, course_id: s2c[s.section_id] || null })));
-            }
-          }
+        async () => {
+          const result = await fetchStudentSummaries();
+          if (result.summaries) setSummaries(result.summaries);
         }
       )
       .subscribe();
@@ -336,14 +311,7 @@ export function StudentAttendanceClient({
                   <div className="mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-text-primary">
-                        {(() => {
-                          const course = summary.course_id ? courseLookup[summary.course_id] : null;
-                          if (course) return course.code;
-                          // Fallback: section_id-based lookup (backward compat)
-                          const e = enrollments.find((en: any) => en.section_id === summary.section_id);
-                          if (e?.courses?.code) return e.courses.code;
-                          return 'مادة';
-                        })()}
+                        {summary.course_name || courseLookup[summary.course_id]?.name || 'مادة'}
                       </span>
                       {summary.is_dismissed && (
                         <span className="flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-xs text-danger">
@@ -398,11 +366,14 @@ export function StudentAttendanceClient({
             className="rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
           >
             <option value="">كل المقررات</option>
-            {enrollments.map((e: any) => (
-              <option key={e.course_id} value={e.course_id}>
-                {e.courses?.code}
-              </option>
-            ))}
+            {enrollments.map((e: any) => {
+              const course = courseLookup[e.course_id];
+              return (
+                <option key={e.course_id} value={e.course_id}>
+                  {course?.code || course?.name || 'مادة'}
+                </option>
+              );
+            })}
           </select>
 
           {filteredRecords.length === 0 ? (
@@ -420,7 +391,9 @@ export function StudentAttendanceClient({
                     <Icon className={`h-5 w-5 ${cfg.color}`} />
                     <div>
                       <span className="text-sm font-medium text-text-primary">
-                        {record.attendance_sessions?.courses?.code}
+                        {record.attendance_sessions?.title
+                          ? `${record.attendance_sessions.title} - ${record.attendance_sessions?.courses?.name || record.attendance_sessions?.courses?.code || ''}`
+                          : record.attendance_sessions?.courses?.code}
                       </span>
                       <div className="text-xs text-text-secondary">
                         {record.attendance_sessions?.session_date && new Date(record.attendance_sessions.session_date).toLocaleDateString("ar-SA")}

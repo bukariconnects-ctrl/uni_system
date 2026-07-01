@@ -1,32 +1,34 @@
 import { requireRole } from "@/lib/auth/get-user";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { StudentAttendanceClient } from "./attendance-client";
+
+export const dynamic = 'force-dynamic';
 
 export default async function StudentAttendancePage() {
   const { profile } = await requireRole(["student"]);
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
-  // Fetch enrollments — section_id is kept for backward compat with attendance_summaries
   const { data: enrollments } = await supabase
     .from("enrollments")
-    .select("course_id, section_id, courses!inner(code, name)")
+    .select("course_id")
     .eq("student_id", profile.id)
     .eq("status", "enrolled");
 
   const enrollmentList = (enrollments || []) as any[];
   const courseIds = enrollmentList.map((e: any) => e.course_id).filter(Boolean);
 
-  // Build lookup: course_id → course code
   const courseLookup: Record<string, { code: string; name: string }> = {};
-  // Build lookup: section_id → course_id (backward compat)
-  const sectionToCourse: Record<string, string> = {};
-  for (const e of enrollmentList) {
-    const course = Array.isArray(e.courses) ? e.courses[0] : e.courses;
-    if (e.course_id && course) {
-      courseLookup[e.course_id] = { code: course.code, name: course.name };
-    }
-    if (e.section_id && e.course_id) {
-      sectionToCourse[e.section_id] = e.course_id;
+
+  if (courseIds.length > 0) {
+    const { data: allCourses } = await supabase
+      .from("courses")
+      .select("id, code, name")
+      .in("id", courseIds);
+
+    if (allCourses) {
+      for (const c of allCourses) {
+        courseLookup[c.id] = { code: c.code, name: c.name };
+      }
     }
   }
 
@@ -34,27 +36,53 @@ export default async function StudentAttendancePage() {
   let records: any[] = [];
 
   if (courseIds.length > 0) {
-    // Query attendance_summaries — still uses section_id (backward compat)
-    const sectionIds = enrollmentList.map((e: any) => e.section_id).filter(Boolean);
-    const [sumRes, recRes] = await Promise.all([
-      supabase
-        .from("attendance_summaries")
-        .select("*")
-        .eq("student_id", profile.id)
-        .in("section_id", sectionIds),
-      supabase
-        .from("attendance_records")
-        .select("*, attendance_sessions!inner(session_date, start_time, course_id, courses!inner(code, name))")
-        .eq("student_id", profile.id)
-        .in("attendance_sessions.course_id", courseIds)
-        .order("created_at", { ascending: false })
-        .limit(100),
-    ]);
-    summaries = (sumRes.data || []).map((s: any) => ({
+    const { data: summariesData } = await supabase
+      .from("attendance_summaries")
+      .select("*")
+      .eq("student_id", profile.id)
+      .in("course_id", courseIds);
+
+    const seenEnrollment = new Set<string>();
+    summaries = (summariesData || []).filter((s: any) => {
+      if (seenEnrollment.has(s.enrollment_id)) return false;
+      seenEnrollment.add(s.enrollment_id);
+      return true;
+    }).map((s: any) => ({
       ...s,
-      course_id: sectionToCourse[s.section_id] || null,
+      course_name: s.course_id ? courseLookup[s.course_id]?.name || null : null,
     }));
-    records = recRes.data || [];
+
+    const { data: recData } = await supabase
+      .from("attendance_records")
+      .select("id, session_id, student_id, status, created_at")
+      .eq("student_id", profile.id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    const sessionIds = (recData || []).map((r: any) => r.session_id).filter(Boolean);
+    const sessionLookup: Record<string, any> = {};
+    if (sessionIds.length > 0) {
+      const { data: sessions } = await supabase
+        .from("attendance_sessions")
+        .select("id, session_date, start_time, course_id, title")
+        .in("id", sessionIds);
+      if (sessions) {
+        for (const s of sessions) {
+          sessionLookup[s.id] = s;
+        }
+      }
+    }
+
+    records = (recData || []).map((r: any) => {
+      const session = r.session_id ? sessionLookup[r.session_id] : null;
+      return {
+        ...r,
+        attendance_sessions: {
+          ...(session || {}),
+          courses: session?.course_id ? courseLookup[session.course_id] || null : null,
+        },
+      };
+    });
   }
 
   return (

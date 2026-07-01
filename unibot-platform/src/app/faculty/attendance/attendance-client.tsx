@@ -32,9 +32,11 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
 
 export function AttendanceClient({
   courses,
+  courseGroups,
   sessions,
 }: {
   courses: any[];
+  courseGroups: any[];
   sessions: any[];
 }) {
   const [showForm, setShowForm] = useState(false);
@@ -46,6 +48,12 @@ export function AttendanceClient({
   const [countdown, setCountdown] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+
+  const availableGroups = selectedCourseId
+    ? courseGroups.filter((g: any) => g.course_id === selectedCourseId)
+    : [];
 
   async function handleAction(action: () => Promise<void>) {
     setLoading(true);
@@ -142,16 +150,55 @@ export function AttendanceClient({
             <h3 className="text-lg font-bold text-text-primary">إنشاء جلسة حضور</h3>
             <button onClick={() => setShowForm(false)} className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg"><X className="h-5 w-5" /></button>
           </div>
-          <form action={(fd) => handleAction(async () => { await createAttendanceSession(fd); setShowForm(false); })} className="grid gap-4 sm:grid-cols-3">
+          <form action={(fd) => {
+            handleAction(async () => {
+              await createAttendanceSession(fd);
+              setShowForm(false);
+              setSelectedCourseId("");
+              setSelectedGroupId("");
+            });
+          }} className="grid gap-4 sm:grid-cols-3">
+            <div className="sm:col-span-3">
+              <label className="mb-1 block text-xs font-medium text-text-primary">عنوان الجلسة</label>
+              <input type="text" name="title" required placeholder="مثال: المحاضرة الأولى" className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue" />
+            </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-text-primary">المقرر</label>
-              <select name="course_id" required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
+              <select
+                name="course_id"
+                required
+                value={selectedCourseId}
+                onChange={(e) => {
+                  setSelectedCourseId(e.target.value);
+                  setSelectedGroupId("");
+                }}
+                className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
+              >
                 <option value="">-- اختر --</option>
                 {courses.map((c: any) => (
-                  <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
+                  <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
             </div>
+            {availableGroups.length > 0 && (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-text-primary">التخصص / المستوى</label>
+                <select
+                  name="group_id"
+                  required
+                  value={selectedGroupId}
+                  onChange={(e) => setSelectedGroupId(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
+                >
+                  <option value="">-- اختر --</option>
+                  {availableGroups.map((g: any) => (
+                    <option key={g.study_plan_course_id} value={g.study_plan_course_id}>
+                      {g.major_name || "تخصص"} — {g.academic_level_name || `مستوى ${g.level_number || ''}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="mb-1 block text-xs font-medium text-text-primary">التاريخ</label>
               <input type="date" name="session_date" required defaultValue={new Date().toISOString().split("T")[0]} className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue" dir="ltr" />
@@ -168,7 +215,6 @@ export function AttendanceClient({
           </form>
         </div>
       )}
-
 
       {sessions.length === 0 && !showForm && (
         <div className="rounded-2xl border border-dashed border-border bg-card-bg p-12 text-center">
@@ -189,7 +235,9 @@ export function AttendanceClient({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-text-primary">
-                      {session.courses?.code}
+                      {session.title
+                        ? `${session.title} - ${session.courses?.name || ''}`
+                        : session.courses?.name || session.courses?.code}
                     </span>
                     {session.is_open ? (
                       <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs text-success">مفتوحة</span>
@@ -199,6 +247,9 @@ export function AttendanceClient({
                   </div>
                   <span className="text-xs text-text-secondary">
                     {new Date(session.session_date).toLocaleDateString("ar-SA")} — {session.start_time}
+                    {session.major_name && session.academic_level_name && (
+                      <span className="mr-2">— {session.major_name} / {session.academic_level_name}</span>
+                    )}
                   </span>
                 </div>
               </div>
@@ -236,11 +287,10 @@ export function AttendanceClient({
                     تحضير بـ QR
                   </button>
                   <button
-                    onClick={async () => { 
-                      setAttendanceMode("manual"); 
-                      setQrData(null); 
+                    onClick={async () => {
+                      setAttendanceMode("manual");
+                      setQrData(null);
                       setActiveQrSessionId(null);
-                      // Load records if not already loaded
                       if (records.length === 0) {
                         setLoading(true);
                         try {
