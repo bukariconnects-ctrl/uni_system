@@ -213,10 +213,11 @@ export function ProfileClient({
           <div className="grid gap-4 sm:grid-cols-2">
             <InfoField label="الرقم الجامعي" value={studentProfile.student_number} />
             <InfoField label="التخصص" value={studentProfile.majors?.name || "—"} />
-            <InfoField label="المستوى" value={studentProfile.academic_levels?.name || "—"} />
+            <InfoField label="القسم" value={studentProfile.majors?.departments?.name || "—"} />
+            <InfoField label="المستوى" value={studentProfile.academic_levels ? `المستوى ${studentProfile.academic_levels.level_number} — ${studentProfile.academic_levels.name}` : "—"} />
             <InfoField label="سنة الالتحاق" value={studentProfile.enrollment_year?.toString() || "—"} />
             <InfoField label="المعدل التراكمي" value={studentProfile.cumulative_gpa ? `${studentProfile.cumulative_gpa.toFixed(2)}` : "—"} />
-            <InfoField label="الساعات المعتمدة" value={`${studentProfile.total_credits_earned || 0} / ${studentProfile.total_credits_required || 0}`} />
+            <InfoField label="الساعات المعتمدة" value={`${studentProfile.earned_credit_hours || 0} / ${studentProfile.total_credit_hours || 0}`} />
           </div>
         </div>
       )}

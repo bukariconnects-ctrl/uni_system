@@ -117,10 +117,12 @@ export function UnibotClient({
   conversations: initialConversations,
   profileId,
   tenantId,
+  studentName,
 }: {
   conversations: ChatbotConversation[];
   profileId: string;
   tenantId: string;
+  studentName: string;
 }) {
   const [conversations, setConversations] = useState(initialConversations);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
@@ -422,7 +424,7 @@ export function UnibotClient({
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-ai-light to-ai-lavender">
                 <Bot className="h-8 w-8 text-white" />
               </div>
-              <h2 className="mb-2 text-lg font-bold text-text-primary">مرحباً في UniBot</h2>
+              <h2 className="mb-2 text-lg font-bold text-text-primary">مرحباً بك {studentName} في UniBot</h2>
               <p className="mb-5 max-w-xs text-xs text-text-secondary">
                 اسألني عن بياناتك الشخصية أو عن اللوائح والسياسات الأكاديمية.
               </p>

@@ -8,11 +8,12 @@ export default async function FacultyDashboard() {
   const serviceClient = createServiceClient();
 
   const [schedulesRes, assignmentsRes] = await Promise.all([
-    supabase
+    serviceClient
       .from("course_schedules")
-      .select("study_plan_courses!inner(course_id, courses!inner(id, code, name)), semesters!inner(name, status)")
+      .select("id, day_of_week, start_time, end_time, component_type, venue_id, venues(name, code), semesters!inner(name, status), study_plan_courses!inner(course_id, academic_level_id, courses!inner(id, code, name), academic_levels!inner(level_number, name, majors!inner(name)))")
       .eq("tenant_id", profile.tenant_id)
-      .eq("instructor_id", profile.id),
+      .eq("instructor_id", profile.id)
+      .eq("status", "published"),
     supabase
       .from("assignments")
       .select("id")
@@ -20,9 +21,11 @@ export default async function FacultyDashboard() {
       .eq("created_by", profile.id),
   ]);
 
-  // Deduplicate courses
+  const rawSchedules = (schedulesRes.data || []) as any[];
+
+  // Deduplicate courses from schedules
   const seen = new Set<string>();
-  const courses = ((schedulesRes.data || []) as any[]).reduce((acc: any[], s: any) => {
+  const courses = rawSchedules.reduce((acc: any[], s: any) => {
     const c = s.study_plan_courses?.courses;
     if (c && !seen.has(c.id)) {
       seen.add(c.id);
@@ -76,38 +79,6 @@ export default async function FacultyDashboard() {
     pendingSubmissions = subs || [];
   }
 
-  // Get attendance sessions for faculty's courses
-  let attendanceSessions: any[] = [];
-  if (courseIds.length > 0) {
-    const { data: sessions } = await serviceClient
-      .from("attendance_sessions")
-      .select("id, course_id, session_date, start_time")
-      .in("course_id", courseIds)
-      .eq("tenant_id", profile.tenant_id)
-      .order("session_date", { ascending: false });
-    attendanceSessions = sessions || [];
-  }
-
-  const sessionIds = attendanceSessions.map((s: any) => s.id);
-
-  // Get attendance records for those sessions
-  let attendanceRecords: any[] = [];
-  if (sessionIds.length > 0) {
-    const { data: records } = await serviceClient
-      .from("attendance_records")
-      .select("session_id, course_id, status, created_at")
-      .in("session_id", sessionIds)
-      .eq("tenant_id", profile.tenant_id);
-    attendanceRecords = records || [];
-  }
-
-  // Enrich attendance records with session dates
-  const sessionMap = new Map(attendanceSessions.map((s: any) => [s.id, s]));
-  const enrichedAttendance = attendanceRecords.map((r: any) => ({
-    ...r,
-    attendance_sessions: sessionMap.get(r.session_id),
-  }));
-
   return (
     <div>
       <div className="mb-6">
@@ -121,7 +92,7 @@ export default async function FacultyDashboard() {
           totalStudents,
           pendingSubmissions: (pendingSubmissions || []) as any,
           assignmentsCount: (assignmentsRes.data || []).length,
-          attendanceRecords: enrichedAttendance as any,
+          schedules: rawSchedules as any,
         }}
       />
     </div>

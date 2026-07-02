@@ -12,12 +12,20 @@ export async function getProfileData() {
   let facultyProfile = null;
 
   if (profile.role === "student") {
-    const { data } = await supabase
-      .from("student_profiles")
-      .select("*, majors(name, code), academic_levels(name)")
-      .eq("profile_id", profile.id)
-      .single();
-    studentProfile = data;
+    const [spRes, smRes] = await Promise.all([
+      supabase
+        .from("student_profiles")
+        .select("*")
+        .eq("profile_id", profile.id)
+        .single(),
+      supabase
+        .from("student_majors")
+        .select("major_id, majors(name, code, departments(name)), academic_levels(level_number, name)")
+        .eq("student_id", profile.id)
+        .eq("is_primary", true)
+        .maybeSingle(),
+    ]);
+    studentProfile = { ...(spRes.data || {}), ...(smRes.data || {}) };
   }
 
   if (profile.role === "faculty") {

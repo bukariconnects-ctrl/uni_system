@@ -11,6 +11,7 @@ export default async function UnibotPage() {
       conversations={conversations}
       profileId={profile.id}
       tenantId={profile.tenant_id!}
+      studentName={`${profile.first_name} ${profile.last_name}`}
     />
   );
 }

@@ -1,23 +1,7 @@
 "use client";
 
 import { KpiCard, ChartCard } from "@/components/analytics";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
-import {
-  Users,
-  FileText,
-  ClipboardCheck,
-  Clock,
-  CheckCircle2,
-} from "lucide-react";
+import { Calendar, CheckCircle2, ClipboardCheck, Clock, FileText, Users } from "lucide-react";
 
 interface Course {
   id: string;
@@ -38,12 +22,21 @@ interface Submission {
   profiles?: { first_name: string; last_name: string };
 }
 
-interface AttendanceRecord {
-  session_id: string;
-  course_id: string;
-  status: string;
-  created_at: string;
-  attendance_sessions?: { session_date: string; start_time: string };
+interface Schedule {
+  id: string;
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+  component_type: string;
+  venue_id: string | null;
+  venues: { name: string; code: string } | null;
+  study_plan_courses: {
+    course_id: string;
+    academic_level_id: string;
+    courses: { id: string; code: string; name: string };
+    academic_levels: { level_number: number; name: string; majors: { name: string } };
+  };
+  semesters: { name: string; status: string };
 }
 
 interface DashboardData {
@@ -51,49 +44,28 @@ interface DashboardData {
   totalStudents: number;
   pendingSubmissions: Submission[];
   assignmentsCount: number;
-  attendanceRecords: AttendanceRecord[];
+  schedules: Schedule[];
 }
 
-const CHART_COLORS = {
-  royalBlue: "#00539C",
-  peach: "#EEA47F",
-  success: "#38A169",
-  purple: "#805AD5",
-};
-
 export function FacultyDashboardClient({ data }: { data: DashboardData }) {
-  const { courses, totalStudents, pendingSubmissions, assignmentsCount, attendanceRecords } = data;
+  const { courses, totalStudents, pendingSubmissions, assignmentsCount, schedules } = data;
 
   const activeCourses = courses.filter(
     (c) => c.semester?.status === "active"
   );
 
-  // Area chart: attendance trends by session
-  const sessionAttendance: Record<string, { present: number; absent: number; date: string }> = {};
-  attendanceRecords.forEach((r) => {
-    const sessionKey = r.session_id;
-    const sessionDate = r.attendance_sessions?.session_date || sessionKey;
-    if (!sessionAttendance[sessionKey]) {
-      sessionAttendance[sessionKey] = { present: 0, absent: 0, date: sessionDate };
-    }
-    if (r.status === "present" || r.status === "late") {
-      sessionAttendance[sessionKey].present++;
-    } else {
-      sessionAttendance[sessionKey].absent++;
-    }
-  });
+  const dayNames: Record<string, string> = {
+    sunday: "الأحد", monday: "الإثنين", tuesday: "الثلاثاء",
+    wednesday: "الأربعاء", thursday: "الخميس", friday: "الجمعة", saturday: "السبت",
+  };
 
-  const attendanceTrend = Object.entries(sessionAttendance)
-    .sort(([, a], [, b]) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(-10)
-    .map(([_, data]) => ({
-      date: new Date(data.date).toLocaleDateString("ar-SA", { month: "short", day: "numeric" }),
-      present: data.present,
-      absent: data.absent,
-      rate: data.present + data.absent > 0
-        ? Math.round((data.present / (data.present + data.absent)) * 100)
-        : 0,
-    }));
+  const dayOrder = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+  const sortedSchedules = [...schedules].sort((a, b) => {
+    const dayDiff = dayOrder.indexOf(a.day_of_week) - dayOrder.indexOf(b.day_of_week);
+    if (dayDiff !== 0) return dayDiff;
+    return a.start_time.localeCompare(b.start_time);
+  });
 
   return (
     <div className="space-y-6">
@@ -134,75 +106,108 @@ export function FacultyDashboardClient({ data }: { data: DashboardData }) {
         />
         <KpiCard
           title="الحضور الأخير"
-          value={`${attendanceTrend.length > 0 ? attendanceTrend[attendanceTrend.length - 1].rate : 0}%`}
+          value={`${sortedSchedules.length}`}
           icon={CheckCircle2}
           iconColor="bg-purple/10 text-purple"
           trend={{
-            value: `${attendanceRecords.filter((r) => r.status === "present").length}`,
+            value: `محاضرة`,
             direction: "up",
-            label: "حضور مسجل",
+            label: "موعد أسبوعي",
           }}
         />
       </div>
 
-      {/* Charts Row */}
+      {/* Schedule + Pending Submissions */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <ChartCard
-          title="اتجاهات الحضور"
-          subtitle="نسبة الحضور عبر آخر الجلسات"
-        >
-          <ResponsiveContainer width="100%" height={260}>
-            <AreaChart data={attendanceTrend}>
-              <defs>
-                <linearGradient id="presentGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={CHART_COLORS.royalBlue} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={CHART_COLORS.royalBlue} stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="absentGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={CHART_COLORS.peach} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={CHART_COLORS.peach} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-              <XAxis
-                dataKey="date"
-                tick={{ fill: "var(--color-text-secondary)", fontSize: 10 }}
-                tickLine={false}
-                axisLine={{ stroke: "var(--color-border)" }}
-              />
-              <YAxis
-                tick={{ fill: "var(--color-text-secondary)", fontSize: 11 }}
-                tickLine={false}
-                axisLine={{ stroke: "var(--color-border)" }}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--color-card-bg)",
-                  borderColor: "var(--color-border)",
-                  borderRadius: "12px",
-                  color: "var(--color-text-primary)",
-                }}
-              />
-              <Legend />
-              <Area
-                type="monotone"
-                dataKey="present"
-                name="حاضر"
-                stroke={CHART_COLORS.royalBlue}
-                fill="url(#presentGrad)"
-                strokeWidth={2}
-              />
-              <Area
-                type="monotone"
-                dataKey="absent"
-                name="غائب"
-                stroke={CHART_COLORS.peach}
-                fill="url(#absentGrad)"
-                strokeWidth={2}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </ChartCard>
+        <div className="rounded-2xl border border-border bg-card-bg p-5 shadow-sm flex flex-col max-h-[400px]">
+          <div className="mb-4 flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-action-blue" />
+            <h2 className="text-base font-bold text-text-primary">الجدول الدراسي الأسبوعي</h2>
+          </div>
+
+          <div className="flex-1 overflow-y-auto pr-1 space-y-3">
+            {sortedSchedules.length === 0 ? (
+              <p className="py-4 text-center text-sm text-text-secondary">لا توجد محاضرات مجدولة</p>
+            ) : (
+              (() => {
+                const schedulesByDay = sortedSchedules.reduce((acc, s) => {
+                  const day = s.day_of_week;
+                  if (!acc[day]) acc[day] = [];
+                  acc[day].push(s);
+                  return acc;
+                }, {} as Record<string, typeof sortedSchedules>);
+
+                const activeDays = Object.keys(schedulesByDay).sort(
+                  (a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b)
+                );
+
+                const formatTime = (timeStr?: string) => {
+                  if (!timeStr) return "";
+                  const [h, m] = timeStr.split(':');
+                  const d = new Date();
+                  d.setHours(parseInt(h, 10), parseInt(m, 10));
+                  return d.toLocaleTimeString("ar-SA", { hour: "numeric", minute: "2-digit" });
+                };
+
+                return activeDays.map((day) => (
+                  <div key={day}>
+                    <h3 className="mb-3 flex items-center gap-1.5 border-b border-border pb-2 text-sm font-bold text-action-blue">
+                      <Calendar className="h-4 w-4" />
+                      {dayNames[day]}
+                    </h3>
+                    <div className="space-y-2">
+                      {schedulesByDay[day].map((s) => {
+                        const spc = s.study_plan_courses;
+                        const course = spc?.courses;
+                        const level = spc?.academic_levels;
+                        const venue = s.venues;
+                        const groupLabel = level
+                          ? `${level.majors?.name ?? ""} - مستوى ${level.level_number}${level.name ? ` (${level.name})` : ""}`
+                          : "—";
+                        return (
+                          <div
+                            key={s.id}
+                            className="rounded-xl border border-border bg-app-bg/50 p-3"
+                          >
+                            <p className="mb-2 text-sm font-bold text-text-primary">
+                              {course?.name ?? ""}{" "}
+                              <span className="text-xs font-normal text-text-secondary">
+                                ({course?.code ?? ""})
+                              </span>
+                            </p>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-text-secondary">
+                              <div className="flex items-center gap-1.5">
+                                <Clock className="h-3.5 w-3.5 text-action-blue" />
+                                <span>{s.start_time ? `${formatTime(s.start_time)} - ${formatTime(s.end_time)}` : ""}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                  s.component_type === "practical"
+                                    ? "bg-success/10 text-success"
+                                    : "bg-academic-navy/10 text-academic-navy"
+                                }`}>
+                                  {s.component_type === "practical" ? "عملي" : "نظري"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <Calendar className="h-3.5 w-3.5 text-purple" />
+                                <span>القاعة: {venue?.name || "غير محددة"}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <Users className="h-3.5 w-3.5 text-academic-navy" />
+                                <span>{groupLabel}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ));
+              })()
+            )}
+          </div>
+        </div>
 
         <ChartCard
           title="تسليمات بانتظار التقييم"
