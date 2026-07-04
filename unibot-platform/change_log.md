@@ -2,6 +2,84 @@
 
 ---
 
+## UI Enhancement: Applied Royal Blue & Peach Brand Identity to Landing Page
+**التاريخ:** 2026-07-04
+
+### ملخص
+إعادة تصميم كاملة لألوان صفحة الهبوط لتطابق الهوية البصرية الجديدة — Royal Blue (`#00539C`) كلون أساسي و Peach (`#EEA47F`) كلون تفاعلي.
+
+### التغييرات
+1. **إضافة توكينات الألوان** (`src/app/globals.css`):
+   - تعريف `--color-royal-blue: #00539C` و `--color-peach: #EEA47F` في `:root` و `.dark`.
+   - تسجيلهما في `@theme inline` لتوليد كلاسات utility مثل `bg-royal-blue`, `text-peach`, `border-royal-blue` إلخ.
+
+2. **قسم Hero** — خلفية فاتحة جديدة:
+   - الخلفية: `bg-white` مع تدرج خفيف `from-[#F7FAFC] via-white to-[#F7FAFC]`.
+   - البقع الزرقاء (blobs) بشفافية `0.07` بدلاً من `0.20`.
+   - شارة (badge): `border-peach/20 bg-peach/10 text-peach`.
+   - العنوان الرئيسي: السطر الأول `text-royal-blue`، السطر الثاني `bg-gradient-to-r from-royal-blue to-peach bg-clip-text text-transparent`.
+   - النص الوصفي: `text-[#4A5568]` (رمادي داكن).
+   - زر CTA الأساسي: `bg-royal-blue text-white shadow-xl hover:shadow-royal-blue/25 hover:scale-[1.02]`.
+   - الزر الثانوي: `border-royal-blue/20 text-royal-blue bg-white`.
+   - إحصائيات: الأرقام `text-royal-blue`، التسميات `text-[#718096]`.
+
+3. **قسم Navbar**:
+   - النصوص في الحالة الشفافة: `text-[#4A5568]` (داكنة) بدلاً من `text-white/80`.
+   - زر تسجيل الدخول: `bg-royal-blue text-white` (ثابت، حتى في الحالة الشفافة).
+   - لون النقّالة: `text-[#1A202C]`.
+
+4. **قسم المميزات (Bento Grid)**:
+   - تدرجات الأيقونات: `from-royal-blue to-royal-blue/70`, `from-royal-blue to-peach`, `from-peach to-peach/70`.
+   - ظلال التمرير: `shadow-royal-blue/20` و `shadow-peach/20`.
+
+5. **قسم "كيف يعمل"**:
+   - أيقونات الخطوات: `from-royal-blue to-royal-blue/80` مع `shadow-royal-blue/20`.
+   - شارة الرقم: `bg-peach text-white`.
+   - خط التوصيل: `from-royal-blue to-peach`.
+
+6. **التذييل (Footer)**:
+   - روابط `hover:text-royal-blue`.
+   - شعار UniBot: `from-royal-blue to-peach`.
+
+### النتيجة
+- هوية بصرية متسقة عبر جميع أقسام الصفحة.
+- Royal Blue يعطي ثقة واحترافية، Peach يضيف طاقة ودفئاً.
+- خلفية الهيرو فاتحة لتبرز ألوان العلامة التجارية بوضوح.
+- البناء يمر بنجاح.
+
+---
+
+## UI Enhancement: Infinite Scrolling Image Marquees
+**التاريخ:** 2026-07-04
+
+### ملخص
+إضافة قسم "نظرة من الداخل" في صفحة الهبوط مزود بشريطين صور لا نهائيين (Infinite Marquee) بتقنية CSS Animations الخالصة.
+
+### التغييرات
+1. **مكون `InfiniteMarquee`** (`src/components/ui/infinite-marquee.tsx`):
+   - يدعم خاصيات `images` (مصفوفة كائنات `{src, alt}`)، `direction` (`"left"` | `"right"`) و `speed` (`"fast"` | `"normal"` | `"slow"`).
+   - يستخدم أنيميشن CSS `marquee-left` / `marquee-right` المسجلة في `@theme` مع إمكانية تجاوز `animation-duration` عبر `inline style`.
+   - `mask-image` مع تدرج خطي لإخفاء الحواف اليمنى واليسرى (fade-out edge).
+   - تكرار المحتوى (Duplicate) داخل الحاوية للف اللانهائي بدون قفزات.
+   - `group-hover:scale-[1.02]` و `group-hover:brightness-110` على الصور لتأثير تكبير وإضاءة عند التمرير.
+   - إيقاف الحركة عند التمرير (مضمن في `group`).
+2. **دمج المقطع** (`src/app/page.tsx`):
+   - قسم جديد بين "المميزات" و "كيف يعمل" بعنوان "تجربة المنصة مباشرة".
+   - شريطان: الأول تجاه اليسار والثاني تجاه اليمين.
+   - 5 صور لكل شريط من Unsplash (جامعات، طلاب، محاضرات، مكتبات) بأبعاد 16:9 (عرض 320px، ارتفاع 192px).
+3. **إعدادات Tailwind v4** (`src/app/globals.css`):
+   - تعريف `@keyframes marquee-left` (من `translateX(0)` إلى `translateX(-50%)`).
+   - تعريف `@keyframes marquee-right` (من `translateX(-50%)` إلى `translateX(0)`).
+   - تسجيل `--animate-marquee-left` و `--animate-marquee-right` داخل `@theme inline`.
+
+### النتيجة
+- شريط صور لا نهائي احترافي بدون أي مكتبة خارجية.
+- أداء عالي (CSS Animations فقط، لا JavaScript).
+- تأثيرات حواف fade-out وتفاعل hover.
+- البناء يمر بنجاح.
+
+---
+
 ## UI/UX Rebranding: Royal Blue & Peach Theme
 **التاريخ:** 2026-06-03
 
@@ -3495,3 +3573,321 @@ if (!scopedCourseIds || scopedCourseIds.length === 0) {
 - إذا فشل TTS، يستمر النظام في العمل كنص فقط بدون تعطيل
 - Rust SDK للـ TTS ليس مطلوباً — استخدمنا REST API المباشر
 
+
+---
+
+## Sprint 24: Smart Recommendation Engine (Proactive & On-Demand)
+**�������:** 2026-07-03
+
+### ����
+���� ���� ������ ��� ����� ������ �� UniBot Chatbot (RAG). ���� ������� ������� ����� ������ ����� Gemini ������� ������ ������ ������� ������:
+1. **������ (Proactive):** ����� �������� ��� ��� ������� (���� < 60% -> ������ ����� ����� > 90% -> ������ �����)
+2. **������ (On-Demand):** ������ ���� ������ ������ ���� (��ȡ ����� �����ȡ ����� �����)
+
+### ����� ����� �� UniBot Chatbot
+| ������ | UniBot Chatbot | Recommendation Engine |
+|--------|---------------|---------------------|
+| ������ | ����� ������� �������� (PDF, RAG) | ����� Gemini �������� |
+| ��������� | ����� ����� + ����� ������� | ������ ������� ������ |
+| ����� ������� | Chat ������ | ������ (grade) + ������ (request) |
+| �������� ��������� | ����� ������� + ������ ������ | ����� Gemini + ��� ������� |
+
+### ������� �������
+
+| ����� | ����� |
+|-------|-------|
+| src/app/api/ai/recommendations/auto/route.ts | API �������� ��������� - ������ ��� ����� ������� |
+| src/app/api/ai/recommendations/request/route.ts | API �������� ��������� - ������ ��� ��� ������ |
+| src/app/student/recommendations/page.tsx | ���� �������� (Server Component) |
+| src/app/student/recommendations/actions.ts | Server Actions ���� �������� |
+| src/app/student/recommendations/recommendations-client.tsx | ����� �������� �� input ������ + ������ Feed |
+
+### ������� �������
+
+| ����� | ������� |
+|-------|---------|
+| src/app/faculty/gradebook/actions.ts | ����� ������� auto API ��� ��� ������� (������) |
+| src/app/student/components/sidebar.tsx | ����� ���� �������� ������ ������� Lightbulb |
+
+### �������
+- ������ ������� ��� ��� ������� ������� �� ��������
+- ������ ������� ��� ��� ������
+- ��� ��� �� UniBot Chatbot (RAG ����ݡ ������� �����)
+- ����� ������ ����� �� ����� ��� �����
+- ������ ��� �����
+
+---
+
+## Hotfix & Enhancement: Smart Recommendations Formatting & Auto-Triggers
+**�������:** 2026-07-03
+
+### ������� �������� ���� QA
+1. **����� Markdown �����**: ���� Gemini ���� ���� ���� UI �� ���� Markdown ����� (��� ###) ���� �����
+2. **��������**: ������ ������� ���� ������ ������ ����
+3. **��� ����� ������� ��������� ��� ����� ���������**: ���� ������� ��������� ���� ��� �� ��� ������� (gradebook) ���� ��� ����� ���� (assignment submission)
+4. **������ �����**: �� ���� ����� ���� ���� �������� ��� ����� ������ ������ �� ��� ����
+
+### ���������
+
+#### 1. ��� Markdown ���� ���� �� ����� ��������
+**�����:** src/app/student/recommendations/recommendations-client.tsx
+
+- ������� ����� ����� ����� (split().map()) �� ReactMarkdown �� remark-gfm
+- ����� MD_COMPONENTS ������ ����� ������� ��� �� ���� Markdown (������ ����� �����)
+- ����� ��� line-clamp �� overflow-hidden ����� ��� ���� ������
+- ��� �������� (react-markdown, remark-gfm) ����� �������� ������ �� package.json
+
+#### 2. ����� ���� �������� ������� + ���� ������ ���������
+**������� �������:**
+- src/lib/ai/recommendation-engine.ts � ���� generateAutoRecommendation() ������
+
+**������� �������:**
+- src/app/faculty/assignments/actions.ts � ������� generateAutoRecommendation() ��� gradeSubmission()
+- src/app/faculty/gradebook/actions.ts � ������� HTTP loopback �� generateAutoRecommendation()
+
+���� �������� ��������� ���� �� ��� ��������:
+- ����� ���� (submissions) ? gradeSubmission()
+- ��� ����� (gradebook) ? saveGradeValues()
+
+#### 3. ����� ����� ������� (Daily Tip)
+**�����:** src/app/student/recommendations/page.tsx
+
+����� ���� ������ ���� �������� �� ��� ���� ��� ���� �� ������ ���� �����:
+- ���� �������� ������� ������
+- ������ Gemini ������ ����� ������ ����� (������) ����� ��������
+- ������� �������� �� student_recommendations ������ ����� ����� ??
+- ���� �� ������� ��� ���� ������� Sparkles ����� ����� �����
+
+### ������� �������
+
+| ����� | ����� |
+|-------|-------|
+| src/lib/ai/recommendation-engine.ts | ���� ������ ������ �������� ��������� ��� Gemini |
+
+### ������� �������
+
+| ����� | ������� |
+|-------|---------|
+| src/app/student/recommendations/recommendations-client.tsx | ReactMarkdown ����� �� ���� ����� + ��� daily_tip �� ������� ���������� |
+| src/app/student/recommendations/page.tsx | ����� ���� ������� ������� |
+| src/app/faculty/assignments/actions.ts | ������� generateAutoRecommendation ��� ������� |
+| src/app/faculty/gradebook/actions.ts | ������� generateAutoRecommendation ����� �� HTTP loopback |
+
+### �������
+- Markdown ���� ���� ���� (������ ����� �����)
+- ������ �� ������ � �������� ����� ��� �������
+- �������� ��������� ���� �� ����� �������� ���� �������
+- �� ��� ���� ���� ����� ���� ������ ��������
+- ������ ��� �����
+---
+## Hotfix: Prompt Engineering for Actionable Recommendations
+**التاريخ:** 2026-07-03
+
+### المشكلة
+كانت توصيات Gemini العامة جداً وتكتفي بجمل تحفيزية (مثل "لا تيأس من درجتك 25%") دون تقديم موارد تعليمية حقيقية — قنوات يوتيوب، كتب، منصات تدريب.
+
+### الإصلاح
+إعادة كتابة الـ System Prompts الثلاثة (محرك التوصيات المشترك + مسار الطلب + مسار التلقائي القديم) لاستخدام صيغة إلزامية صارمة: "ممنوع منعاً باتاً الاكتفاء بالتشجيع العام" مع تحديد أقسام إجبارية: تحليل سريع، قنوات يوتيوب مقترحة، مراجع وكتب، منصات تدريب. مع تنسيق Markdown إلزامي وكلمات مفتاحية search-friendly بدلاً من URLs.
+
+### الملفات المعدلة
+| الملف | التغيير |
+|-------|---------|
+| src/lib/ai/recommendation-engine.ts | إعادة كتابة prompts Remedial و Enrichment بصيغة إلزامية مقسمة ومنظمة |
+| src/app/api/ai/recommendations/auto/route.ts | نفس التحديث للمسار التلقائي (احتياطي) |
+| src/app/api/ai/recommendations/request/route.ts | نفس التحديث لمسار الطلب المباشر |
+
+### النتيجة
+- الـ output سيحتوي دائماً على 4 أقسام منظمة: تحليل، قنوات يوتيوب، كتب ومراجع، منصات تدريب
+- تنسيق Markdown نظيف للعرض في الواجهة عبر ReactMarkdown
+- لا روابط معطلة — أسماء بحث واضحة بدلاً من URLs
+- البناء يمر بنجاح
+---
+## UX Refactoring: Centralized Toast Notifications (Sonner)
+**التاريخ:** 2026-07-03
+
+### المشكلة
+عند تنفيذ عمليات CRUD (تسجيل دخول، حفظ، حذف، إنشاء)، لم تكن هناك إشعارات Toast مرئية وأنيقة. كانت الأخطاء تظهر داخل النموذج أو كرسائل نصية مخفية في الـ UI.
+
+### الحل
+تركيب مكتبة sonner وإضافة <Toaster /> في الـ Root Layout مع تنسيق متوافق مع theme.md (زوايا مدورة 12px، ظل ناعم، ألوان غنية).
+
+### الملفات المعدلة
+
+#### 1. الـ Root Layout (src/app/layout.tsx)
+- إضافة import { Toaster } from \"sonner\" 
+- تضمين <Toaster position=\"top-center\" richColors closeButton> مع خيارات تنسيق متوافقة مع التصميم العام
+
+#### 2. تسجيل الدخول (src/app/login/page.tsx)
+- استبدال setError الداخلي بـ 	oast.loading → 	oast.success / 	oast.error
+- ترجمة رسائل الخطأ (Invalid login credentials → البريد الإلكتروني أو كلمة المرور غير صحيحة)
+- إزالة <div> عرض الخطأ اليدوي
+
+#### 3. إدارة المستخدمين - Tenant Admin (src/app/tenant-admin/users/users-client.tsx)
+- تعديل الدالة un() لاستخدام 	oast.loading و 	oast.success و 	oast.error
+- تعديل handleCsvUpload() لعرض toast لعملية الاستيراد (عدد الناجحين / الأخطاء)
+- إزالة <div> autoEnrollMsg اليدوي
+- إضافة رسائل نجاح مخصصة لكل عملية (إنشاء، تعليق، تفعيل، حذف، تعيين دور)
+
+#### 4. إدارة التذاكر - Academic Management (src/app/academic-management/tickets/tickets-admin-client.tsx)
+- إزالة error و success من الـ state بالكامل
+- استبدال setError/setSuccess بـ 	oast.success / 	oast.error في كل الدوال (handleStatusChange, handleAssign, handleSendReply, handleAddApprover, handleDecision)
+- إزالة <div> عرض الأخطاء والنجاح اليدوي
+
+#### 5. سجل الدرجات - Faculty (src/app/faculty/gradebook/gradebook-client.tsx)
+- إزالة error و saved من الـ state
+- استبدال setError بـ 	oast.error في loadEntries
+- إضافة 	oast.loading لـ handleInit و handleSaveAll و handlePublish
+- إزالة <div> عرض الخطأ اليدوي وعنصر "تم الحفظ بنجاح" النصي
+- جميع التغييرات غير محفوظة → handleDraftChange لم تعد تُعيد setSaved(false)
+
+#### 6. التوصيات الذكية - Student (src/app/student/recommendations/recommendations-client.tsx)
+- استبدال lert() بـ 	oast.loading(\"جاري استشارة الذكاء الاصطناعي...\") ثم 	oast.success / 	oast.error
+- إزالة lert في حالتي النجاح والفشل
+
+### ملاحظات فنية
+- جميع الـ Server Actions ترمي 	hrow new Error() عند الفشل — يتم التقاطها في try/catch بالـ Client
+- مكتبة sonner تقدم ichColors (أخضر للنجاح، أحمر للخطأ، أزرق للمعلومات) بشكل تلقائي
+- Toaster موحد في Root Layout وليس مكرراً في كل صفحة
+- 	oast.loading يتم dismiss قبل عرض النتيجة لضمان عدم ازدواج الإشعارات
+- البناء يمر بنجاح
+---
+## UX Refactoring: Toast Notifications for All CRUD Pages
+**التاريخ:** 2026-07-03
+
+### المشكلة
+جميع صفحات المنصة كانت تفتقر إلى إشعارات toast عند تنفيذ عمليات الإضافة والحذف والتعديل. كانت الأخطاء تظهر داخل الـ UI كرسائل نصية ثابتة، والنجاح لم يكن يظهر مطلقاً (يحدث فقط window.location.reload).
+
+### الحل
+تمت إضافة 	oast.loading → 	oast.success / 	oast.error في 27 ملف عميل عبر المنصة بأكملها.
+
+### الملفات المعدلة
+
+#### الدفعة الأولى (المعالجة يدوياً):
+| الملف | الوظائف المضافة إليها Toast |
+|-------|---------------------------|
+| src/app/faculty/assignments/assignments-client.tsx | إنشاء/نشر/إخفاء/حذف تكليف، تصحيح تسليم، طلب إعادة |
+| src/app/faculty/materials/materials-client.tsx | رفع/نشر/إخفاء/حذف مادة، حفظ/تقديم خطة |
+| src/app/faculty/attendance/attendance-client.tsx | إنشاء جلسة، إعادة فتح/إغلاق، تحديث حالة حضور |
+| src/app/student/assignments/assignments-client.tsx | رفع تسليم تكليف |
+
+#### الدفعة الثانية (عالية الأولوية — فيها reload):
+| الملف | الوظائف |
+|-------|---------|
+| src/app/faculty/circulars/circulars-client.tsx | إنشاء/نشر/حذف تعميم |
+| src/app/tenant-admin/venues/venues-client.tsx | إنشاء/تعديل/حذف قاعة |
+| src/app/tenant-admin/calendar/calendar-client.tsx | إنشاء/تحديث semester |
+| src/app/(shared)/profile/profile-client.tsx | تحديث ملف شخصي، كلمة مرور، صورة |
+
+#### الدفعة الثالثة (متوسطة — جميعها):
+| الملف | الوظائف |
+|-------|---------|
+| src/app/faculty/risk-zone/risk-zone-client.tsx | إرسال توصية |
+| src/app/student/tickets/tickets-client.tsx | إنشاء/إرسال/تقييم تذكرة |
+| src/app/student/register/register-client.tsx | تسجيل مادة |
+| src/app/student/messages/messages-client.tsx | إرسال رسالة |
+| src/app/student/unibot/unibot-client.tsx | إنهاء محادثة |
+| src/app/student/attendance/attendance-client.tsx | تسجيل حضور QR |
+| src/app/academic-management/enrollments/enrollments-client.tsx | تسجيل جماعي، تحديث حالة |
+| src/app/academic-management/schedules/schedules-client.tsx | إنشاء/تعديل/حذف جدول |
+| src/app/academic-management/circulars/circulars-client.tsx | إنشاء/نشر/حذف تعميم |
+| src/app/academic-management/analytics/analytics-client.tsx | حساب مخاطر، إرسال توصية |
+| src/app/tenant-admin/study-plans/study-plan-client.tsx | إضافة/إزالة مادة خطة، متطلب |
+| src/app/tenant-admin/departments/staff/staff-client.tsx | إضافة/إزالة/تعديل موظف |
+| src/app/tenant-admin/courses/catalog-client.tsx | إنشاء/تعديل/حذف مقرر |
+| src/app/tenant-admin/settings/settings-client.tsx | تحديث إعدادات الجامعة |
+| src/app/tenant-admin/knowledge/knowledge-client.tsx | رفع/حذف/تفعيل مستند |
+| src/app/tenant-admin/campuses/campuses-client.tsx | إنشاء/تعديل/حذف حرم |
+| src/app/tenant-admin/academic/academic-client.tsx | إنشاء/تعديل/حذف كلية/قسم/تخصص/مستوى |
+| src/app/faculty/messages/messages-client.tsx | إرسال رسالة |
+
+### النتيجة
+- كل عملية CRUD عبر المنصة تعرض الآن 	oast.loading("جاري تنفيذ العملية...") → 	oast.success / 	oast.error
+- جميع رسائل الخطأ بلغة عربية مفهومة
+- لا توجد رسائل خطأ/نجاح مكررة (تم إزالة الـ inline banners)
+- البناء يمر بنجاح (بدون تحذيرات)
+---
+## Feature: Official PDF Attendance & Dismissal Reports
+**التاريخ:** 2026-07-03
+
+### الوصف
+إضافة ميزة تصدير تقرير الحضور والحرمان الأكاديمي بصيغة PDF لأعضاء هيئة التدريس، لتقديمه للإدارة الأكاديمية في نهاية الفصل الدراسي.
+
+### المكتبات المثبتة
+- html2canvas — لتحويل قالب HTML إلى Canvas
+- jspdf — لإنشاء ملف PDF من Canvas
+
+### طريقة العمل
+1. زر "تصدير تقرير الحضور والحرمان (PDF)" يظهر في صفحة الحضور للمحاضر
+2. عند الضغط، يتم استدعاء server action جديدة getAttendanceReportData() تجلب:
+   - بيانات الجامعة (الاسم، الشعار)
+   - بيانات المادة (الرمز، الاسم)
+   - الفصل الدراسي الحالي
+   - ملخصات الحضور لكل طالب (ttendance_summaries)
+   - أسماء الطلاب وأرقامهم الجامعية
+3. يتم بناء قالب HTML كامل RTL مع جداول منسقة
+4. html2canvas يحول القالب إلى Canvas بدقة عالية (scale: 2)
+5. jspdf ينشئ PDF متعدد الصفحات مع دعم المحتوى الطويل
+
+### محتويات التقرير
+- **الترويسة:** شعار الجامعة، اسم الجامعة، عنوان "تقرير كشف الحضور والحرمان الأكاديمي"
+- **معلومات المادة:** الكود، الاسم، الفصل، تاريخ التقرير، إجمالي الجلسات، عدد الطلاب، عدد المحرومين
+- **الجدول 1 (الحضور العام):** #، اسم الطالب، الرقم الجامعي، إجمالي الجلسات، حاضر، غائب، معذور، % الغياب، حرمان
+- **الجدول 2 (المحرومون):** قائمة منفصلة بالطلاب الذين تجاوزوا حد الغياب (is_dismissed = true) بخلفية حمراء
+- **التوقيعات:** توقيع المحاضر + توقيع رئيس القسم مع تاريخ إنشاء التقرير
+
+### معالجة اللغة العربية (RTL)
+- القالب يبني HTML مباشر بخاصية direction:rtl
+- الخط المستخدم DejaVu Sans يدعم الأحرف العربية
+- جميع العناوين والمحتويات باللغة العربية
+
+### الملفات المنشأة
+| الملف | الوصف |
+|-------|-------|
+| src/app/faculty/attendance/attendance-report-template.tsx | قالب التقرير المخفي مع دالة useAttendanceReport() و generatePdf() |
+
+### الملفات المعدلة
+| الملف | التغيير |
+|-------|---------|
+| src/app/faculty/attendance/actions.ts | إضافة getAttendanceReportData() — تجلب جميع بيانات التقرير |
+| src/app/faculty/attendance/attendance-client.tsx | إضافة زر التصدير مع Toast notifications |
+| package.json | إضافة html2canvas و jspdf |
+
+### النتيجة
+- المحاضر يختار المادة → يضغط "تصدير تقرير الحضور والحرمان (PDF)" → يظهر Toast "جاري تجهيز التقرير..." → يتم تحميل PDF باسم تقرير_الحضور_كودالمادة_التاريخ.pdf
+- التقرير جاهز للتقديم للإدارة الأكاديمية
+- البناء يمر بنجاح
+---
+## Feature: Premium SaaS Landing Page
+**التاريخ:** 2026-07-03
+
+### الوصف
+إعادة تصميم الصفحة الرئيسية (/) بالكامل لتصبح صفحة هبوط عصرية بمستوى Vercel/Stripe تناسب منصة SaaS أكاديمية ذكية.
+
+### المكتبات المثبتة
+- ramer-motion — للأنيميشن، التمرير التفاعلي، تأثيرات الظهور
+
+### الأقسام
+1. **Navbar** — شفاف في أعلى الصفحة، يتحول إلى خلفية بيضاء مع blur عند التمرير. زر "تسجيل الدخول" وروابط "المميزات" و"كيف يعمل". قائمة جانبية للجوال.
+2. **Hero Section** — خلفية متدرجة (Royal Blue → داكن) مع دوائر متحركة وشبكة نقطية. عنوان رئيسي "مستقبل الإدارة الجامعية، مدعوماً بالذكاء الاصطناعي" مع نص فرعي. زرين CTA: "تسجيل الدخول" و"استكشف المميزات". أرقام إحصائية (+10 جامعة، +5,000 طالب، إلخ). كلها تظهر بحركة fade-up/slide-up.
+3. **Features Section (Bento Grid)** — شبكة 3 أعمدة بتصميم bento-box. 4 بطاقات بخلفية زجاجية (glassmorphism)، كل بطاقة لها تدرج لوني مميز وأيقونة lucide، تأثير hover يرفع البطاقة للأعلى مع زيادة الظل. بطاقة "العزل السحابي" عرضها ضعف الأخرى.
+4. **How it Works** — 3 خطوات بسيطة (تهيئة الجامعة → إدارة المقررات → تجربة الطالب الذكية) مع خط متصل بينها وأرقام دائرية.
+5. **Footer** — شعار UniBot، روابط سريعة، حقوق النشر.
+
+### التوافق مع Theme.md
+- الألوان الأساسية: Royal Blue #00539C (أزرار، تذييلات، تدرجات) و Peach #EEA47F (إضاءات، أيقونات AI، شارة)
+- الخط Inter (موروث من layout.tsx)
+- زوايا مدورة 12px/16px، ظلال ناعمة
+- دعم كامل للـ RTL (阿拉伯语)
+- يتكيف مع Dark Mode عبر ThemeProvider الموجود مسبقاً
+
+### الملفات
+| الملف | التغيير |
+|-------|---------|
+| src/app/page.tsx | إعادة كتابة كاملة (من 65 سطر → 380+ سطر) |
+| package.json | إضافة framer-motion |
+
+### النتيجة
+- صفحة هبوط احترافية تنافس منصات SaaS عالمية
+- أنيميشن سلس عند التمرير
+- تجربة مستخدم غامرة من اللحظة الأولى
+- البناء يمر بنجاح

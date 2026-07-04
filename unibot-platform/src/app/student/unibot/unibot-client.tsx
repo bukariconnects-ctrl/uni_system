@@ -21,6 +21,7 @@ import {
   Mic,
   Volume2,
 } from "lucide-react";
+import { toast } from "sonner";
 import type { ChatbotConversation } from "@/lib/types/database";
 import { getConversationMessages, endConversation } from "./actions";
 
@@ -325,11 +326,17 @@ export function UnibotClient({
   }
 
   async function handleEndConversation(convId: string) {
-    await endConversation(convId);
-    setConversations((prev) => prev.filter((c) => c.id !== convId));
-    if (activeConvId === convId) {
-      setActiveConvId(null);
-      setMessages([]);
+    try {
+      await endConversation(convId);
+      setConversations((prev) => prev.filter((c) => c.id !== convId));
+      if (activeConvId === convId) {
+        setActiveConvId(null);
+        setMessages([]);
+      }
+      toast.success("تم إنهاء المحادثة");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
     }
   }
 

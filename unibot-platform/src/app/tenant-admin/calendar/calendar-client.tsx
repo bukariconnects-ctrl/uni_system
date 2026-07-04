@@ -15,6 +15,7 @@ import {
   Archive,
   Clock,
 } from "lucide-react";
+import { toast } from "sonner";
 import type { Semester, SemesterStatus } from "@/lib/types/database";
 
 const SEMESTER_TYPES = [
@@ -43,13 +44,18 @@ export function CalendarClient({
 
   async function handleCreate(formData: FormData) {
     setLoading(true);
-    setError("");
+    const loadingToast = toast.loading("جاري إنشاء الفصل...");
     try {
       await createSemester(formData);
       setShowForm(false);
+      toast.dismiss(loadingToast);
+      toast.success("تم إنشاء الفصل الدراسي");
       window.location.reload();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -57,13 +63,18 @@ export function CalendarClient({
 
   async function handleUpdate(id: string, formData: FormData) {
     setLoading(true);
-    setError("");
+    const loadingToast = toast.loading("جاري تحديث الفصل...");
     try {
       await updateSemester(id, formData);
       setEditingId(null);
+      toast.dismiss(loadingToast);
+      toast.success("تم تحديث الفصل الدراسي");
       window.location.reload();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -81,12 +92,22 @@ export function CalendarClient({
     };
     if (!confirm(messages[status])) return;
     setLoading(true);
-    setError("");
+    const loadingToast = toast.loading("جاري تغيير الحالة...");
     try {
       await updateSemesterStatus(id, status);
+      toast.dismiss(loadingToast);
+      const statusLabels: Record<string, string> = {
+        active: "تم تفعيل الفصل الدراسي",
+        archived: "تم أرشفة الفصل الدراسي",
+        planning: "تم إرجاع الفصل للتخطيط",
+      };
+      toast.success(statusLabels[status]);
       window.location.reload();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -94,12 +115,6 @@ export function CalendarClient({
 
   return (
     <div className="space-y-6">
-      {error && (
-        <div className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
-          {error}
-        </div>
-      )}
-
       <div className="flex justify-end">
         <button
           onClick={() => setShowForm(!showForm)}

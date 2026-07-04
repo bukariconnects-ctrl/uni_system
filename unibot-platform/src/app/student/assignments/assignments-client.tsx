@@ -13,6 +13,7 @@ import {
   Download,
   Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   submitted: { label: "مُسلَّم", color: "bg-action-blue/20 text-action-blue" },
@@ -38,12 +39,18 @@ export function StudentAssignmentsClient({
   async function handleSubmit(fd: FormData) {
     setLoading(true);
     setError("");
+    const loadingToast = toast.loading("جاري رفع التسليم...");
     try {
       await submitAssignment(fd);
+      toast.dismiss(loadingToast);
+      toast.success("تم تسليم التكليف بنجاح");
       setSubmitId(null);
       window.location.reload();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -51,10 +58,6 @@ export function StudentAssignmentsClient({
 
   return (
     <div className="space-y-4">
-      {error && (
-        <div className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">{error}</div>
-      )}
-
       {assignments.length === 0 && (
         <div className="rounded-2xl border border-dashed border-border bg-card-bg p-12 text-center">
           <FileText className="mx-auto mb-3 h-10 w-10 text-text-secondary" />

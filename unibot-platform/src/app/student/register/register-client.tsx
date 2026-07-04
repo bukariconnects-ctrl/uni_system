@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { toast } from "sonner";
 
 /* ──────────── Types ──────────── */
 
@@ -82,7 +83,6 @@ export function RegisterClient({
   courses: CourseRow[];
 }) {
   const [enrolling, setEnrolling] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [prereqStatus, setPrereqStatus] = useState<
     Record<
@@ -130,16 +130,19 @@ export function RegisterClient({
   async function handleEnroll(courseId: string) {
     setEnrolling(courseId);
     setErrors((prev) => ({ ...prev, [courseId]: "" }));
-    setSuccess(null);
+    const loadingToast = toast.loading("جاري التسجيل...");
     try {
       await selfEnroll(courseId);
-      setSuccess("تم تسجيلك بنجاح");
-      // Refresh page after a short delay to show updated state
+      toast.dismiss(loadingToast);
+      toast.success("تم تسجيلك بنجاح");
       setTimeout(() => window.location.reload(), 1000);
     } catch (e: unknown) {
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ غير متوقع";
+      toast.error(msg);
       setErrors((prev) => ({
         ...prev,
-        [courseId]: e instanceof Error ? e.message : "حدث خطأ غير متوقع",
+        [courseId]: msg,
       }));
     } finally {
       setEnrolling(null);
@@ -154,13 +157,6 @@ export function RegisterClient({
     <div className="space-y-6">
       {/* Semester Banner */}
       <SemesterBanner semester={semester} />
-
-      {success && (
-        <div className="flex items-center gap-3 rounded-xl border border-success/30 bg-success/10 px-4 py-3">
-          <CheckCircle className="h-5 w-5 text-success" />
-          <p className="text-sm text-success">{success}</p>
-        </div>
-      )}
 
       {/* Courses */}
       <div className="space-y-4">

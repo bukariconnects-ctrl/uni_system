@@ -25,6 +25,7 @@ import {
   Download,
   Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   submitted: { label: "مُسلَّم", color: "bg-action-blue/20 text-action-blue" },
@@ -55,15 +56,21 @@ export function AssignmentsClient({
     ? courseGroups.filter((g: any) => g.course_id === selectedCourseId)
     : [];
 
-  async function handleAction(action: () => Promise<void>) {
+  async function handleAction(action: () => Promise<void>, successMsg?: string) {
     setLoading(true);
     setError("");
+    const loadingToast = toast.loading("جاري تنفيذ العملية...");
     try {
       await action();
+      toast.dismiss(loadingToast);
+      toast.success(successMsg || "تمت العملية بنجاح");
       setShowForm(false);
       window.location.reload();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -80,7 +87,7 @@ export function AssignmentsClient({
       setSubmissions(data);
       setExpandedId(assignmentId);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.error(e instanceof Error ? e.message : "حدث خطأ");
     } finally {
       setLoading(false);
     }
@@ -88,10 +95,6 @@ export function AssignmentsClient({
 
   return (
     <div className="space-y-4">
-      {error && (
-        <div className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">{error}</div>
-      )}
-
       <div className="flex justify-end">
         <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 rounded-lg bg-action-blue px-4 py-2.5 text-sm font-medium text-white hover:bg-action-blue/90">
           <Plus className="h-4 w-4" />
@@ -105,7 +108,7 @@ export function AssignmentsClient({
             <h3 className="text-lg font-bold text-text-primary">إنشاء تكليف</h3>
             <button onClick={() => setShowForm(false)} className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg"><X className="h-5 w-5" /></button>
           </div>
-          <form action={(fd) => handleAction(() => createAssignment(fd))} className="grid gap-4 sm:grid-cols-2">
+          <form action={(fd) => handleAction(() => createAssignment(fd), "تم إنشاء التكليف")} className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-text-primary">المقرر</label>
               <select
@@ -235,13 +238,13 @@ export function AssignmentsClient({
                   {loading && expandedId !== assignment.id ? <Loader2 className="h-4 w-4 animate-spin" /> : isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                 </button>
                 <button
-                  onClick={() => handleAction(() => toggleAssignmentPublish(assignment.id, !assignment.is_published))}
+                  onClick={() => handleAction(() => toggleAssignmentPublish(assignment.id, !assignment.is_published), assignment.is_published ? "تم إخفاء التكليف" : "تم نشر التكليف")}
                   className={`rounded-lg p-1.5 ${assignment.is_published ? "text-success hover:bg-success/10" : "text-text-secondary hover:bg-app-bg"}`}
                 >
                   {assignment.is_published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                 </button>
                 <button
-                  onClick={() => { if (confirm("حذف هذا التكليف؟")) handleAction(() => deleteAssignment(assignment.id)); }}
+                  onClick={() => { if (confirm("حذف هذا التكليف؟")) handleAction(() => deleteAssignment(assignment.id), "تم حذف التكليف"); }}
                   className="rounded-lg p-1.5 text-text-secondary hover:bg-danger/10 hover:text-danger"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -297,7 +300,7 @@ export function AssignmentsClient({
                                 </button>
                               )}
                               {sub.status !== "resubmit_requested" && sub.status !== "graded" && (
-                                <button onClick={() => handleAction(() => requestResubmission(sub.id))} className="rounded-lg p-1.5 text-text-secondary hover:bg-warning/10 hover:text-warning" title="طلب إعادة تسليم">
+                                <button onClick={() => handleAction(() => requestResubmission(sub.id), "تم طلب إعادة التسليم")} className="rounded-lg p-1.5 text-text-secondary hover:bg-warning/10 hover:text-warning" title="طلب إعادة تسليم">
                                   <RotateCcw className="h-4 w-4" />
                                 </button>
                               )}
@@ -307,7 +310,7 @@ export function AssignmentsClient({
                             <p className="mt-2 rounded-lg bg-app-bg p-2 text-xs text-text-secondary">{sub.text_content}</p>
                           )}
                           {gradingId === sub.id && (
-                            <form action={(fd) => handleAction(() => gradeSubmission(sub.id, fd))} className="mt-3 flex items-end gap-3 border-t border-border pt-3">
+                            <form action={(fd) => handleAction(() => gradeSubmission(sub.id, fd), "تم تصحيح التسليم")} className="mt-3 flex items-end gap-3 border-t border-border pt-3">
                               <div className="flex-1">
                                 <label className="mb-1 block text-xs font-medium text-text-primary">الدرجة (من {assignment.max_grade})</label>
                                 <input type="number" name="grade" min={0} max={assignment.max_grade} step={0.5} required defaultValue={sub.grade ?? ""} className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue" dir="ltr" />

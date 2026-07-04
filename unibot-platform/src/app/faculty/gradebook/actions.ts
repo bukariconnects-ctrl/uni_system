@@ -1,8 +1,9 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
+import { generateAutoRecommendation } from "@/lib/ai/recommendation-engine";
 
 export async function getGradebookEntries(courseId: string) {
   await requireRole(["faculty"]);
@@ -88,7 +89,7 @@ export async function saveGradeValues(
   midterm: number | null,
   final: number | null
 ) {
-  await requireRole(["faculty"]);
+  const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
   const updates: Record<string, number | null> = {};
@@ -104,6 +105,30 @@ export async function saveGradeValues(
     .eq("id", entryId);
 
   if (error) throw new Error(error.message);
+
+  // Trigger auto-recommendation in background
+  const { data: entry } = await supabase
+    .from("gradebook_entries")
+    .select("id, student_id, course_id, total_grade, courses!inner(name)")
+    .eq("id", entryId)
+    .single();
+
+  if (entry && entry.total_grade !== null && entry.student_id && entry.course_id) {
+    const courseName = Array.isArray(entry.courses)
+      ? entry.courses[0]?.name
+      : (entry.courses as any)?.name;
+    if (courseName) {
+      void generateAutoRecommendation({
+        studentId: entry.student_id,
+        courseId: entry.course_id,
+        courseName,
+        grade: entry.total_grade,
+        maxGrade: 100,
+        tenantId: profile.tenant_id!,
+      });
+    }
+  }
+
   revalidatePath("/faculty/gradebook");
 }
 

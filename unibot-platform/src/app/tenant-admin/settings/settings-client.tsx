@@ -7,6 +7,7 @@ import {
   updateAbsenceThreshold,
 } from "./actions";
 import { Palette, Globe, ShieldAlert } from "lucide-react";
+import { toast } from "sonner";
 import type { Tenant } from "@/lib/types/database";
 
 const TIMEZONES = [
@@ -26,7 +27,6 @@ const LANGUAGES = [
 
 export function SettingsClient({ tenant }: { tenant: Tenant }) {
   const [loading, setLoading] = useState("");
-  const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
   async function handleAction(
@@ -35,14 +35,16 @@ export function SettingsClient({ tenant }: { tenant: Tenant }) {
     formData: FormData
   ) {
     setLoading(actionName);
-    setError("");
-    setSuccess("");
+    const loadingToast = toast.loading("جاري الحفظ...");
     try {
       await action(formData);
-      setSuccess(actionName);
-      setTimeout(() => setSuccess(""), 3000);
+      toast.dismiss(loadingToast);
+      toast.success("تم الحفظ بنجاح");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading("");
     }
@@ -50,12 +52,6 @@ export function SettingsClient({ tenant }: { tenant: Tenant }) {
 
   return (
     <div className="space-y-6">
-      {error && (
-        <div className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
-          {error}
-        </div>
-      )}
-
       <div className="rounded-2xl border border-border bg-card-bg p-6 shadow-sm">
         <div className="mb-5 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-action-blue/20">
@@ -145,7 +141,6 @@ export function SettingsClient({ tenant }: { tenant: Tenant }) {
           <div className="sm:col-span-2">
             <SubmitButton
               loading={loading === "branding"}
-              success={success === "branding"}
             />
           </div>
         </form>
@@ -207,7 +202,6 @@ export function SettingsClient({ tenant }: { tenant: Tenant }) {
           <div className="sm:col-span-2">
             <SubmitButton
               loading={loading === "localization"}
-              success={success === "localization"}
             />
           </div>
         </form>
@@ -252,7 +246,6 @@ export function SettingsClient({ tenant }: { tenant: Tenant }) {
           </div>
           <SubmitButton
             loading={loading === "absence"}
-            success={success === "absence"}
           />
         </form>
       </div>
@@ -262,22 +255,16 @@ export function SettingsClient({ tenant }: { tenant: Tenant }) {
 
 function SubmitButton({
   loading,
-  success,
 }: {
   loading: boolean;
-  success: boolean;
 }) {
   return (
     <button
       type="submit"
       disabled={loading}
-      className={`rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 ${
-        success
-          ? "bg-success hover:bg-success/90"
-          : "bg-action-blue hover:bg-action-blue/90"
-      }`}
+      className="rounded-lg bg-action-blue px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-action-blue/90 disabled:opacity-50"
     >
-      {loading ? "جاري الحفظ..." : success ? "تم الحفظ ✓" : "حفظ التغييرات"}
+      {loading ? "جاري الحفظ..." : "حفظ التغييرات"}
     </button>
   );
 }

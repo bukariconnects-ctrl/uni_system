@@ -37,6 +37,7 @@ import {
   Hash,
   BookOpen,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface StudentMajorLink {
   major_id: string;
@@ -198,31 +199,33 @@ export function UsersClient({
     setImportResult(null);
   };
 
-  async function run(action: () => Promise<any>) {
+  async function run(action: () => Promise<any>, successMessage?: string) {
     setLoading(true);
     setError("");
     setAutoEnrollMsg(null);
+    const loadingToast = toast.loading("جاري تنفيذ العملية...");
     try {
       const result = await action();
-      closeModal();
+      toast.dismiss(loadingToast);
       if (result?.autoEnrollment) {
         const ae = result.autoEnrollment;
         if (ae.warning) {
-          setAutoEnrollMsg(`⚠️ ${ae.warning}`);
+          toast.success(`✅ تم إنشاء المستخدم\n${ae.warning}`);
         } else if (ae.enrolled > 0) {
-          setAutoEnrollMsg(`✅ تم تسجيل الطالب آلياً في ${ae.enrolled} من ${ae.total} مادة في "${ae.semesterName}"`);
+          toast.success(`تم تسجيل الطالب في ${ae.enrolled} من ${ae.total} مادة`);
         } else {
-          setAutoEnrollMsg(`ℹ️ لم يتم تسجيل أي مادة تلقائياً`);
+          toast.success("تم إنشاء المستخدم بنجاح");
         }
-      }
-      // Show auto-enrollment message briefly before reload
-      if (result?.autoEnrollment) {
         setTimeout(() => window.location.reload(), 2500);
       } else {
+        toast.success(successMessage || "تمت العملية بنجاح");
         window.location.reload();
       }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ غير متوقع");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ غير متوقع";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -250,19 +253,32 @@ export function UsersClient({
     setLoading(true);
     setError("");
     setImportResult(null);
+    const loadingToast = toast.loading("جاري استيراد المستخدمين...");
     try {
       const text = await file.text();
       const rows = parseCsv(text);
       if (rows.length === 0) {
+        toast.dismiss(loadingToast);
+        toast.error("الملف فارغ أو لا يحتوي على بيانات صالحة");
         setError("الملف فارغ أو لا يحتوي على بيانات صالحة");
         setLoading(false);
         return;
       }
       const result = await bulkImportUsers(rows as never);
+      toast.dismiss(loadingToast);
       setImportResult(result);
+      if (result.success > 0) {
+        toast.success(`تم استيراد ${result.success} مستخدم بنجاح`);
+      }
+      if (result.errors.length > 0) {
+        toast.error(`${result.errors.length} أخطاء أثناء الاستيراد`);
+      }
       if (fileRef.current) fileRef.current.value = "";
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ أثناء الاستيراد");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ أثناء الاستيراد";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -298,11 +314,6 @@ export function UsersClient({
 
   return (
     <div className="space-y-5">
-      {autoEnrollMsg && (
-        <div className="fixed left-1/2 top-4 z-[100] w-full max-w-md -translate-x-1/2 rounded-2xl border border-border bg-card-bg px-5 py-4 text-sm font-medium text-text-primary shadow-2xl text-center">
-          {autoEnrollMsg}
-        </div>
-      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <StatBadge icon={<Users className="h-4 w-4" />} label="مستخدمين" count={counts.all} color="blue" />
@@ -470,7 +481,7 @@ export function UsersClient({
                         {/* Suspend / Activate */}
                         {user.account_status === "active" && user.role !== "tenant_admin" && (
                           <button
-                            onClick={() => run(() => updateUserStatus(user.id, "suspended"))}
+                            onClick={() => run(() => updateUserStatus(user.id, "suspended"), "تم تعليق المستخدم")}
                             className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-warning/10 hover:text-warning"
                             title="تعليق"
                           >
@@ -479,7 +490,7 @@ export function UsersClient({
                         )}
                         {user.account_status === "suspended" && (
                           <button
-                            onClick={() => run(() => updateUserStatus(user.id, "active"))}
+                            onClick={() => run(() => updateUserStatus(user.id, "active"), "تم إعادة تفعيل المستخدم")}
                             className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-success/10 hover:text-success"
                             title="إعادة تفعيل"
                           >
@@ -491,7 +502,7 @@ export function UsersClient({
                           <button
                             onClick={() => {
                               if (confirm(`هل أنت متأكد من حذف المستخدم "${user.first_name} ${user.last_name}"؟ لا يمكن التراجع عن هذا الإجراء.`))
-                                run(() => deleteUser(user.id));
+                                run(() => deleteUser(user.id), "تم حذف المستخدم");
                             }}
                             className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-danger/10 hover:text-danger"
                             title="حذف"
@@ -543,7 +554,7 @@ export function UsersClient({
                     </div>
                   </div>
                   <button
-                    onClick={() => { if (confirm("حذف هذا الدور؟")) run(() => deleteCustomRole(role.id)); }}
+                    onClick={() => { if (confirm("حذف هذا الدور؟")) run(() => deleteCustomRole(role.id), "تم حذف الدور"); }}
                     className="rounded-lg p-1 text-text-secondary hover:bg-danger/10 hover:text-danger"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -557,7 +568,7 @@ export function UsersClient({
                     <span key={pcr.profile_id} className="flex items-center gap-1 rounded-full bg-app-bg px-2 py-0.5 text-xs">
                       {pcr.profiles?.first_name} {pcr.profiles?.last_name}
                       <button
-                        onClick={() => run(() => removeCustomRoleAssignment(pcr.profile_id, role.id))}
+                        onClick={() => run(() => removeCustomRoleAssignment(pcr.profile_id, role.id), "تم إلغاء تعيين الدور")}
                         className="text-text-secondary hover:text-danger"
                       >
                         <X className="h-3 w-3" />
@@ -608,7 +619,7 @@ export function UsersClient({
           loading={loading}
           error={error}
           onClose={closeModal}
-          onSubmit={(fd) => run(() => createCustomRole(fd))}
+          onSubmit={(fd) => run(() => createCustomRole(fd), "تم إنشاء الدور")}
         />
       )}
 
@@ -620,7 +631,7 @@ export function UsersClient({
           loading={loading}
           error={error}
           onClose={closeModal}
-          onSubmit={(fd) => run(() => assignCustomRole(fd))}
+          onSubmit={(fd) => run(() => assignCustomRole(fd), "تم تعيين الدور")}
         />
       )}
 
@@ -640,7 +651,7 @@ export function UsersClient({
           loading={loading}
           error={error}
           onClose={closeModal}
-          onSubmit={(fd) => run(() => updateUser(modal.user.id, fd))}
+          onSubmit={(fd) => run(() => updateUser(modal.user.id, fd), "تم تحديث المستخدم")}
         />
       )}
     </div>

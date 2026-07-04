@@ -16,6 +16,7 @@ import {
   Save,
   CheckCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 
 const ROLE_LABELS: Record<string, string> = {
   super_admin: "مدير النظام",
@@ -78,7 +79,6 @@ export function ProfileClient({
   tenantName: string | null;
 }) {
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const [avatarPreview, setAvatarPreview] = useState(profile.avatar_url || "");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -86,14 +86,17 @@ export function ProfileClient({
   async function handleProfileUpdate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setSuccess("");
+    const loadingToast = toast.loading("جاري حفظ البيانات...");
     try {
       const fd = new FormData(e.currentTarget);
       await updateProfile(fd);
-      setSuccess("تم تحديث البيانات بنجاح");
+      toast.dismiss(loadingToast);
+      toast.success("تم تحديث البيانات بنجاح");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = err instanceof Error ? err.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -102,15 +105,18 @@ export function ProfileClient({
   async function handlePasswordUpdate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setSuccess("");
+    const loadingToast = toast.loading("جاري تغيير كلمة المرور...");
     try {
       const fd = new FormData(e.currentTarget);
       await updatePassword(fd);
-      setSuccess("تم تغيير كلمة المرور بنجاح");
+      toast.dismiss(loadingToast);
+      toast.success("تم تغيير كلمة المرور بنجاح");
       e.currentTarget.reset();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = err instanceof Error ? err.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -121,8 +127,7 @@ export function ProfileClient({
     if (!file) return;
 
     setLoading(true);
-    setError("");
-    setSuccess("");
+    const loadingToast = toast.loading("جاري رفع الصورة...");
 
     try {
       const webpBlob = await compressToWebp(file, 0.5);
@@ -133,9 +138,13 @@ export function ProfileClient({
 
       const newUrl = await uploadAvatar(fd);
       setAvatarPreview(newUrl);
-      setSuccess("تم تحديث الصورة بنجاح");
+      toast.dismiss(loadingToast);
+      toast.success("تم تحديث الصورة بنجاح");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "فشل رفع الصورة");
+      toast.dismiss(loadingToast);
+      const msg = err instanceof Error ? err.message : "فشل رفع الصورة";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -143,15 +152,7 @@ export function ProfileClient({
 
   return (
     <div className="space-y-6">
-      {error && (
-        <div className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">{error}</div>
-      )}
-      {success && (
-        <div className="flex items-center gap-2 rounded-xl bg-success/10 px-4 py-3 text-sm text-success">
-          <CheckCircle className="h-4 w-4" />
-          {success}
-        </div>
-      )}
+
 
       <div className="rounded-2xl border border-border bg-card-bg p-6 shadow-sm">
         <div className="flex items-center gap-6">

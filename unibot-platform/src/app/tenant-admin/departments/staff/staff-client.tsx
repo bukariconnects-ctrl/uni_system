@@ -22,6 +22,7 @@ import {
   Shield,
   Search,
 } from "lucide-react";
+import { toast } from "sonner";
 
 const ROLE_OPTIONS = [
   { value: "head_of_department", label: "رئيس قسم", color: "purple" },
@@ -74,22 +75,20 @@ export function DepartmentsStaffClient({ departments, initialStaffByDept }: Prop
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   const selectDepartment = useCallback(async (dept: DeptData) => {
     setSelectedDept(dept);
-    setError("");
-    setSuccess("");
     setShowAddForm(false);
-    // Load staff for this department
     setLoading(true);
     try {
       const data = await getDepartmentStaff(dept.id);
       setStaff(data as unknown as StaffMember[]);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
       setStaff([]);
     } finally {
       setLoading(false);
@@ -100,16 +99,19 @@ export function DepartmentsStaffClient({ departments, initialStaffByDept }: Prop
     if (!selectedDept) return;
     formData.set("department_id", selectedDept.id);
     setLoading(true);
-    setError("");
-    setSuccess("");
+    const loadingToast = toast.loading("جاري إضافة الموظف...");
     try {
       await addStaffMember(formData);
-      setSuccess("تمت إضافة الموظف بنجاح");
       setShowAddForm(false);
       const data = await getDepartmentStaff(selectedDept.id);
       setStaff(data as unknown as StaffMember[]);
+      toast.dismiss(loadingToast);
+      toast.success("تمت إضافة الموظف بنجاح");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -117,28 +119,36 @@ export function DepartmentsStaffClient({ departments, initialStaffByDept }: Prop
 
   async function handleRemove(id: string) {
     setLoading(true);
-    setError("");
+    const loadingToast = toast.loading("جاري إزالة الموظف...");
     try {
       await removeStaffMember(id);
       setStaff((prev) => prev.filter((s) => s.id !== id));
-      setSuccess("تمت إزالة الموظف بنجاح");
+      toast.dismiss(loadingToast);
+      toast.success("تمت إزالة الموظف بنجاح");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
   }
 
   async function handleToggle(id: string, currentActive: boolean) {
-    setError("");
-    setSuccess("");
+    const loadingToast = toast.loading("جاري تغيير الحالة...");
     try {
       await toggleStaffStatus(id, !currentActive);
       setStaff((prev) =>
         prev.map((s) => (s.id === id ? { ...s, is_active: !currentActive } : s))
       );
+      toast.dismiss(loadingToast);
+      toast.success(currentActive ? "تم تعطيل الموظف" : "تم تفعيل الموظف");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     }
   }
 
@@ -245,20 +255,6 @@ export function DepartmentsStaffClient({ departments, initialStaffByDept }: Prop
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {/* Notifications */}
-              {error && (
-                <div className="flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
-                  <AlertTriangle className="h-4 w-4 shrink-0" />
-                  {error}
-                </div>
-              )}
-              {success && (
-                <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">
-                  <CheckCircle className="h-4 w-4 shrink-0" />
-                  {success}
-                </div>
-              )}
-
               {/* Add Form */}
               {showAddForm && (
                 <AvailableProfilesForm

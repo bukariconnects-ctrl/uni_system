@@ -22,6 +22,7 @@ import {
   Clock,
   Check,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface LevelNode {
   id: string;
@@ -111,18 +112,17 @@ export function StudyPlanClient({
         setPlanCourses(pc);
         setPrerequisites(pr);
       })
-      .catch((e) => setError(e.message))
+      .catch((e) => { const msg = e.message; toast.error(msg); setError(msg); })
       .finally(() => setFetching(false));
   }, [selectedMajor]);
 
   const closeModal = () => {
     setModal(null);
-    setError("");
   };
 
-  async function run(action: () => Promise<void>) {
+  async function run(action: () => Promise<void>, successMsg?: string) {
     setLoading(true);
-    setError("");
+    const loadingToast = toast.loading("جاري تنفيذ العملية...");
     try {
       await action();
       closeModal();
@@ -132,8 +132,13 @@ export function StudyPlanClient({
       ]);
       setPlanCourses(pc);
       setPrerequisites(pr);
+      toast.dismiss(loadingToast);
+      toast.success(successMsg || "تمت العملية بنجاح");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ غير متوقع");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ غير متوقع";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -141,12 +146,12 @@ export function StudyPlanClient({
 
   async function handleRemoveCourse(id: string) {
     if (!confirm("هل أنت متأكد من حذف هذا المقرر من الخطة؟")) return;
-    await run(() => removeStudyPlanCourse(id));
+    await run(() => removeStudyPlanCourse(id), "تم حذف المقرر من الخطة");
   }
 
   async function handleRemovePrereq(id: string) {
     if (!confirm("هل أنت متأكد من حذف هذا المتطلب؟")) return;
-    await run(() => removePrerequisite(id));
+    await run(() => removePrerequisite(id), "تم حذف المتطلب");
   }
 
   function getCellCourses(levelId: string, semester: string) {
@@ -218,10 +223,6 @@ export function StudyPlanClient({
           </div>
         )}
       </div>
-
-      {error && (
-        <div className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">{error}</div>
-      )}
 
       {!selectedMajor && (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card-bg py-20 text-center">
@@ -345,7 +346,7 @@ export function StudyPlanClient({
           loading={loading}
           error={error}
           onClose={closeModal}
-          onSubmit={(fd) => run(() => addStudyPlanCourse(fd))}
+          onSubmit={(fd) => run(() => addStudyPlanCourse(fd), "تمت إضافة المقرر")}
         />
       )}
 
@@ -360,7 +361,7 @@ export function StudyPlanClient({
           loading={loading}
           error={error}
           onClose={closeModal}
-          onSubmit={(fd) => run(() => addPrerequisite(fd))}
+          onSubmit={(fd) => run(() => addPrerequisite(fd), "تمت إضافة المتطلب")}
         />
       )}
     </div>

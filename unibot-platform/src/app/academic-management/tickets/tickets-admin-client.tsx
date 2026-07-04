@@ -27,6 +27,7 @@ import {
   createApprovalWorkflow,
   decideApproval,
 } from "./actions";
+import { toast } from "sonner";
 
 const statusConfig: Record<
   TicketStatus,
@@ -100,8 +101,6 @@ export function TicketsAdminClient({
   } | null>(null);
   const [replyText, setReplyText] = useState("");
   const [isInternal, setIsInternal] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const filtered =
     filter === "all" ? tickets : tickets.filter((t) => t.status === filter);
@@ -129,49 +128,45 @@ export function TicketsAdminClient({
   }
 
   async function handleStatusChange(ticketId: string, newStatus: TicketStatus) {
-    setError("");
     try {
       await updateTicketStatus(ticketId, newStatus);
-      setSuccess("تم تحديث الحالة");
+      toast.success("تم تحديث الحالة");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ");
+      toast.error(e instanceof Error ? e.message : "خطأ");
     }
   }
 
   async function handleAssign(ticketId: string, assigneeId: string) {
-    setError("");
     try {
       await assignTicket(ticketId, assigneeId);
-      setSuccess("تم تعيين التذكرة");
+      toast.success("تم تعيين التذكرة");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ");
+      toast.error(e instanceof Error ? e.message : "خطأ");
     }
   }
 
   async function handleSendReply(ticketId: string) {
     if (!replyText.trim()) return;
-    setError("");
     try {
       await sendAdminTicketMessage(ticketId, replyText.trim(), isInternal);
       setReplyText("");
       const data = await getTicketDetail(ticketId);
       setDetail({ messages: data.messages, workflows: data.workflows });
-      setSuccess("تم إرسال الرد");
+      toast.success("تم إرسال الرد");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ");
+      toast.error(e instanceof Error ? e.message : "خطأ");
     }
   }
 
   async function handleAddApprover(ticketId: string, approverId: string) {
-    setError("");
     try {
       const currentSteps = detail?.workflows?.length || 0;
       await createApprovalWorkflow(ticketId, approverId, currentSteps + 1);
       const data = await getTicketDetail(ticketId);
       setDetail({ messages: data.messages, workflows: data.workflows });
-      setSuccess("تمت إضافة مسار الموافقة");
+      toast.success("تمت إضافة مسار الموافقة");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ");
+      toast.error(e instanceof Error ? e.message : "خطأ");
     }
   }
 
@@ -180,14 +175,13 @@ export function TicketsAdminClient({
     decision: "approved" | "rejected",
     ticketId: string
   ) {
-    setError("");
     try {
       await decideApproval(workflowId, decision, "");
       const data = await getTicketDetail(ticketId);
       setDetail({ messages: data.messages, workflows: data.workflows });
-      setSuccess(decision === "approved" ? "تمت الموافقة" : "تم الرفض");
+      toast.success(decision === "approved" ? "تمت الموافقة" : "تم الرفض");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ");
+      toast.error(e instanceof Error ? e.message : "خطأ");
     }
   }
 
@@ -199,17 +193,6 @@ export function TicketsAdminClient({
           معالجة وتعيين ومتابعة التذاكر الأكاديمية
         </p>
       </div>
-
-      {error && (
-        <div className="rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="rounded-lg border border-success/30 bg-success/10 p-3 text-sm text-success">
-          {success}
-        </div>
-      )}
 
       <div className="grid grid-cols-4 gap-4">
         <div className="rounded-2xl border border-border bg-card-bg p-4">

@@ -25,6 +25,7 @@ import {
   Send,
   ChevronDown,
 } from "lucide-react";
+import { toast } from "sonner";
 
 const CONTENT_TYPES = [
   { value: "pdf", label: "PDF", icon: FileText },
@@ -98,16 +99,22 @@ export function MaterialsClient({
     return acc;
   }, {});
 
-  async function handleAction(action: () => Promise<void>) {
+  async function handleAction(action: () => Promise<void>, successMsg?: string) {
     setLoading(true);
     setError("");
+    const loadingToast = toast.loading("جاري تنفيذ العملية...");
     try {
       await action();
+      toast.dismiss(loadingToast);
+      toast.success(successMsg || "تمت العملية بنجاح");
       setShowUpload(false);
       setShowSyllabus(false);
       window.location.reload();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -115,10 +122,6 @@ export function MaterialsClient({
 
   return (
     <div className="space-y-4">
-      {error && (
-        <div className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">{error}</div>
-      )}
-
       <div className="flex gap-1 rounded-xl bg-app-bg p-1">
         <button
           onClick={() => changeTab("materials")}
@@ -167,7 +170,7 @@ export function MaterialsClient({
                 <button onClick={() => setShowUpload(false)} className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg"><X className="h-5 w-5" /></button>
               </div>
               <form
-                action={(fd) => handleAction(() => uploadMaterial(fd))}
+                action={(fd) => handleAction(() => uploadMaterial(fd), "تم رفع المادة التعليمية")}
                 className="grid gap-4 sm:grid-cols-2"
               >
                 <div>
@@ -321,14 +324,14 @@ export function MaterialsClient({
                                     onToggle={handleAction}
                                   />
                                   <button
-                                    onClick={() => handleAction(() => togglePublish(material.id, !material.is_published))}
+                                    onClick={() => handleAction(() => togglePublish(material.id, !material.is_published), material.is_published ? "تم إخفاء المادة" : "تم نشر المادة")}
                                     className={`rounded-lg p-1.5 ${material.is_published ? "text-success hover:bg-success/10" : "text-text-secondary hover:bg-app-bg"}`}
                                     title={material.is_published ? "إلغاء النشر" : "نشر"}
                                   >
                                     {material.is_published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                                   </button>
                                   <button
-                                    onClick={() => { if (confirm("حذف هذه المادة؟")) handleAction(() => deleteMaterial(material.id)); }}
+                                    onClick={() => { if (confirm("حذف هذه المادة؟")) handleAction(() => deleteMaterial(material.id), "تم حذف المادة"); }}
                                     className="rounded-lg p-1.5 text-text-secondary hover:bg-danger/10 hover:text-danger"
                                   >
                                     <Trash2 className="h-4 w-4" />
@@ -362,7 +365,7 @@ export function MaterialsClient({
                 <h3 className="text-lg font-bold text-text-primary">إنشاء/تعديل خطة مقرر</h3>
                 <button onClick={() => setShowSyllabus(false)} className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg"><X className="h-5 w-5" /></button>
               </div>
-              <form action={(fd) => handleAction(() => upsertSyllabus(fd))} className="space-y-4">
+              <form action={(fd) => handleAction(() => upsertSyllabus(fd), "تم حفظ الخطة الدراسية")} className="space-y-4">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-text-primary">المادة</label>
                   <select name="course_id" required className="w-full rounded-lg border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue">
@@ -413,7 +416,7 @@ export function MaterialsClient({
                   </div>
                   {syllabus.status === "draft" && (
                     <button
-                      onClick={() => handleAction(() => submitSyllabus(syllabus.id))}
+                      onClick={() => handleAction(() => submitSyllabus(syllabus.id), "تم تقديم الخطة الدراسية")}
                       className="flex items-center gap-2 rounded-lg border border-action-blue/30 px-3 py-1.5 text-xs font-medium text-action-blue hover:bg-action-blue/5"
                     >
                       <Send className="h-3.5 w-3.5" />

@@ -27,6 +27,7 @@ import {
   Layers,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface FacultyOption {
   id: string;
@@ -105,26 +106,30 @@ export function AcademicClient({
 
   const closeModal = () => {
     setModal(null);
-    setError("");
   };
 
-  async function run(action: () => Promise<void>) {
+  async function run(action: () => Promise<void>, successMsg?: string) {
     setLoading(true);
-    setError("");
+    const loadingToast = toast.loading("جاري تنفيذ العملية...");
     try {
       await action();
       closeModal();
+      toast.dismiss(loadingToast);
+      toast.success(successMsg || "تمت العملية بنجاح");
       window.location.reload();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ غير متوقع");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ غير متوقع";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleDelete(label: string, id: string, fn: (id: string) => Promise<void>) {
+  async function handleDelete(label: string, id: string, fn: (id: string) => Promise<void>, successMsg: string) {
     if (!confirm(`هل أنت متأكد من حذف هذا ${label}؟`)) return;
-    await run(() => fn(id));
+    await run(() => fn(id), successMsg);
   }
 
   const resolveName = (id: string | null) => {
@@ -243,7 +248,7 @@ export function AcademicClient({
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete("الكلية", college.id, deleteCollege)}
+                    onClick={() => handleDelete("الكلية", college.id, deleteCollege, "تم حذف الكلية")}
                     className="rounded-lg p-2 text-text-secondary transition-colors hover:bg-danger/10 hover:text-danger"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -313,7 +318,7 @@ export function AcademicClient({
                                   <Pencil className="h-3.5 w-3.5" />
                                 </button>
                                 <button
-                                  onClick={() => handleDelete("القسم", dept.id, deleteDepartment)}
+                                  onClick={() => handleDelete("القسم", dept.id, deleteDepartment, "تم حذف القسم")}
                                   className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-danger/10 hover:text-danger"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -379,7 +384,7 @@ export function AcademicClient({
                                                 <Pencil className="h-3 w-3" />
                                               </button>
                                               <button
-                                                onClick={() => handleDelete("التخصص", major.id, deleteMajor)}
+                                                onClick={() => handleDelete("التخصص", major.id, deleteMajor, "تم حذف التخصص")}
                                                 className="rounded p-1 text-text-secondary transition-colors hover:bg-danger/10 hover:text-danger"
                                               >
                                                 <Trash2 className="h-3 w-3" />
@@ -424,7 +429,7 @@ export function AcademicClient({
                                                             <Pencil className="h-2.5 w-2.5" />
                                                           </button>
                                                           <button
-                                                            onClick={() => handleDelete("المستوى", level.id, deleteLevel)}
+                                                            onClick={() => handleDelete("المستوى", level.id, deleteLevel, "تم حذف المستوى")}
                                                             className="rounded p-0.5 text-danger/60 transition-colors hover:text-danger"
                                                           >
                                                             <Trash2 className="h-2.5 w-2.5" />
@@ -457,30 +462,30 @@ export function AcademicClient({
 
       {/* ── Modal ── */}
       {modal && (
-        <Modal title={modalTitle()} onClose={closeModal} error={error}>
+        <Modal title={modalTitle()} onClose={closeModal}>
           {modal.type === "add-college" && (
-            <CollegeForm faculty={faculty} campuses={campuses} loading={loading} onSubmit={(fd) => run(() => createCollege(fd))} />
+            <CollegeForm faculty={faculty} campuses={campuses} loading={loading} onSubmit={(fd) => run(() => createCollege(fd), "تم إنشاء الكلية")} />
           )}
           {modal.type === "edit-college" && (
-            <CollegeForm faculty={faculty} campuses={campuses} loading={loading} defaults={modal.college} onSubmit={(fd) => run(() => updateCollege(modal.college.id, fd))} />
+            <CollegeForm faculty={faculty} campuses={campuses} loading={loading} defaults={modal.college} onSubmit={(fd) => run(() => updateCollege(modal.college.id, fd), "تم تحديث الكلية")} />
           )}
           {modal.type === "add-dept" && (
-            <DeptForm faculty={faculty} loading={loading} collegeId={modal.collegeId} onSubmit={(fd) => run(() => createDepartment(fd))} />
+            <DeptForm faculty={faculty} loading={loading} collegeId={modal.collegeId} onSubmit={(fd) => run(() => createDepartment(fd), "تم إنشاء القسم")} />
           )}
           {modal.type === "edit-dept" && (
-            <DeptForm faculty={faculty} loading={loading} defaults={modal.dept} onSubmit={(fd) => run(() => updateDepartment(modal.dept.id, fd))} />
+            <DeptForm faculty={faculty} loading={loading} defaults={modal.dept} onSubmit={(fd) => run(() => updateDepartment(modal.dept.id, fd), "تم تحديث القسم")} />
           )}
           {modal.type === "add-major" && (
-            <MajorForm loading={loading} deptId={modal.deptId} onSubmit={(fd) => run(() => createMajor(fd))} />
+            <MajorForm loading={loading} deptId={modal.deptId} onSubmit={(fd) => run(() => createMajor(fd), "تم إنشاء التخصص")} />
           )}
           {modal.type === "edit-major" && (
-            <MajorForm loading={loading} defaults={modal.major} onSubmit={(fd) => run(() => updateMajor(modal.major.id, fd))} />
+            <MajorForm loading={loading} defaults={modal.major} onSubmit={(fd) => run(() => updateMajor(modal.major.id, fd), "تم تحديث التخصص")} />
           )}
           {modal.type === "add-level" && (
-            <LevelForm loading={loading} majorId={modal.majorId} onSubmit={(fd) => run(() => createLevel(fd))} />
+            <LevelForm loading={loading} majorId={modal.majorId} onSubmit={(fd) => run(() => createLevel(fd), "تم إنشاء المستوى")} />
           )}
           {modal.type === "edit-level" && (
-            <LevelForm loading={loading} defaults={modal.level} onSubmit={(fd) => run(() => updateLevel(modal.level.id, fd))} />
+            <LevelForm loading={loading} defaults={modal.level} onSubmit={(fd) => run(() => updateLevel(modal.level.id, fd), "تم تحديث المستوى")} />
           )}
         </Modal>
       )}
@@ -507,7 +512,7 @@ function StatBadge({ icon, label, count, color }: { icon: React.ReactNode; label
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
-function Modal({ title, onClose, error, children }: { title: string; onClose: () => void; error: string; children: React.ReactNode }) {
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
@@ -520,9 +525,6 @@ function Modal({ title, onClose, error, children }: { title: string; onClose: ()
             <X className="h-5 w-5" />
           </button>
         </div>
-        {error && (
-          <div className="mx-6 mt-4 rounded-lg bg-danger/10 px-4 py-3 text-sm text-danger">{error}</div>
-        )}
         <div className="p-6">{children}</div>
       </div>
     </div>

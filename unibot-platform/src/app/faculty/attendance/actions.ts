@@ -309,6 +309,180 @@ async function enrichWithStudentNames(serviceClient: any, records: any[]) {
   });
 }
 
+export async function getAttendanceReportData(
+  courseId: string,
+  groupFilter?: { major_id?: string | null; academic_level_id?: string | null }
+) {
+  const { profile } = await requireRole(["faculty"]);
+  const serviceClient = createServiceClient();
+  const tenantId = profile.tenant_id!;
+
+  // Tenant info
+  const { data: tenant } = await serviceClient
+    .from("tenants")
+    .select("name, logo_url")
+    .eq("id", tenantId)
+    .single();
+
+  // Course info
+  const { data: course } = await serviceClient
+    .from("courses")
+    .select("code, name")
+    .eq("id", courseId)
+    .single();
+
+  // Current semester
+  const { data: semester } = await serviceClient
+    .from("semesters")
+    .select("id, name, academic_year")
+    .eq("tenant_id", tenantId)
+    .in("status", ["active", "registration"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  // Build session query — filter by group if provided
+  let sessionQuery = serviceClient
+    .from("attendance_sessions")
+    .select("id, title, session_date, start_time, major_id, academic_level_id")
+    .eq("course_id", courseId)
+    .eq("created_by", profile.id)
+    .order("session_date", { ascending: true })
+    .order("start_time", { ascending: true });
+
+  if (groupFilter?.academic_level_id) {
+    sessionQuery = sessionQuery.eq("academic_level_id", groupFilter.academic_level_id);
+  }
+  if (groupFilter?.major_id) {
+    sessionQuery = sessionQuery.eq("major_id", groupFilter.major_id);
+  }
+
+  const { data: sessions } = await sessionQuery;
+  const sessionIds = (sessions || []).map((s: any) => s.id);
+  const totalSessions = sessionIds.length;
+
+  // Get all attendance records for these sessions
+  const attendanceMap: Record<string, { present: number; absent: number; excused: number; late: number }> = {};
+
+  if (sessionIds.length > 0) {
+    const { data: records } = await serviceClient
+      .from("attendance_records")
+      .select("student_id, status")
+      .in("session_id", sessionIds);
+
+    if (records) {
+      for (const r of records) {
+        if (!attendanceMap[r.student_id]) {
+          attendanceMap[r.student_id] = { present: 0, absent: 0, excused: 0, late: 0 };
+        }
+        if (r.status === "present") attendanceMap[r.student_id].present++;
+        else if (r.status === "absent") attendanceMap[r.student_id].absent++;
+        else if (r.status === "excused") attendanceMap[r.student_id].excused++;
+        else if (r.status === "late") attendanceMap[r.student_id].late++;
+      }
+    }
+  }
+
+  // Enrolled students — filter by group if provided
+  let enrollQuery = serviceClient
+    .from("enrollments")
+    .select("student_id, major_id, academic_level_id")
+    .eq("course_id", courseId)
+    .eq("status", "enrolled");
+
+  if (groupFilter?.academic_level_id) {
+    enrollQuery = enrollQuery.eq("academic_level_id", groupFilter.academic_level_id);
+  }
+  if (groupFilter?.major_id) {
+    enrollQuery = enrollQuery.eq("major_id", groupFilter.major_id);
+  }
+
+  const { data: enrollments } = await enrollQuery;
+  const studentIds = [...new Set((enrollments || []).map((e: any) => e.student_id).filter(Boolean))];
+
+  // Student profile info
+  const studentMap: Record<string, any> = {};
+  if (studentIds.length > 0) {
+    const { data: profiles } = await serviceClient
+      .from("profiles")
+      .select("id, first_name, last_name")
+      .in("id", studentIds);
+
+    const { data: studentProfiles } = await serviceClient
+      .from("student_profiles")
+      .select("profile_id, student_number")
+      .in("profile_id", studentIds);
+
+    const spMap: Record<string, any> = {};
+    if (studentProfiles) {
+      for (const sp of studentProfiles) spMap[sp.profile_id] = sp;
+    }
+
+    if (profiles) {
+      for (const p of profiles) {
+        studentMap[p.id] = {
+          first_name: p.first_name,
+          last_name: p.last_name,
+          student_number: spMap[p.id]?.student_number || "—",
+        };
+      }
+    }
+  }
+
+  // Check dismissal status from attendance_summaries (for is_dismissed flag)
+  const { data: summaries } = await serviceClient
+    .from("attendance_summaries")
+    .select("student_id, is_dismissed")
+    .eq("course_id", courseId);
+
+  const dismissedMap: Record<string, boolean> = {};
+  if (summaries) {
+    for (const s of summaries) {
+      if (s.is_dismissed) dismissedMap[s.student_id] = true;
+    }
+  }
+
+  // Build report rows from actual attendance data
+  const rows = studentIds
+    .filter((id) => studentMap[id])
+    .map((studentId) => {
+      const a = attendanceMap[studentId] || { present: 0, absent: 0, excused: 0, late: 0 };
+      const totalAttended = a.present;
+      const totalUnexcused = a.absent;
+      const totalExcused = a.excused;
+      const percentage = totalSessions > 0 ? Math.round((totalUnexcused / totalSessions) * 100) : 0;
+
+      return {
+        student_id: studentId,
+        ...studentMap[studentId],
+        total_sessions: totalSessions,
+        attended: totalAttended,
+        unexcused_absences: totalUnexcused,
+        excused_absences: totalExcused,
+        absence_percentage: percentage,
+        is_dismissed: !!dismissedMap[studentId],
+      };
+    })
+    .sort((a, b) => a.first_name.localeCompare(b.first_name));
+
+  const dismissed = rows.filter((r) => r.is_dismissed);
+
+  return {
+    tenantName: tenant?.name || "الجامعة",
+    tenantLogo: tenant?.logo_url || null,
+    courseName: course?.name || "",
+    courseCode: course?.code || "",
+    semesterName: semester?.name || "",
+    academicYear: semester?.academic_year || "",
+    totalSessions,
+    totalStudents: rows.length,
+    totalDismissed: dismissed.length,
+    rows,
+    dismissed,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
 export async function updateAttendanceRecord(
   recordId: string,
   status: "present" | "absent" | "late" | "excused",

@@ -15,6 +15,7 @@ import {
   CameraOff,
   RefreshCw,
 } from "lucide-react";
+import { toast } from "sonner";
 import { submitAttendanceByQr, fetchStudentRecords, fetchStudentSummaries } from "./actions";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
@@ -124,13 +125,17 @@ export function StudentAttendanceClient({
       const response = await submitAttendanceByQr(scannedText);
       setScanResult(response);
       if (response.success) {
+        toast.success("تم تسجيل الحضور");
         setCameraActive(false);
+      } else {
+        toast.error(response.message);
       }
     } catch (e: unknown) {
-      setScanResult({ success: false, message: e instanceof Error ? e.message : "حدث خطأ" });
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setScanResult({ success: false, message: msg });
     } finally {
       setLoading(false);
-      // Reset last scanned code after a delay to allow re-scanning
       setTimeout(() => setLastScannedCode(null), 3000);
     }
   }, [loading, lastScannedCode]);
@@ -143,12 +148,22 @@ export function StudentAttendanceClient({
     if (!qrInput.trim()) return;
     setLoading(true);
     setScanResult(null);
+    const loadingToast = toast.loading("جاري تسجيل الحضور...");
     try {
       const result = await submitAttendanceByQr(qrInput.trim());
       setScanResult(result);
+      toast.dismiss(loadingToast);
+      if (result.success) {
+        toast.success("تم تسجيل الحضور");
+      } else {
+        toast.error(result.message);
+      }
       setQrInput("");
     } catch (e: unknown) {
-      setScanResult({ success: false, message: e instanceof Error ? e.message : "حدث خطأ" });
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setScanResult({ success: false, message: msg });
     } finally {
       setLoading(false);
     }

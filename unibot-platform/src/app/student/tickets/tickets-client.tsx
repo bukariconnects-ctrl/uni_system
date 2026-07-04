@@ -16,6 +16,7 @@ import {
   Send,
   Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import type {
   Ticket as TicketType,
   TicketCategory,
@@ -78,7 +79,6 @@ export function TicketsClient({
   const [ticketMessages, setTicketMessages] = useState<Record<string, unknown>[]>([]);
   const [replyText, setReplyText] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   async function handleStep1Submit(formData: FormData) {
     const desc = formData.get("description") as string;
@@ -97,46 +97,58 @@ export function TicketsClient({
   }
 
   async function handleAcceptAi(formData: FormData) {
-    setError("");
+    const loadingToast = toast.loading("جاري إنشاء التذكرة...");
     try {
       formData.set("ai_attempted", "true");
       formData.set("ai_suggestion", aiSuggestion || "");
       formData.set("auto_close", "true");
       formData.set("description", description);
       await createTicket(formData);
-      setSuccess("تم حل المشكلة تلقائياً بواسطة UniBot");
+      toast.dismiss(loadingToast);
+      toast.success("تم حل المشكلة تلقائياً بواسطة UniBot");
       resetForm();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "خطأ";
+      toast.error(msg);
+      setError(msg);
     }
   }
 
   async function handleRejectAi(formData: FormData) {
-    setError("");
+    const loadingToast = toast.loading("جاري إنشاء التذكرة...");
     try {
       formData.set("ai_attempted", "true");
       formData.set("ai_suggestion", aiSuggestion || "");
       formData.set("auto_close", "false");
       formData.set("description", description);
       await createTicket(formData);
-      setSuccess("تم فتح التذكرة بنجاح");
+      toast.dismiss(loadingToast);
+      toast.success("تم فتح التذكرة بنجاح");
       resetForm();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "خطأ";
+      toast.error(msg);
+      setError(msg);
     }
   }
 
   async function handleNoAiSubmit(formData: FormData) {
-    setError("");
+    const loadingToast = toast.loading("جاري إنشاء التذكرة...");
     try {
       formData.set("ai_attempted", "false");
       formData.set("auto_close", "false");
       formData.set("description", description);
       await createTicket(formData);
-      setSuccess("تم فتح التذكرة بنجاح");
+      toast.dismiss(loadingToast);
+      toast.success("تم فتح التذكرة بنجاح");
       resetForm();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "خطأ";
+      toast.error(msg);
+      setError(msg);
     }
   }
 
@@ -164,17 +176,22 @@ export function TicketsClient({
       setReplyText("");
       const msgs = await getTicketMessages(ticketId);
       setTicketMessages(msgs);
+      toast.success("تم إرسال الرد");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ");
+      const msg = e instanceof Error ? e.message : "خطأ";
+      toast.error(msg);
+      setError(msg);
     }
   }
 
   async function handleRate(ticketId: string, rating: number) {
     try {
       await rateTicket(ticketId, rating);
-      setSuccess("شكراً على تقييمك");
+      toast.success("شكراً على تقييمك");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ");
+      const msg = e instanceof Error ? e.message : "خطأ";
+      toast.error(msg);
+      setError(msg);
     }
   }
 
@@ -198,17 +215,6 @@ export function TicketsClient({
           تذكرة جديدة
         </button>
       </div>
-
-      {error && (
-        <div className="rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="rounded-lg border border-success/30 bg-success/10 p-3 text-sm text-success">
-          {success}
-        </div>
-      )}
 
       {showCreate && (
         <div className="rounded-2xl border border-border bg-card-bg p-6">

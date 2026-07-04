@@ -8,6 +8,7 @@ import {
   reopenSession,
   getSessionRecords,
   updateAttendanceRecord,
+  getAttendanceReportData,
 } from "./actions";
 import {
   Plus,
@@ -21,7 +22,10 @@ import {
   Clock,
   ShieldCheck,
   RotateCcw,
+  FileText,
 } from "lucide-react";
+import { toast } from "sonner";
+import { useAttendanceReport } from "./attendance-report-template";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   present: { label: "حاضر", color: "bg-success/10 text-success", icon: UserCheck },
@@ -50,19 +54,27 @@ export function AttendanceClient({
   const [error, setError] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [reportGroupId, setReportGroupId] = useState("");
+  const { generatePdf } = useAttendanceReport();
 
   const availableGroups = selectedCourseId
     ? courseGroups.filter((g: any) => g.course_id === selectedCourseId)
     : [];
 
-  async function handleAction(action: () => Promise<void>) {
+  async function handleAction(action: () => Promise<void>, successMsg?: string) {
     setLoading(true);
     setError("");
+    const loadingToast = toast.loading("جاري تنفيذ العملية...");
     try {
       await action();
+      toast.dismiss(loadingToast);
+      toast.success(successMsg || "تمت العملية بنجاح");
       window.location.reload();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -80,7 +92,7 @@ export function AttendanceClient({
       const data = await getSessionRecords(sessionId);
       setRecords(data);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.error(e instanceof Error ? e.message : "حدث خطأ");
     } finally {
       setLoading(false);
     }
@@ -95,7 +107,7 @@ export function AttendanceClient({
       setActiveQrSessionId(sessionId);
       setCountdown(10);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.error(e instanceof Error ? e.message : "حدث خطأ");
     } finally {
       setLoading(false);
     }
@@ -116,15 +128,15 @@ export function AttendanceClient({
 
   async function handleStatusChange(recordId: string, status: "present" | "absent" | "late" | "excused") {
     setLoading(true);
-    setError("");
     try {
       await updateAttendanceRecord(recordId, status);
+      toast.success("تم تحديث حالة الحضور");
       if (expandedId) {
         const data = await getSessionRecords(expandedId);
         setRecords(data);
       }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.error(e instanceof Error ? e.message : "حدث خطأ");
     } finally {
       setLoading(false);
     }
@@ -132,11 +144,53 @@ export function AttendanceClient({
 
   return (
     <div className="space-y-4">
-      {error && (
-        <div className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">{error}</div>
-      )}
-
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedCourseId}
+            onChange={(e) => { setSelectedCourseId(e.target.value); setReportGroupId(""); }}
+            className="rounded-lg border border-border bg-card-bg px-3 py-2.5 text-sm outline-none focus:border-action-blue focus:ring-2 focus:ring-action-blue/20"
+          >
+            <option value="">— اختر مادة للتقرير —</option>
+            {courses.map((c: any) => (
+              <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
+            ))}
+          </select>
+          {selectedCourseId && (
+            <select
+              value={reportGroupId}
+              onChange={(e) => setReportGroupId(e.target.value)}
+              className="rounded-lg border border-border bg-card-bg px-3 py-2.5 text-sm outline-none focus:border-action-blue focus:ring-2 focus:ring-action-blue/20"
+            >
+              <option value="">— جميع التخصصات —</option>
+              {courseGroups.filter((g: any) => g.course_id === selectedCourseId).map((g: any) => (
+                <option key={g.study_plan_course_id} value={g.study_plan_course_id}>
+                  {g.major_name || "تخصص"} — مستوى {g.level_number ?? ""}
+                </option>
+              ))}
+            </select>
+          )}
+          <button
+            onClick={async () => {
+              if (!selectedCourseId) { toast.error("اختر مادة أولاً"); return; }
+              try {
+                const group = courseGroups.find((g: any) => g.study_plan_course_id === reportGroupId);
+                const filter = reportGroupId && group
+                  ? { major_id: group.major_id, academic_level_id: group.academic_level_id }
+                  : undefined;
+                const data = await getAttendanceReportData(selectedCourseId, filter);
+                await generatePdf(data);
+              } catch (e: unknown) {
+                toast.error(e instanceof Error ? e.message : "فشل تحميل التقرير");
+              }
+            }}
+            disabled={!selectedCourseId}
+            className="flex items-center gap-2 rounded-lg border border-action-blue/30 bg-action-blue/5 px-4 py-2.5 text-sm font-medium text-action-blue transition-colors hover:bg-action-blue/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FileText className="h-4 w-4" />
+            تصدير تقرير PDF
+          </button>
+        </div>
         <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 rounded-lg bg-action-blue px-4 py-2.5 text-sm font-medium text-white hover:bg-action-blue/90">
           <Plus className="h-4 w-4" />
           جلسة حضور جديدة
@@ -155,7 +209,7 @@ export function AttendanceClient({
               setShowForm(false);
               setSelectedCourseId("");
               setSelectedGroupId("");
-            });
+            }, "تم إنشاء جلسة الحضور");
           }} className="grid gap-4 sm:grid-cols-3">
             <div className="sm:col-span-3">
               <label className="mb-1 block text-xs font-medium text-text-primary">عنوان الجلسة</label>
@@ -254,7 +308,7 @@ export function AttendanceClient({
               </div>
               <div className="flex items-center gap-1">
                 {!session.is_open && (
-                  <button onClick={() => handleAction(() => reopenSession(session.id))} className="rounded-lg p-1.5 text-success hover:bg-success/10" title="إعادة فتح الجلسة">
+                  <button onClick={() => handleAction(() => reopenSession(session.id), "تم إعادة فتح الجلسة")} className="rounded-lg p-1.5 text-success hover:bg-success/10" title="إعادة فتح الجلسة">
                     <RotateCcw className="h-4 w-4" />
                   </button>
                 )}
@@ -264,7 +318,7 @@ export function AttendanceClient({
                   </button>
                 )}
                 {session.is_open && (
-                  <button onClick={() => handleAction(() => closeSession(session.id))} className="rounded-lg p-1.5 text-danger hover:bg-danger/10" title="إغلاق الجلسة">
+                  <button onClick={() => handleAction(() => closeSession(session.id), "تم إغلاق الجلسة")} className="rounded-lg p-1.5 text-danger hover:bg-danger/10" title="إغلاق الجلسة">
                     <XCircle className="h-4 w-4" />
                   </button>
                 )}

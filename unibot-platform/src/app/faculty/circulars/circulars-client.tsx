@@ -15,6 +15,7 @@ import {
   GraduationCap,
   Building2,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   createFacultyCircular,
   publishFacultyCircular,
@@ -148,15 +149,20 @@ export function FacultyCircularsClient({
     };
   }, [userId]);
 
-  async function handleAction(action: () => Promise<void>) {
+  async function handleAction(action: () => Promise<void>, successMsg?: string) {
     setLoading(true);
-    setError("");
+    const loadingToast = toast.loading("جاري تنفيذ العملية...");
     try {
       await action();
       setShowForm(false);
+      toast.dismiss(loadingToast);
+      toast.success(successMsg || "تمت العملية بنجاح");
       window.location.reload();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -164,12 +170,6 @@ export function FacultyCircularsClient({
 
   return (
     <div className="space-y-4">
-      {error && (
-        <div className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
-          {error}
-        </div>
-      )}
-
       {/* Tabs + New button */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex gap-1 rounded-xl bg-app-bg p-1">
@@ -232,7 +232,7 @@ export function FacultyCircularsClient({
           </div>
 
           <form
-            action={(fd) => handleAction(() => createFacultyCircular(fd))}
+            action={(fd) => handleAction(() => createFacultyCircular(fd), "تم إنشاء التعميم")}
             className="grid gap-4 sm:grid-cols-2"
           >
             <div className="sm:col-span-2">
@@ -384,8 +384,8 @@ export function FacultyCircularsClient({
                 key={c.id}
                 circular={c}
                 isOwn={true}
-                onPublish={() => handleAction(() => publishFacultyCircular(c.id))}
-                onDelete={() => handleAction(() => deleteFacultyCircular(c.id))}
+                onPublish={() => handleAction(() => publishFacultyCircular(c.id), "تم نشر التعميم")}
+                onDelete={() => handleAction(() => deleteFacultyCircular(c.id), "تم حذف التعميم")}
                 loading={loading}
               />
             ))

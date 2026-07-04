@@ -25,6 +25,8 @@
   --color-teal: hsl(174 48% 40%);
   --color-purple: hsl(263 54% 58%);
   --color-orange: hsl(20 78% 71%);
+  --color-royal-blue: #00539C;
+  --color-peach: #EEA47F;
 }
 
 /* ─── Dark Mode Design Tokens (applied via .dark class by next-themes) ── */
@@ -72,7 +74,11 @@
   --color-teal: var(--color-teal);
   --color-purple: var(--color-purple);
   --color-orange: var(--color-orange);
+  --color-royal-blue: var(--color-royal-blue);
+  --color-peach: var(--color-peach);
   --font-sans: var(--font-inter);
+  --animate-marquee-left: marquee-left 35s linear infinite;
+  --animate-marquee-right: marquee-right 35s linear infinite;
 }
 
 /* ─── Base styles ──────────────────────────── */
@@ -119,6 +125,16 @@ input, select, textarea {
 
 .dark input, .dark select, .dark textarea {
   color-scheme: dark;
+}
+
+/* ─── Infinite marquee scroll ──────────────────── */
+@keyframes marquee-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes marquee-right {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
 }
 
 /* ─── Action progress bar shimmer ──────────────── */

@@ -22,6 +22,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
 } from "lucide-react";
+import { toast } from "sonner";
 
 type ChatTarget = {
   type: "channel" | "conversation";
@@ -134,8 +135,11 @@ export function StudentMessagesClient({
 
     try {
       await sendMessage(fd);
+      toast.success("تم إرسال الرسالة");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "فشل إرسال الرسالة");
+      const msg = e instanceof Error ? e.message : "فشل إرسال الرسالة";
+      toast.error(msg);
+      setError(msg);
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
     }
   }

@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
@@ -15,19 +15,29 @@ export default function LoginPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setError("");
+
+    const loadingToast = toast.loading("جاري تسجيل الدخول...");
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
+    toast.dismiss(loadingToast);
+
     if (error) {
-      setError(error.message);
+      const msg =
+        error.message.includes("Invalid login credentials")
+          ? "البريد الإلكتروني أو كلمة المرور غير صحيحة"
+          : error.message.includes("Email not confirmed")
+            ? "البريد الإلكتروني غير مؤكد"
+            : error.message;
+      toast.error(msg);
       setLoading(false);
       return;
     }
 
+    toast.success("تم تسجيل الدخول بنجاح");
     router.refresh();
     router.push("/");
   }
@@ -73,12 +83,6 @@ export default function LoginPage() {
               dir="ltr"
             />
           </div>
-
-          {error && (
-            <div className="rounded-lg bg-danger/10 px-4 py-2.5 text-sm text-danger">
-              {error}
-            </div>
-          )}
 
           <button
             type="submit"

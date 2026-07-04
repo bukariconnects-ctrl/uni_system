@@ -14,6 +14,7 @@ import {
   Ticket as TicketIcon,
   Megaphone,
   ClipboardList,
+  Lightbulb,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types/database";
@@ -31,6 +32,7 @@ const navItems = [
   { href: "/student/messages", label: "الرسائل", icon: MessageSquare },
   { href: "/student/circulars", label: "التعاميم", icon: Megaphone },
   { href: "/student/unibot", label: "UniBot", icon: Sparkles },
+  { href: "/student/recommendations", label: "التوصيات الذكية", icon: Lightbulb },
   { href: "/student/tickets", label: "تذاكري", icon: TicketIcon },
 ];
 

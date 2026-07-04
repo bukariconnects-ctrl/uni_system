@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { Suspense } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ActionProgressEnhancer } from "@/components/action-progress-enhancer";
+import { Toaster } from "sonner";
 import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 
@@ -35,6 +36,20 @@ export default function RootLayout({
           shadow="0 0 10px #00539C,0 0 5px #00539C"
         />
         <ThemeProvider>
+          <Toaster
+            position="top-center"
+            richColors
+            closeButton
+            toastOptions={{
+              style: {
+                borderRadius: "12px",
+                padding: "14px 18px",
+                fontSize: "14px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                fontFamily: "var(--font-inter), sans-serif",
+              },
+            }}
+          />
           <Suspense fallback={null}>
             <ActionProgressEnhancer />
           </Suspense>

@@ -12,6 +12,7 @@ import {
   BookOpen,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 import { triggerRiskComputation, sendRecommendation } from "./actions";
 
 const riskColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -74,7 +75,6 @@ export function AnalyticsClient({
   const [recStudentName, setRecStudentName] = useState("");
   const [recCourseId, setRecCourseId] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const lowCount = allScores.filter((s) => s.risk_level === "low").length;
   const mediumCount = allScores.filter((s) => s.risk_level === "medium").length;
@@ -87,29 +87,35 @@ export function AnalyticsClient({
   async function handleCompute() {
     if (!selectedSemester) return;
     setComputing(true);
-    setError("");
-    setSuccess("");
+    const loadingToast = toast.loading("جاري حساب درجات الخطر...");
     try {
       const result = await triggerRiskComputation(selectedSemester);
-      setSuccess(
+      toast.dismiss(loadingToast);
+      toast.success(
         `تم حساب ${result.computed} درجة خطر و${result.course_flags} مؤشر مقرر`
       );
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setComputing(false);
     }
   }
 
   async function handleSendRecommendation(formData: FormData) {
-    setError("");
-    setSuccess("");
+    const loadingToast = toast.loading("جاري إرسال التوصية...");
     try {
       await sendRecommendation(formData);
-      setSuccess("تم إرسال التوصية بنجاح");
+      toast.dismiss(loadingToast);
+      toast.success("تم إرسال التوصية بنجاح");
       setShowRecommendation(null);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "خطأ";
+      toast.error(msg);
+      setError(msg);
     }
   }
 
@@ -148,17 +154,6 @@ export function AnalyticsClient({
           </button>
         </div>
       </div>
-
-      {error && (
-        <div className="rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="rounded-lg border border-success/30 bg-success/10 p-3 text-sm text-success">
-          {success}
-        </div>
-      )}
 
       <div className="grid grid-cols-4 gap-4">
         <div className="rounded-2xl border border-border bg-card-bg p-4">

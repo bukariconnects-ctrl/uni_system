@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface DraftEntry {
   coursework: string;
@@ -29,8 +30,6 @@ export function GradebookClient({ courses }: { courses: any[] }) {
   const [dirty, setDirty] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
 
   function initDrafts(data: any[]) {
     const d: Record<string, DraftEntry> = {};
@@ -49,13 +48,12 @@ export function GradebookClient({ courses }: { courses: any[] }) {
     setSelectedCourseId(courseId);
     if (!courseId) { setEntries([]); setDrafts({}); setDirty(new Set()); return; }
     setLoading(true);
-    setError("");
     try {
       const data = await getGradebookEntries(courseId);
       setEntries(data);
       initDrafts(data);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.error(e instanceof Error ? e.message : "حدث خطأ");
     } finally {
       setLoading(false);
     }
@@ -64,14 +62,17 @@ export function GradebookClient({ courses }: { courses: any[] }) {
   async function handleInit() {
     if (!selectedCourseId) return;
     setLoading(true);
-    setError("");
+    const loadingToast = toast.loading("جاري تهيئة السجل...");
     try {
       await initGradebook(selectedCourseId);
+      toast.dismiss(loadingToast);
+      toast.success("تم تهيئة سجل الدرجات");
       const data = await getGradebookEntries(selectedCourseId);
       setEntries(data);
       initDrafts(data);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      toast.error(e instanceof Error ? e.message : "حدث خطأ");
     } finally {
       setLoading(false);
     }
@@ -80,13 +81,12 @@ export function GradebookClient({ courses }: { courses: any[] }) {
   function handleDraftChange(entryId: string, field: keyof DraftEntry, value: string) {
     setDrafts((prev) => ({ ...prev, [entryId]: { ...prev[entryId], [field]: value } }));
     setDirty((prev) => new Set(prev).add(entryId));
-    setSaved(false);
   }
 
   async function handleSaveAll() {
     if (dirty.size === 0) return;
     setSaving(true);
-    setError("");
+    const loadingToast = toast.loading("جاري حفظ الدرجات...");
     try {
       await Promise.all(
         Array.from(dirty).map((id) => {
@@ -99,13 +99,14 @@ export function GradebookClient({ courses }: { courses: any[] }) {
           );
         })
       );
+      toast.dismiss(loadingToast);
+      toast.success("تم حفظ الدرجات بنجاح");
       const data = await getGradebookEntries(selectedCourseId);
       setEntries(data);
       initDrafts(data);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      toast.error(e instanceof Error ? e.message : "حدث خطأ");
     } finally {
       setSaving(false);
     }
@@ -114,14 +115,17 @@ export function GradebookClient({ courses }: { courses: any[] }) {
   async function handlePublish() {
     if (!selectedCourseId || !confirm("نشر جميع الدرجات؟ سيتمكن الطلاب من رؤيتها.")) return;
     setLoading(true);
-    setError("");
+    const loadingToast = toast.loading("جاري نشر الدرجات...");
     try {
       await publishGrades(selectedCourseId);
+      toast.dismiss(loadingToast);
+      toast.success("تم نشر الدرجات بنجاح");
       const data = await getGradebookEntries(selectedCourseId);
       setEntries(data);
       initDrafts(data);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      toast.error(e instanceof Error ? e.message : "حدث خطأ");
     } finally {
       setLoading(false);
     }
@@ -141,13 +145,6 @@ export function GradebookClient({ courses }: { courses: any[] }) {
 
   return (
     <div className="space-y-4">
-      {error && (
-        <div className="flex items-center gap-2 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
-          {error}
-        </div>
-      )}
-
       <div className="flex flex-wrap items-center gap-3">
         <select
           value={selectedCourseId}
@@ -180,13 +177,6 @@ export function GradebookClient({ courses }: { courses: any[] }) {
                 <Save className="h-4 w-4" />
                 {saving ? "جاري الحفظ..." : `حفظ التغييرات (${dirty.size})`}
               </button>
-            )}
-
-            {saved && dirty.size === 0 && (
-              <span className="flex items-center gap-1.5 text-sm font-medium text-success">
-                <CheckCircle2 className="h-4 w-4" />
-                تم الحفظ بنجاح
-              </span>
             )}
 
             {hasUnpublished && entries.length > 0 && dirty.size === 0 && (

@@ -17,6 +17,7 @@ import {
   Loader2,
   Search,
 } from "lucide-react";
+import { toast } from "sonner";
 
 /* ──────────── Types ──────────── */
 
@@ -168,7 +169,6 @@ export function EnrollmentsClient({
   const handleLoadCourses = useCallback(async () => {
     if (!selectedLevel || !semesterObj) return;
     setLoadingCourses(true);
-    setError("");
     setSelectedCourse("");
     try {
       const data = await getStudyPlanCoursesForEnrollment(
@@ -177,7 +177,9 @@ export function EnrollmentsClient({
       );
       setCourses(data);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ أثناء تحميل المواد");
+      const msg = e instanceof Error ? e.message : "حدث خطأ أثناء تحميل المواد";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoadingCourses(false);
     }
@@ -185,22 +187,30 @@ export function EnrollmentsClient({
 
   async function handleBatchEnroll() {
     if (!selectedCourse || selectedStudents.length === 0) {
-      setError("يرجى اختيار المادة وطالب واحد على الأقل");
+      toast.error("يرجى اختيار المادة وطالب واحد على الأقل");
       return;
     }
 
     setLoading(true);
-    setError("");
     setResult(null);
+    const loadingToast = toast.loading("جاري تسجيل الطلاب...");
 
     try {
       const res = await batchEnroll(selectedCourse, selectedSemester, selectedStudents);
       setResult(res);
+      toast.dismiss(loadingToast);
       if (res.success > 0) {
+        toast.success(`تم تسجيل ${res.success} طالب بنجاح`);
         setSelectedStudents([]);
       }
+      if (res.errors.length > 0) {
+        toast.error(`فشل تسجيل ${res.errors.length} طالب`);
+      }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -208,7 +218,6 @@ export function EnrollmentsClient({
 
   async function handleLoadEnrollments() {
     setLoadingEnrollments(true);
-    setError("");
     try {
       const data = await getEnrollments(
         listFilterCourse || undefined,
@@ -216,7 +225,9 @@ export function EnrollmentsClient({
       );
       setEnrollments(data);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoadingEnrollments(false);
     }
@@ -224,7 +235,7 @@ export function EnrollmentsClient({
 
   async function handleStatusChange(id: string, status: "enrolled" | "dropped") {
     setLoading(true);
-    setError("");
+    const loadingToast = toast.loading("جاري تغيير الحالة...");
     try {
       await updateEnrollmentStatus(id, status);
       const data = await getEnrollments(
@@ -232,8 +243,13 @@ export function EnrollmentsClient({
         selectedSemester || undefined
       );
       setEnrollments(data);
+      toast.dismiss(loadingToast);
+      toast.success(status === "enrolled" ? "تم إعادة تسجيل الطالب" : "تم سحب الطالب");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -247,10 +263,6 @@ export function EnrollmentsClient({
   /* ── Render ── */
   return (
     <div className="space-y-4">
-      {error && (
-        <div className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">{error}</div>
-      )}
-
       {/* ── Tabs ── */}
       <div className="flex gap-1 rounded-xl bg-app-bg p-1">
         <button

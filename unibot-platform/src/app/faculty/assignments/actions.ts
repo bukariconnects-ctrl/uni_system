@@ -3,6 +3,7 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
+import { generateAutoRecommendation } from "@/lib/ai/recommendation-engine";
 
 export async function createAssignment(formData: FormData) {
   const { profile } = await requireRole(["faculty"]);
@@ -112,10 +113,12 @@ export async function gradeSubmission(id: string, formData: FormData) {
   const { profile } = await requireRole(["faculty"]);
   const serviceClient = createServiceClient();
 
+  const grade = parseFloat(formData.get("grade") as string);
+
   const { error } = await serviceClient
     .from("submissions")
     .update({
-      grade: parseFloat(formData.get("grade") as string),
+      grade,
       feedback: (formData.get("feedback") as string) || null,
       status: "graded",
       graded_at: new Date().toISOString(),
@@ -124,6 +127,33 @@ export async function gradeSubmission(id: string, formData: FormData) {
     .eq("id", id);
 
   if (error) throw new Error(error.message);
+
+  // Trigger auto-recommendation in background
+  const { data: sub } = await serviceClient
+    .from("submissions")
+    .select("student_id, assignments!inner(max_grade, course_id, courses!inner(name))")
+    .eq("id", id)
+    .single();
+
+  if (sub && !isNaN(grade)) {
+    const assignment = Array.isArray(sub.assignments) ? sub.assignments[0] : sub.assignments;
+    const course = assignment?.courses
+      ? Array.isArray(assignment.courses)
+        ? assignment.courses[0]
+        : assignment.courses
+      : null;
+    if (assignment?.max_grade && course?.name && assignment?.course_id) {
+      void generateAutoRecommendation({
+        studentId: sub.student_id,
+        courseId: assignment.course_id,
+        courseName: course.name,
+        grade,
+        maxGrade: assignment.max_grade,
+        tenantId: profile.tenant_id!,
+      });
+    }
+  }
+
   revalidatePath("/faculty/assignments");
 }
 

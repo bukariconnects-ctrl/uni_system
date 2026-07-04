@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createVenue, updateVenue, deleteVenue } from "./actions";
 import { Plus, Pencil, Trash2, MapPin, X, Projector, Wind } from "lucide-react";
+import { toast } from "sonner";
 
 interface VenueRow {
   id: string;
@@ -37,16 +38,21 @@ export function VenuesClient({ initialVenues, campuses }: { initialVenues: Venue
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleAction(action: () => Promise<void>) {
+  async function handleAction(action: () => Promise<void>, successMsg?: string) {
     setLoading(true);
-    setError("");
+    const loadingToast = toast.loading("جاري تنفيذ العملية...");
     try {
       await action();
       setShowForm(false);
       setEditId(null);
+      toast.dismiss(loadingToast);
+      toast.success(successMsg || "تمت العملية بنجاح");
       window.location.reload();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -54,10 +60,6 @@ export function VenuesClient({ initialVenues, campuses }: { initialVenues: Venue
 
   return (
     <div className="space-y-4">
-      {error && (
-        <div className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">{error}</div>
-      )}
-
       <div className="flex justify-end">
         <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 rounded-lg bg-action-blue px-4 py-2.5 text-sm font-medium text-white hover:bg-action-blue/90">
           <Plus className="h-4 w-4" />
@@ -71,7 +73,7 @@ export function VenuesClient({ initialVenues, campuses }: { initialVenues: Venue
             <h3 className="text-lg font-bold text-text-primary">قاعة جديدة</h3>
             <button onClick={() => setShowForm(false)} className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg"><X className="h-5 w-5" /></button>
           </div>
-          <VenueForm loading={loading} campuses={campuses} onSubmit={(fd) => handleAction(() => createVenue(fd))} />
+          <VenueForm loading={loading} campuses={campuses} onSubmit={(fd) => handleAction(() => createVenue(fd), "تم إنشاء القاعة")} />
         </div>
       )}
 
@@ -91,7 +93,7 @@ export function VenuesClient({ initialVenues, campuses }: { initialVenues: Venue
                   <h3 className="font-bold text-text-primary">تعديل القاعة</h3>
                   <button onClick={() => setEditId(null)} className="rounded-lg p-1 text-text-secondary hover:bg-app-bg"><X className="h-4 w-4" /></button>
                 </div>
-                <VenueForm loading={loading} campuses={campuses} defaultValues={venue} onSubmit={(fd) => handleAction(() => updateVenue(venue.id, fd))} />
+                <VenueForm loading={loading} campuses={campuses} defaultValues={venue} onSubmit={(fd) => handleAction(() => updateVenue(venue.id, fd), "تم تحديث القاعة")} />
               </div>
             ) : (
               <>
@@ -112,7 +114,7 @@ export function VenuesClient({ initialVenues, campuses }: { initialVenues: Venue
                   </div>
                   <div className="flex items-center gap-0.5">
                     <button onClick={() => setEditId(venue.id)} className="rounded-lg p-1 text-text-secondary hover:bg-app-bg"><Pencil className="h-3.5 w-3.5" /></button>
-                    <button onClick={() => { if (confirm("حذف هذه القاعة؟")) handleAction(() => deleteVenue(venue.id)); }} className="rounded-lg p-1 text-text-secondary hover:bg-danger/10 hover:text-danger"><Trash2 className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => { if (confirm("حذف هذه القاعة؟")) handleAction(() => deleteVenue(venue.id), "تم حذف القاعة"); }} className="rounded-lg p-1 text-text-secondary hover:bg-danger/10 hover:text-danger"><Trash2 className="h-3.5 w-3.5" /></button>
                   </div>
                 </div>
                 <div className="space-y-1.5 text-xs text-text-secondary">

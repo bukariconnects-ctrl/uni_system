@@ -19,6 +19,7 @@ import {
   Building2,
   GraduationCap,
 } from "lucide-react";
+import { toast } from "sonner";
 
 const TARGET_TYPES = [
   { value: "all", label: "الجميع", icon: "👥" },
@@ -58,15 +59,20 @@ export function CircularsClient({
 
   const filteredLevels = levels.filter((l) => l.major_id === selectedMajorId);
 
-  async function handleAction(action: () => Promise<void>) {
+  async function handleAction(action: () => Promise<void>, successMsg?: string) {
     setLoading(true);
-    setError("");
+    const loadingToast = toast.loading("جاري تنفيذ العملية...");
     try {
       await action();
       setShowForm(false);
+      toast.dismiss(loadingToast);
+      toast.success(successMsg || "تمت العملية بنجاح");
       window.location.reload();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -85,10 +91,6 @@ export function CircularsClient({
 
   return (
     <div className="space-y-4">
-      {error && (
-        <div className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">{error}</div>
-      )}
-
       <div className="flex justify-end">
         <button
           onClick={() => setShowForm(!showForm)}
@@ -112,7 +114,7 @@ export function CircularsClient({
           </div>
 
           <form
-            action={(fd) => handleAction(() => createCircular(fd))}
+            action={(fd) => handleAction(() => createCircular(fd), "تم إنشاء التعميم")}
             className="grid gap-4 sm:grid-cols-2"
           >
             {/* Title */}
@@ -403,7 +405,7 @@ export function CircularsClient({
                   {!circular.is_published && (
                     <button
                       onClick={() =>
-                        handleAction(() => publishCircular(circular.id))
+                        handleAction(() => publishCircular(circular.id), "تم نشر التعميم")
                       }
                       className="rounded-lg p-1.5 text-success hover:bg-success/10"
                       title="نشر وإرسال إشعارات"
@@ -414,7 +416,7 @@ export function CircularsClient({
                   <button
                     onClick={() => {
                       if (confirm("حذف هذا التعميم؟"))
-                        handleAction(() => deleteCircular(circular.id));
+                        handleAction(() => deleteCircular(circular.id), "تم حذف التعميم");
                     }}
                     className="rounded-lg p-1.5 text-text-secondary hover:bg-danger/10 hover:text-danger"
                   >

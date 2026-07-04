@@ -18,6 +18,7 @@ import {
   ToggleLeft,
   ToggleRight,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface CampusRow {
   id: string;
@@ -37,12 +38,10 @@ interface CollegeForClone {
 function Modal({
   title,
   onClose,
-  error,
   children,
 }: {
   title: string;
   onClose: () => void;
-  error?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -54,12 +53,7 @@ function Modal({
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="p-5">
-          {error && (
-            <div className="mb-4 rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">{error}</div>
-          )}
-          {children}
-        </div>
+        <div className="p-5">{children}</div>
       </div>
     </div>
   );
@@ -81,23 +75,25 @@ export function CampusesClient({
   const [modal, setModal] = useState<ModalState>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [cloneSuccess, setCloneSuccess] = useState("");
 
   const closeModal = () => {
     setModal(null);
-    setError("");
-    setCloneSuccess("");
   };
 
-  async function run(action: () => Promise<void>) {
+  async function run(action: () => Promise<void>, successMsg?: string) {
     setLoading(true);
-    setError("");
+    const loadingToast = toast.loading("جاري تنفيذ العملية...");
     try {
       await action();
       closeModal();
+      toast.dismiss(loadingToast);
+      toast.success(successMsg || "تمت العملية بنجاح");
       window.location.reload();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ غير متوقع");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ غير متوقع";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -105,13 +101,16 @@ export function CampusesClient({
 
   async function handleClone(sourceCollegeId: string, targetCampusId: string) {
     setLoading(true);
-    setError("");
-    setCloneSuccess("");
+    const loadingToast = toast.loading("جاري استنساخ الهيكل...");
     try {
       await cloneCollegeToCampus(sourceCollegeId, targetCampusId);
-      setCloneSuccess("تم الاستنساخ بنجاح! تم نسخ الهيكل الأكاديمي إلى الفرع الجديد.");
+      toast.dismiss(loadingToast);
+      toast.success("تم الاستنساخ بنجاح! تم نسخ الهيكل الأكاديمي إلى الفرع الجديد.");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حشد خطأ أثناء الاستنساخ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ أثناء الاستنساخ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -189,7 +188,7 @@ export function CampusesClient({
                 <button
                   onClick={async () => {
                     if (!confirm(`هل أنت متأكد من حذف فرع "${campus.name}"؟`)) return;
-                    await run(() => deleteCampus(campus.id));
+                    await run(() => deleteCampus(campus.id), "تم حذف الفرع");
                   }}
                   className="flex items-center justify-center rounded-xl border border-border p-2 text-text-secondary transition-colors hover:border-danger/40 hover:text-danger"
                 >
@@ -203,9 +202,9 @@ export function CampusesClient({
 
       {/* Add Modal */}
       {modal?.type === "add" && (
-        <Modal title="إضافة فرع جديد" onClose={closeModal} error={error}>
+        <Modal title="إضافة فرع جديد" onClose={closeModal}>
           <form
-            action={(fd) => run(() => createCampus(fd))}
+            action={(fd) => run(() => createCampus(fd), "تم إنشاء الفرع")}
             className="space-y-4"
           >
             <div>
@@ -238,9 +237,9 @@ export function CampusesClient({
 
       {/* Edit Modal */}
       {modal?.type === "edit" && (
-        <Modal title="تعديل بيانات الفرع" onClose={closeModal} error={error}>
+        <Modal title="تعديل بيانات الفرع" onClose={closeModal}>
           <form
-            action={(fd) => run(() => updateCampus(modal.campus.id, fd))}
+            action={(fd) => run(() => updateCampus(modal.campus.id, fd), "تم تحديث الفرع")}
             className="space-y-4"
           >
             <div>
@@ -286,44 +285,35 @@ export function CampusesClient({
 
       {/* Clone Modal */}
       {modal?.type === "clone" && (
-        <Modal title={`استنساخ هيكل أكاديمي إلى: ${modal.campusName}`} onClose={closeModal} error={error}>
+        <Modal title={`استنساخ هيكل أكاديمي إلى: ${modal.campusName}`} onClose={closeModal}>
           <div className="space-y-4">
-            {cloneSuccess ? (
-              <div className="flex items-start gap-3 rounded-xl border border-success/30 bg-success/10 p-4">
-                <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-success" />
-                <p className="text-sm text-success">{cloneSuccess}</p>
-              </div>
-            ) : (
-              <>
-                <div className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-xs text-warning">
-                  سيتم نسخ الهيكل الأكاديمي (الكلية + أقسامها + تخصصاتها + مستوياتها) إلى هذا الفرع بـ UUIDs جديدة، دون نسخ الطلاب أو المدرسين أو القاعات.
+            <div className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-xs text-warning">
+              سيتم نسخ الهيكل الأكاديمي (الكلية + أقسامها + تخصصاتها + مستوياتها) إلى هذا الفرع بـ UUIDs جديدة، دون نسخ الطلاب أو المدرسين أو القاعات.
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-text-primary">اختر الكلية المصدر</label>
+              {colleges.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-border py-4 text-center text-sm text-text-secondary">
+                  لا توجد كليات متاحة للاستنساخ
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {colleges.map((col) => (
+                    <button
+                      key={col.id}
+                      onClick={() => handleClone(col.id, modal.campusId)}
+                      disabled={loading}
+                      className="flex w-full items-center justify-between rounded-xl border border-border bg-app-bg px-4 py-3 text-right text-sm transition-colors hover:border-purple/40 hover:bg-purple/5 disabled:opacity-50"
+                    >
+                      <span className="font-medium text-text-primary">{col.name}</span>
+                      <span className="text-xs text-text-secondary">
+                        {Array.isArray(col.campuses) ? col.campuses[0]?.name : (col.campuses as any)?.name || "بدون فرع"}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-text-primary">اختر الكلية المصدر</label>
-                  {colleges.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-border py-4 text-center text-sm text-text-secondary">
-                      لا توجد كليات متاحة للاستنساخ
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {colleges.map((col) => (
-                        <button
-                          key={col.id}
-                          onClick={() => handleClone(col.id, modal.campusId)}
-                          disabled={loading}
-                          className="flex w-full items-center justify-between rounded-xl border border-border bg-app-bg px-4 py-3 text-right text-sm transition-colors hover:border-purple/40 hover:bg-purple/5 disabled:opacity-50"
-                        >
-                          <span className="font-medium text-text-primary">{col.name}</span>
-                          <span className="text-xs text-text-secondary">
-                            {Array.isArray(col.campuses) ? col.campuses[0]?.name : (col.campuses as any)?.name || "بدون فرع"}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
+              )}
+            </div>
           </div>
         </Modal>
       )}

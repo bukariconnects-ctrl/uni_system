@@ -20,6 +20,7 @@ import {
   X,
   Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 // ── Types ──────────────────────────────────────────────
 interface Major { id: string; name: string; code: string | null; department_id: string | null; }
@@ -118,7 +119,6 @@ export function SchedulesClient({
   const [error, setError] = useState("");
   const [hasLoaded, setHasLoaded] = useState(false);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
-  const [success, setSuccess] = useState("");
   const [editState, setEditState] = useState<EditState | null>(null);
   const [publishMode, setPublishMode] = useState(false);
   const selectedRef = useRef<HTMLDivElement>(null);
@@ -138,14 +138,12 @@ export function SchedulesClient({
   const loadSchedule = useCallback(async () => {
     if (!selectedLevel || !selectedSemester) return;
     setLoading(true);
-    setError("");
     setEditState(null);
     try {
       const semesterType = (selectedSemesterObj?.semester_type || "first") as "first" | "second" | "summer";
       const result = await getStudyPlanCoursesForScheduling(selectedMajor, selectedLevel, semesterType);
       setSpcList(result.studyPlanCourses as unknown as StudyPlanCourse[]);
 
-      // Build grid from existing schedules
       const newGrid: Record<string, Record<string, CellSchedule | null>> = {};
       for (const day of DAYS) {
         newGrid[day.id] = {};
@@ -158,7 +156,6 @@ export function SchedulesClient({
         const day = s.day_of_week as string;
         if (!newGrid[day]) continue;
 
-        // Determine which time slot this falls into
         const startTime = s.start_time?.slice(0, 5) || "";
         let slotId = "";
         for (const slot of TIME_SLOTS) {
@@ -168,7 +165,6 @@ export function SchedulesClient({
           }
         }
         if (!slotId) {
-          // If exact slot not found, find closest
           const sorted = [...TIME_SLOTS].sort((a, b) => {
             const diffA = Math.abs(timeToMinutes(startTime) - timeToMinutes(a.start));
             const diffB = Math.abs(timeToMinutes(startTime) - timeToMinutes(b.start));
@@ -183,7 +179,6 @@ export function SchedulesClient({
         const rawCourse = studyPlanCourse?.courses;
         const course = Array.isArray(rawCourse) ? rawCourse[0] : rawCourse;
 
-        // Only add to grid if slot is empty (prefer theoretical over practical)
         if (!newGrid[day][slotId]) {
           newGrid[day][slotId] = {
             scheduleId: s.id,
@@ -210,7 +205,9 @@ export function SchedulesClient({
       setGrid(newGrid);
       setHasLoaded(true);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -233,7 +230,6 @@ export function SchedulesClient({
     setEditState(null);
   }
 
-  // When user selects a course for a subject cell
   async function handleSubjectSelect(day: string, slotId: string, spcId: string) {
     const spc = spcList.find((s) => s.id === spcId);
     if (!spc) return;
@@ -241,8 +237,7 @@ export function SchedulesClient({
     if (!course) return;
 
     setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: true }));
-    setError("");
-    setSuccess("");
+    const loadingToast = toast.loading("جاري إضافة المادة...");
 
     try {
       const slot = TIME_SLOTS.find((s) => s.id === slotId)!;
@@ -261,12 +256,14 @@ export function SchedulesClient({
       fd.set("instructor_id", "");
 
       await createCourseSchedule(fd);
-
-      // Refresh
       await loadSchedule();
-      setSuccess(`تمت إضافة ${course.name}`);
+      toast.dismiss(loadingToast);
+      toast.success(`تمت إضافة ${course.name}`);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ في الحفظ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ في الحفظ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: false }));
       cancelEdit();
@@ -278,8 +275,7 @@ export function SchedulesClient({
     if (!cell?.scheduleId) return;
 
     setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: true }));
-    setError("");
-    setSuccess("");
+    const loadingToast = toast.loading("جاري تحديث المحاضر...");
 
     try {
       const fd = new FormData();
@@ -293,9 +289,13 @@ export function SchedulesClient({
 
       await updateCourseSchedule(cell.scheduleId, fd);
       await loadSchedule();
-      setSuccess("تم تحديث المحاضر");
+      toast.dismiss(loadingToast);
+      toast.success("تم تحديث المحاضر");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: false }));
       cancelEdit();
@@ -307,8 +307,7 @@ export function SchedulesClient({
     if (!cell?.scheduleId) return;
 
     setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: true }));
-    setError("");
-    setSuccess("");
+    const loadingToast = toast.loading("جاري تحديث القاعة...");
 
     try {
       const fd = new FormData();
@@ -322,9 +321,13 @@ export function SchedulesClient({
 
       await updateCourseSchedule(cell.scheduleId, fd);
       await loadSchedule();
-      setSuccess("تم تحديث القاعة");
+      toast.dismiss(loadingToast);
+      toast.success("تم تحديث القاعة");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: false }));
       cancelEdit();
@@ -337,15 +340,18 @@ export function SchedulesClient({
     if (!confirm("هل أنت متأكد من حذف هذا الموعد؟")) return;
 
     setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: true }));
-    setError("");
-    setSuccess("");
+    const loadingToast = toast.loading("جاري حذف الموعد...");
 
     try {
       await deleteCourseSchedule(cell.scheduleId);
       await loadSchedule();
-      setSuccess("تم حذف الموعد");
+      toast.dismiss(loadingToast);
+      toast.success("تم حذف الموعد");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: false }));
       cancelEdit();
@@ -358,25 +364,22 @@ export function SchedulesClient({
 
     const newStatus = cell.status === "published" ? "draft" : "published";
     setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: true }));
+    const loadingToast = toast.loading("جاري تغيير الحالة...");
 
     try {
       await toggleScheduleStatus(cell.scheduleId, newStatus as "draft" | "published");
       await loadSchedule();
-      setSuccess(newStatus === "published" ? "تم النشر" : "تم الإرجاع للمسودة");
+      toast.dismiss(loadingToast);
+      toast.success(newStatus === "published" ? "تم النشر" : "تم الإرجاع للمسودة");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setSaving((prev) => ({ ...prev, [`${day}-${slotId}`]: false }));
     }
   }
-
-  // Clear success after 3s
-  useEffect(() => {
-    if (success) {
-      const t = setTimeout(() => setSuccess(""), 3000);
-      return () => clearTimeout(t);
-    }
-  }, [success]);
 
   return (
     <div className="space-y-5" dir="ltr">
@@ -429,20 +432,6 @@ export function SchedulesClient({
           </select>
         </div>
       </div>
-
-      {/* ── Messages ──────────────────────────────────── */}
-      {error && (
-        <div className="flex items-center gap-3 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
-          <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="flex items-center gap-3 rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">
-          <CheckCircle className="h-5 w-5 flex-shrink-0" />
-          {success}
-        </div>
-      )}
 
       {/* ── Loading / Empty States ────────────────────── */}
       {loading && (

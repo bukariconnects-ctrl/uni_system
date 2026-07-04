@@ -12,6 +12,7 @@ import {
   Shield,
   FileCheck,
 } from "lucide-react";
+import { toast } from "sonner";
 import type { AiKnowledgeDocument, AiDocumentType } from "@/lib/types/database";
 import {
   uploadKnowledgeDocument,
@@ -44,21 +45,23 @@ export function KnowledgeClient({
   const [showUpload, setShowUpload] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [fileName, setFileName] = useState("");
   const [reindexingId, setReindexingId] = useState<string | null>(null);
 
   async function handleUpload(formData: FormData) {
     setLoading(true);
-    setError("");
-    setSuccess("");
+    const loadingToast = toast.loading("جاري رفع الوثيقة...");
     try {
       await uploadKnowledgeDocument(formData);
-      setSuccess("تم رفع الوثيقة بنجاح وبدأت عملية الفهرسة");
+      toast.dismiss(loadingToast);
+      toast.success("تم رفع الوثيقة بنجاح وبدأت عملية الفهرسة");
       setShowUpload(false);
       setFileName("");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ في الرفع");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "خطأ في الرفع";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -67,8 +70,11 @@ export function KnowledgeClient({
   async function handleToggle(id: string, current: boolean) {
     try {
       await toggleDocumentActive(id, !current);
+      toast.success(current ? "تم تعطيل الوثيقة" : "تم تفعيل الوثيقة");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ");
+      const msg = e instanceof Error ? e.message : "خطأ";
+      toast.error(msg);
+      setError(msg);
     }
   }
 
@@ -76,18 +82,26 @@ export function KnowledgeClient({
     if (!confirm("هل تريد حذف هذه الوثيقة من قاعدة المعرفة؟")) return;
     try {
       await deleteKnowledgeDocument(id);
+      toast.success("تم حذف الوثيقة");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ");
+      const msg = e instanceof Error ? e.message : "خطأ";
+      toast.error(msg);
+      setError(msg);
     }
   }
 
   async function handleReindex(id: string) {
     setReindexingId(id);
+    const loadingToast = toast.loading("جاري إعادة الفهرسة...");
     try {
       const result = await reindexDocument(id);
-      setSuccess(`تمت إعادة الفهرسة: ${result.total_chunks} جزء`);
+      toast.dismiss(loadingToast);
+      toast.success(`تمت إعادة الفهرسة: ${result.total_chunks} جزء`);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "خطأ");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "خطأ";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setReindexingId(null);
     }
@@ -112,17 +126,6 @@ export function KnowledgeClient({
           رفع وثيقة
         </button>
       </div>
-
-      {error && (
-        <div className="rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="rounded-lg border border-success/30 bg-success/10 p-3 text-sm text-success">
-          {success}
-        </div>
-      )}
 
       {showUpload && (
         <div className="rounded-2xl border border-border bg-card-bg p-6">

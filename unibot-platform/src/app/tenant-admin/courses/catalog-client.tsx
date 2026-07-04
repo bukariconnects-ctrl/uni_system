@@ -16,6 +16,7 @@ import {
   FlaskConical,
   BookText,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface DeptOption {
   id: string;
@@ -57,15 +58,20 @@ export function CatalogClient({
     setError("");
   };
 
-  async function run(action: () => Promise<void>) {
+  async function run(action: () => Promise<void>, successMsg?: string) {
     setLoading(true);
-    setError("");
+    const loadingToast = toast.loading("جاري تنفيذ العملية...");
     try {
       await action();
       closeModal();
+      toast.dismiss(loadingToast);
+      toast.success(successMsg || "تمت العملية بنجاح");
       window.location.reload();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "حدث خطأ غير متوقع");
+      toast.dismiss(loadingToast);
+      const msg = e instanceof Error ? e.message : "حدث خطأ غير متوقع";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -73,7 +79,7 @@ export function CatalogClient({
 
   async function handleDelete(id: string) {
     if (!confirm("هل أنت متأكد من حذف هذا المقرر؟")) return;
-    await run(() => deleteCourse(id));
+    await run(() => deleteCourse(id), "تم حذف المقرر");
   }
 
   const filtered = initialCourses.filter(
@@ -195,11 +201,10 @@ export function CatalogClient({
       )}
 
       {modal && (
-        <Modal
-          title={modal.type === "add" ? "إضافة مقرر جديد" : "تعديل المقرر"}
-          onClose={closeModal}
-          error={error}
-        >
+          <Modal
+            title={modal.type === "add" ? "إضافة مقرر جديد" : "تعديل المقرر"}
+            onClose={closeModal}
+          >
           <CourseForm
             departments={departments}
             loading={loading}
@@ -208,7 +213,8 @@ export function CatalogClient({
               run(() =>
                 modal.type === "add"
                   ? createCourse(fd)
-                  : updateCourse(modal.course.id, fd)
+                  : updateCourse(modal.course.id, fd),
+                modal.type === "add" ? "تم إنشاء المقرر" : "تم تحديث المقرر"
               )
             }
           />
@@ -271,12 +277,10 @@ function CourseTypeBadge({ type }: { type: string }) {
 function Modal({
   title,
   onClose,
-  error,
   children,
 }: {
   title: string;
   onClose: () => void;
-  error: string;
   children: React.ReactNode;
 }) {
   return (
@@ -297,11 +301,6 @@ function Modal({
             <X className="h-5 w-5" />
           </button>
         </div>
-        {error && (
-          <div className="mx-6 mt-4 rounded-lg bg-danger/10 px-4 py-3 text-sm text-danger">
-            {error}
-          </div>
-        )}
         <div className="p-6">{children}</div>
       </div>
     </div>
