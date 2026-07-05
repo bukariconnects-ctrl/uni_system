@@ -197,6 +197,7 @@ export interface Tenant {
   welcome_message?: string | null;
   default_language?: string | null;
   absence_threshold?: number | null;
+  absence_limit_count?: number | null;
   status: "active" | "suspended" | "trial";
   language: string;
   timezone: string;

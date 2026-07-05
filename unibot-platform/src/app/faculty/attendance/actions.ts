@@ -134,7 +134,7 @@ export async function createAttendanceSession(formData: FormData) {
     .from("enrollments")
     .select("student_id")
     .eq("course_id", courseId)
-    .eq("status", "enrolled");
+    .in("status", ["enrolled", "dismissed"]);
 
   if (majorId && academicLevelId) {
     query = query.eq("major_id", majorId).eq("academic_level_id", academicLevelId);
@@ -255,7 +255,7 @@ export async function getSessionRecords(sessionId: string) {
         .from("enrollments")
         .select("student_id")
         .eq("course_id", session.course_id)
-        .eq("status", "enrolled");
+        .in("status", ["enrolled", "dismissed"]);
 
       if (session.major_id && session.academic_level_id) {
         query = query.eq("major_id", session.major_id).eq("academic_level_id", session.academic_level_id);
@@ -412,7 +412,7 @@ export async function getAttendanceReportData(
     .from("enrollments")
     .select("student_id, major_id, academic_level_id")
     .eq("course_id", courseId)
-    .eq("status", "enrolled");
+    .in("status", ["enrolled", "dismissed"]);
 
   if (groupFilter?.academic_level_id) {
     enrollQuery = enrollQuery.eq("academic_level_id", groupFilter.academic_level_id);
@@ -466,6 +466,35 @@ export async function getAttendanceReportData(
     }
   }
 
+  // Fetch absence_limit_count — try college-level first, fall back to tenant
+  let absenceLimitCount = 5;
+  const { data: courseDept } = await serviceClient
+    .from("courses")
+    .select("departments!inner(college_id)")
+    .eq("id", courseId)
+    .single();
+  const collegeId = (courseDept as any)?.departments?.college_id;
+  if (collegeId) {
+    const { data: college } = await serviceClient
+      .from("colleges")
+      .select("absence_limit_count")
+      .eq("id", collegeId)
+      .single();
+    if (college?.absence_limit_count != null) {
+      absenceLimitCount = college.absence_limit_count;
+    }
+  }
+  if (!collegeId || absenceLimitCount === 5) {
+    const { data: tenantLimit } = await serviceClient
+      .from("tenants")
+      .select("absence_limit_count")
+      .eq("id", tenantId)
+      .single();
+    if (tenantLimit?.absence_limit_count != null) {
+      absenceLimitCount = tenantLimit.absence_limit_count;
+    }
+  }
+
   // Build report rows from actual attendance data
   const rows = studentIds
     .filter((id) => studentMap[id])
@@ -474,7 +503,7 @@ export async function getAttendanceReportData(
       const totalAttended = a.present;
       const totalUnexcused = a.absent;
       const totalExcused = a.excused;
-      const percentage = totalSessions > 0 ? Math.round((totalUnexcused / totalSessions) * 100) : 0;
+      const remaining = Math.max(0, absenceLimitCount - totalUnexcused);
 
       return {
         student_id: studentId,
@@ -483,7 +512,8 @@ export async function getAttendanceReportData(
         attended: totalAttended,
         unexcused_absences: totalUnexcused,
         excused_absences: totalExcused,
-        absence_percentage: percentage,
+        absence_limit_count: absenceLimitCount,
+        remaining_absences: remaining,
         is_dismissed: !!dismissedMap[studentId],
       };
     })
@@ -501,6 +531,7 @@ export async function getAttendanceReportData(
     totalSessions,
     totalStudents: rows.length,
     totalDismissed: dismissed.length,
+    absenceLimitCount,
     rows,
     dismissed,
     generatedAt: new Date().toISOString(),

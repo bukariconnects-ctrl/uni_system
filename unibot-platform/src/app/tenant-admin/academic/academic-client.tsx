@@ -72,7 +72,7 @@ interface CollegeNode {
   code: string | null;
   dean_id: string | null;
   campus_id: string | null;
-  absence_threshold: number | null;
+  absence_limit_count: number | null;
   campuses: { name: string }[] | null;
   departments: DeptNode[];
 }
@@ -92,10 +92,12 @@ export function AcademicClient({
   initialColleges,
   faculty,
   campuses,
+  tenantAbsenceLimit = 5,
 }: {
   initialColleges: CollegeNode[];
   faculty: FacultyOption[];
   campuses: CampusOption[];
+  tenantAbsenceLimit?: number;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [modal, setModal] = useState<ModalState>(null);
@@ -225,9 +227,9 @@ export function AcademicClient({
                       {college.campuses && college.campuses[0]?.name && (
                         <span>الفرع: {college.campuses[0].name}</span>
                       )}
-                      {college.absence_threshold != null && (
+                      {college.absence_limit_count != null && (
                         <span className="rounded-full bg-warning/10 px-2 py-0.5 text-warning">
-                          غياب {college.absence_threshold}%
+                          حد الغياب: {college.absence_limit_count}
                         </span>
                       )}
                       <span>{college.departments.length} أقسام</span>
@@ -464,10 +466,10 @@ export function AcademicClient({
       {modal && (
         <Modal title={modalTitle()} onClose={closeModal}>
           {modal.type === "add-college" && (
-            <CollegeForm faculty={faculty} campuses={campuses} loading={loading} onSubmit={(fd) => run(() => createCollege(fd), "تم إنشاء الكلية")} />
+            <CollegeForm faculty={faculty} campuses={campuses} loading={loading} tenantAbsenceLimit={tenantAbsenceLimit} onSubmit={(fd) => run(() => createCollege(fd), "تم إنشاء الكلية")} />
           )}
           {modal.type === "edit-college" && (
-            <CollegeForm faculty={faculty} campuses={campuses} loading={loading} defaults={modal.college} onSubmit={(fd) => run(() => updateCollege(modal.college.id, fd), "تم تحديث الكلية")} />
+            <CollegeForm faculty={faculty} campuses={campuses} loading={loading} defaults={modal.college} tenantAbsenceLimit={tenantAbsenceLimit} onSubmit={(fd) => run(() => updateCollege(modal.college.id, fd), "تم تحديث الكلية")} />
           )}
           {modal.type === "add-dept" && (
             <DeptForm faculty={faculty} loading={loading} collegeId={modal.collegeId} onSubmit={(fd) => run(() => createDepartment(fd), "تم إنشاء القسم")} />
@@ -533,7 +535,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 
 // ─── College Form ─────────────────────────────────────────────────────────────
 
-function CollegeForm({ faculty, campuses, loading, defaults, onSubmit }: { faculty: FacultyOption[]; campuses: CampusOption[]; loading: boolean; defaults?: CollegeNode; onSubmit: (fd: FormData) => void }) {
+function CollegeForm({ faculty, campuses, loading, defaults, onSubmit, tenantAbsenceLimit = 5 }: { faculty: FacultyOption[]; campuses: CampusOption[]; loading: boolean; defaults?: CollegeNode; onSubmit: (fd: FormData) => void; tenantAbsenceLimit?: number }) {
   return (
     <form action={onSubmit} className="grid gap-4 sm:grid-cols-2">
       <Input label="اسم الكلية" name="name" required defaultValue={defaults?.name} />
@@ -551,7 +553,20 @@ function CollegeForm({ faculty, campuses, loading, defaults, onSubmit }: { facul
           ))}
         </select>
       </div>
-      <Input label="نسبة الغياب % (اختياري)" name="absence_threshold" type="number" placeholder="25" defaultValue={defaults?.absence_threshold != null ? String(defaults.absence_threshold) : ""} />
+      <div>
+        <label className="mb-1.5 block text-xs font-semibold text-text-primary">
+          الحد الأقصى للغياب (عدد) <span className="text-text-secondary">(اختياري — أقصى {tenantAbsenceLimit})</span>
+        </label>
+        <input
+          type="number"
+          name="absence_limit_count"
+          min={1}
+          max={tenantAbsenceLimit}
+          placeholder={String(tenantAbsenceLimit)}
+          defaultValue={defaults?.absence_limit_count != null ? String(defaults.absence_limit_count) : ""}
+          className="w-full rounded-xl border border-border bg-app-bg px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:bg-card-bg focus:ring-2 focus:ring-action-blue/20"
+        />
+      </div>
       <div className="sm:col-span-2">
         <FacultySelect label="العميد (اختياري)" name="dean_id" faculty={faculty} defaultValue={defaults?.dean_id ?? ""} />
       </div>

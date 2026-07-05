@@ -16,8 +16,10 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  AlertTriangle,
 } from "lucide-react";
 import type { TenantStatus, SubscriptionPlanRow } from "@/lib/types/database";
+import { permanentCleanDeletedTenants } from "./cleanup-action";
 
 interface TenantWithSubs {
   id: string;
@@ -102,14 +104,42 @@ export function TenantsClient({
         </div>
       )}
 
-      <div className="flex justify-end">
-        <button
-          onClick={() => setShowWizard(true)}
-          className="flex items-center gap-2 rounded-lg bg-action-blue px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-action-blue/90"
-        >
-          <Plus className="h-4 w-4" />
-          إنشاء جامعة جديدة
-        </button>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex-1" />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={async () => {
+              if (!confirm("هل أنت متأكد من حذف جميع بيانات الجامعات المحذوفة بشكل نهائي؟\n\nسيتم حذف جميع السجلات والطلاب والمقررات والملفات المرتبطة بهذه الجامعات. هذا الإجراء لا يمكن التراجع عنه.")) return;
+              setLoading(true);
+              setError("");
+              try {
+                const result = await permanentCleanDeletedTenants();
+                if (result.results.length === 0) {
+                  alert("لا توجد جامعات محذوفة لتنظيف بياناتها");
+                } else {
+                  alert(result.message);
+                  window.location.reload();
+                }
+              } catch (e: unknown) {
+                setError(e instanceof Error ? e.message : "حدث خطأ");
+              } finally {
+                setLoading(false);
+              }
+            }}
+            disabled={loading}
+            className="flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/5 px-4 py-2.5 text-sm font-medium text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
+          >
+            <AlertTriangle className="h-4 w-4" />
+            تنظيف بيانات المحذوفة
+          </button>
+          <button
+            onClick={() => setShowWizard(true)}
+            className="flex items-center gap-2 rounded-lg bg-action-blue px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-action-blue/90"
+          >
+            <Plus className="h-4 w-4" />
+            إنشاء جامعة جديدة
+          </button>
+        </div>
       </div>
 
       {showWizard && (

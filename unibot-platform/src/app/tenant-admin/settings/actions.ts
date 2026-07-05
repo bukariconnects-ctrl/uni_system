@@ -47,13 +47,14 @@ export async function updateAbsenceThreshold(formData: FormData) {
   const { profile } = await requireRole(["tenant_admin"]);
   const supabase = await createClient();
 
-  const absence_threshold = parseFloat(
-    formData.get("absence_threshold") as string
+  const absence_limit_count = parseInt(
+    formData.get("absence_limit_count") as string,
+    10
   );
 
   const { error } = await supabase
     .from("tenants")
-    .update({ absence_threshold })
+    .update({ absence_limit_count })
     .eq("id", profile.tenant_id);
 
   if (error) throw new Error(error.message);

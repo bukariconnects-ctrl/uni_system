@@ -174,9 +174,48 @@ export async function fetchStudentSummaries() {
     }
   }
 
+  // Get tenant-level absence_limit_count
+  const { data: tenant } = await serviceClient
+    .from("tenants")
+    .select("absence_limit_count")
+    .eq("id", profile.tenant_id)
+    .single();
+
+  const defaultLimit = tenant?.absence_limit_count ?? 5;
+
+  // Build college-level absence_limit_count lookup per course
+  const collegeLimitMap: Record<string, number> = {};
+  if (summaryCourseIds.length > 0) {
+    const { data: courseDepts } = await serviceClient
+      .from("courses")
+      .select("id, departments(college_id)")
+      .in("id", summaryCourseIds);
+
+    const collegeIds = [...new Set((courseDepts || []).map((cd: any) => cd.departments?.college_id).filter(Boolean))];
+    if (collegeIds.length > 0) {
+      const { data: colleges } = await serviceClient
+        .from("colleges")
+        .select("id, absence_limit_count")
+        .in("id", collegeIds);
+      if (colleges) {
+        const collegeMap: Record<string, number | null> = {};
+        for (const c of colleges) {
+          collegeMap[c.id] = c.absence_limit_count;
+        }
+        for (const cd of (courseDepts || [])) {
+          const collegeId = (cd as any).departments?.college_id;
+          if (collegeId && collegeMap[collegeId] != null) {
+            collegeLimitMap[cd.id] = collegeMap[collegeId]!;
+          }
+        }
+      }
+    }
+  }
+
   const enrichedSummaries = summaries.map((s: any) => ({
     ...s,
     course_name: s.course_id ? summaryCourseLookup[s.course_id]?.name || null : null,
+    absence_limit_count: collegeLimitMap[s.course_id] || defaultLimit,
   }));
 
   return { summaries: enrichedSummaries };

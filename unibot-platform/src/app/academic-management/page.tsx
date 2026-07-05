@@ -71,7 +71,7 @@ export default async function AcademicManagementDashboard() {
     enrolledSectionIds.length > 0
       ? await supabase
           .from("attendance_summaries")
-          .select("student_id, section_id, absence_percentage, attended_sessions, total_sessions, is_dismissed")
+          .select("student_id, section_id, attended_sessions, total_sessions, unexcused_absences, is_dismissed")
           .in("section_id", enrolledSectionIds)
       : { data: [] };
 
@@ -80,6 +80,37 @@ export default async function AcademicManagementDashboard() {
     ...s,
     course_id: enrollmentSectionToCourse[s.section_id] || null,
   }));
+
+  // Resolve absence_limit_count per course (college → tenant fallback)
+  const courseLimitCache: Record<string, number> = {};
+  for (const cid of courseIds) {
+    if (courseLimitCache[cid] != null) continue;
+    // Try college-level first
+    const { data: cd } = await supabase
+      .from("courses")
+      .select("departments!inner(college_id)")
+      .eq("id", cid)
+      .single();
+    const collegeId = (cd as any)?.departments?.college_id;
+    if (collegeId) {
+      const { data: coll } = await supabase
+        .from("colleges")
+        .select("absence_limit_count")
+        .eq("id", collegeId)
+        .single();
+      if (coll?.absence_limit_count != null) {
+        courseLimitCache[cid] = coll.absence_limit_count;
+        continue;
+      }
+    }
+    // Fall back to tenant
+    const { data: tn } = await supabase
+      .from("tenants")
+      .select("absence_limit_count")
+      .eq("id", profile.tenant_id)
+      .single();
+    courseLimitCache[cid] = tn?.absence_limit_count ?? 5;
+  }
 
   // Fetch risk zone students
   const studentIds = (enrollments || []).map((e: any) => e.student_id);
@@ -107,6 +138,7 @@ export default async function AcademicManagementDashboard() {
           enrollments: (enrollments || []) as any,
           attendanceSummaries: enrichedSummaries as any,
           riskStudents: (riskStudents || []) as any,
+          courseLimitCache,
         }}
       />
     </div>

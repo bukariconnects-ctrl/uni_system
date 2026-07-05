@@ -599,6 +599,7 @@ export type Database = {
         Row: {
           absence_percentage: number
           attended_sessions: number
+          course_id: string | null
           dismissed_at: string | null
           enrollment_id: string
           excused_absences: number
@@ -606,7 +607,7 @@ export type Database = {
           is_dismissed: boolean
           last_updated: string
           late_count: number
-          section_id: string
+          section_id: string | null
           student_id: string
           tenant_id: string
           total_sessions: number
@@ -615,6 +616,7 @@ export type Database = {
         Insert: {
           absence_percentage?: number
           attended_sessions?: number
+          course_id?: string | null
           dismissed_at?: string | null
           enrollment_id: string
           excused_absences?: number
@@ -622,7 +624,7 @@ export type Database = {
           is_dismissed?: boolean
           last_updated?: string
           late_count?: number
-          section_id: string
+          section_id?: string | null
           student_id: string
           tenant_id: string
           total_sessions?: number
@@ -631,6 +633,7 @@ export type Database = {
         Update: {
           absence_percentage?: number
           attended_sessions?: number
+          course_id?: string | null
           dismissed_at?: string | null
           enrollment_id?: string
           excused_absences?: number
@@ -638,7 +641,7 @@ export type Database = {
           is_dismissed?: boolean
           last_updated?: string
           late_count?: number
-          section_id?: string
+          section_id?: string | null
           student_id?: string
           tenant_id?: string
           total_sessions?: number
@@ -1050,6 +1053,7 @@ export type Database = {
       }
       colleges: {
         Row: {
+          absence_limit_count: number | null
           absence_threshold: number | null
           campus_id: string | null
           code: string | null
@@ -1061,6 +1065,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          absence_limit_count?: number | null
           absence_threshold?: number | null
           campus_id?: string | null
           code?: string | null
@@ -1072,6 +1077,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          absence_limit_count?: number | null
           absence_threshold?: number | null
           campus_id?: string | null
           code?: string | null
@@ -2982,6 +2988,7 @@ export type Database = {
       }
       tenants: {
         Row: {
+          absence_limit_count: number
           absence_threshold: number
           admin_email: string
           contract_end: string | null
@@ -3006,6 +3013,7 @@ export type Database = {
           welcome_message: string | null
         }
         Insert: {
+          absence_limit_count?: number
           absence_threshold?: number
           admin_email: string
           contract_end?: string | null
@@ -3030,6 +3038,7 @@ export type Database = {
           welcome_message?: string | null
         }
         Update: {
+          absence_limit_count?: number
           absence_threshold?: number
           admin_email?: string
           contract_end?: string | null

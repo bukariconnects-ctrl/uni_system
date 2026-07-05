@@ -40,7 +40,7 @@ interface AttendanceSummary {
   student_id: string;
   section_id: string;
   course_id: string | null;
-  absence_percentage: number;
+  unexcused_absences: number;
   attended_sessions: number;
   total_sessions: number;
   is_dismissed: boolean;
@@ -60,6 +60,7 @@ interface DashboardData {
   enrollments: Enrollment[];
   attendanceSummaries: AttendanceSummary[];
   riskStudents: StudentProfile[];
+  courseLimitCache: Record<string, number>;
 }
 
 const CHART_COLORS = {
@@ -71,24 +72,27 @@ const CHART_COLORS = {
 };
 
 export function AcademicManagementDashboardClient({ data }: { data: DashboardData }) {
-  const { courses, enrollments, attendanceSummaries, riskStudents } = data;
+  const { courses, enrollments, attendanceSummaries, riskStudents, courseLimitCache } = data;
 
   const enrolledCount = enrollments.filter((e) => e.status === "enrolled").length;
   const activeCourseCount = courses.length;
 
-  // Average absence rate
-  const avgAbsence =
+  // Average unexcused absences count
+  const totalUnexcused = attendanceSummaries.reduce((s, a) => s + (a.unexcused_absences || 0), 0);
+  const avgAbsenceCount =
     attendanceSummaries.length > 0
-      ? attendanceSummaries.reduce((s, a) => s + (a.absence_percentage || 0), 0) /
-        attendanceSummaries.length
+      ? Math.round(totalUnexcused / attendanceSummaries.length)
       : 0;
+
+  // Dismissed count
+  const dismissedCount = attendanceSummaries.filter((a) => a.is_dismissed).length;
 
   // High risk students
   const highRiskStudents = riskStudents.filter(
     (s) => s.risk_level === "high" || s.risk_level === "critical"
   );
 
-  // Attendance vs Risk by course (using course_id from enrollments)
+  // Attendance vs Risk by course
   const courseMap = new Map(courses.map((c) => [c.id, c]));
   const courseStats: Record<string, { absences: number[]; riskScores: number[]; name: string }> = {};
 
@@ -101,7 +105,7 @@ export function AcademicManagementDashboardClient({ data }: { data: DashboardDat
     if (!courseStats[courseId]) {
       courseStats[courseId] = { absences: [], riskScores: [], name };
     }
-    courseStats[courseId].absences.push(a.absence_percentage || 0);
+    courseStats[courseId].absences.push(a.unexcused_absences || 0);
   });
 
   riskStudents.forEach((s) => {
@@ -120,11 +124,16 @@ export function AcademicManagementDashboardClient({ data }: { data: DashboardDat
   });
 
   const composedData = Object.values(courseStats)
-    .map((s) => ({
-      name: s.name,
-      avgAbsence: s.absences.length > 0 ? Math.round(s.absences.reduce((a, b) => a + b, 0) / s.absences.length) : 0,
-      avgRisk: s.riskScores.length > 0 ? Math.round(s.riskScores.reduce((a, b) => a + b, 0) / s.riskScores.length) : 0,
-    }))
+    .map((s) => {
+      const courseId = courses.find((c) => c.code === s.name)?.id;
+      const limit = courseId ? courseLimitCache[courseId] || 5 : 5;
+      return {
+        name: s.name,
+        avgAbsence: s.absences.length > 0 ? Math.round(s.absences.reduce((a, b) => a + b, 0) / s.absences.length) : 0,
+        avgRisk: s.riskScores.length > 0 ? Math.round(s.riskScores.reduce((a, b) => a + b, 0) / s.riskScores.length) : 0,
+        limit,
+      };
+    })
     .filter((d) => d.avgAbsence > 0 || d.avgRisk > 0)
     .slice(0, 8);
 
@@ -154,14 +163,14 @@ export function AcademicManagementDashboardClient({ data }: { data: DashboardDat
           trend={{ value: `${courses.length}`, direction: "neutral", label: "إجمالي المواد" }}
         />
         <KpiCard
-          title="معدل الغياب"
-          value={`${avgAbsence.toFixed(1)}%`}
+          title="متوسط الغياب"
+          value={avgAbsenceCount}
           icon={TrendingDown}
           iconColor="bg-warning/10 text-warning"
           trend={{
-            value: `${attendanceSummaries.length}`,
+            value: `${dismissedCount} محروم`,
             direction: "neutral",
-            label: "سجل حضور",
+            label: "من أصل " + attendanceSummaries.length + " سجل",
           }}
         />
         <KpiCard
@@ -180,8 +189,8 @@ export function AcademicManagementDashboardClient({ data }: { data: DashboardDat
       {/* Charts Row */}
       <div className="grid gap-4 lg:grid-cols-2">
         <ChartCard
-          title="نسبة الغياب مقابل المخاطر"
-          subtitle="للمواد النشطة (متوسط الغياب % vs متوسط Risk Score)"
+          title="متوسط الغياب مقابل المخاطر"
+          subtitle="للمواد النشطة (متوسط عدد الغيابات vs متوسط Risk Score)"
         >
           <ResponsiveContainer width="100%" height={260}>
             <ComposedChart data={composedData}>
@@ -197,7 +206,7 @@ export function AcademicManagementDashboardClient({ data }: { data: DashboardDat
                 tick={{ fill: "var(--color-text-secondary)", fontSize: 11 }}
                 tickLine={false}
                 axisLine={{ stroke: "var(--color-border)" }}
-                label={{ value: "% غياب", angle: -90, position: "insideLeft", fill: "var(--color-text-secondary)", fontSize: 10 }}
+                label={{ value: "عدد الغيابات", angle: -90, position: "insideLeft", fill: "var(--color-text-secondary)", fontSize: 10 }}
               />
               <YAxis
                 yAxisId="right"
@@ -219,7 +228,7 @@ export function AcademicManagementDashboardClient({ data }: { data: DashboardDat
               <Bar
                 yAxisId="left"
                 dataKey="avgAbsence"
-                name="متوسط الغياب %"
+                name="متوسط الغياب"
                 fill={CHART_COLORS.peach}
                 radius={[6, 6, 0, 0]}
               />

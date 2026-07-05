@@ -317,9 +317,13 @@ export function StudentAttendanceClient({
             summaries.map((summary: any) => {
               const total = summary.total_sessions ?? 0;
               const attended = summary.attended_sessions ?? 0;
-              const attendPct = total > 0 ? Math.round((attended / total) * 100) : 100;
-              const absencePct = 100 - attendPct;
-              const barColor = absencePct >= 25 ? "bg-danger" : absencePct >= 15 ? "bg-warning" : "bg-success";
+              const unexcused = summary.unexcused_absences ?? 0;
+              const limit = summary.absence_limit_count ?? 5;
+              const remaining = Math.max(0, limit - unexcused);
+              const isOverLimit = unexcused >= limit;
+              const isNearLimit = unexcused >= Math.ceil(limit * 0.6) && !isOverLimit;
+              const barProgress = limit > 0 ? Math.min((unexcused / limit) * 100, 100) : 0;
+              const barColor = isOverLimit ? "bg-danger" : isNearLimit ? "bg-warning" : "bg-success";
 
               return (
                 <div key={summary.id} className="rounded-2xl border border-border bg-card-bg p-5 shadow-sm">
@@ -334,14 +338,20 @@ export function StudentAttendanceClient({
                           محروم
                         </span>
                       )}
+                      {!summary.is_dismissed && isOverLimit && (
+                        <span className="flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-xs text-danger">
+                          <AlertTriangle className="h-3 w-3" />
+                          تجاوز الحد
+                        </span>
+                      )}
                     </div>
-                    <span className={`text-sm font-bold ${absencePct >= 25 ? "text-danger" : absencePct >= 15 ? "text-warning" : "text-success"}`}>
-                      {attendPct}% حضور
+                    <span className={`text-sm font-bold ${isOverLimit ? "text-danger" : isNearLimit ? "text-warning" : "text-success"}`}>
+                      {unexcused}/{limit} غياب
                     </span>
                   </div>
 
                   <div className="mb-3 h-3 w-full overflow-hidden rounded-full bg-app-bg">
-                    <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${attendPct}%` }} />
+                    <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${barProgress}%` }} />
                   </div>
 
                   <div className="grid grid-cols-5 gap-2 text-center text-xs">
@@ -366,6 +376,12 @@ export function StudentAttendanceClient({
                       <p className="text-text-secondary">تأخر</p>
                     </div>
                   </div>
+
+                  {!summary.is_dismissed && remaining > 0 && (
+                    <div className="mt-2 text-center text-xs text-text-secondary">
+                      متبقي لك <span className="font-bold text-text-primary">{remaining}</span> غيابات قبل الحرمان
+                    </div>
+                  )}
                 </div>
               );
             })

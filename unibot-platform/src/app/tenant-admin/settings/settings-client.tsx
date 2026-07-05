@@ -213,9 +213,9 @@ export function SettingsClient({ tenant }: { tenant: Tenant }) {
             <ShieldAlert className="h-5 w-5 text-danger" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-text-primary">نسبة الحرمان</h2>
+            <h2 className="text-lg font-bold text-text-primary">حد الحرمان (عدد الغيابات)</h2>
             <p className="text-sm text-text-secondary">
-              النسبة المئوية للغياب التي تؤدي لحرمان الطالب تلقائياً
+              عدد مرات الغياب غير المعذور التي تؤدي لحرمان الطالب تلقائياً من المقرر
             </p>
           </div>
         </div>
@@ -228,20 +228,20 @@ export function SettingsClient({ tenant }: { tenant: Tenant }) {
         >
           <div className="flex-1">
             <label className="mb-1 block text-sm font-medium text-text-primary">
-              نسبة الحرمان (%)
+              الحد الأقصى للغياب (عدد)
             </label>
             <input
               type="number"
-              name="absence_threshold"
-              min={0}
-              max={100}
-              step={0.01}
-              defaultValue={tenant.absence_threshold ?? 25}
+              name="absence_limit_count"
+              min={1}
+              max={50}
+              step={1}
+              defaultValue={tenant.absence_limit_count ?? 5}
               className="w-full rounded-lg border border-border bg-card-bg px-3 py-2.5 text-sm text-text-primary outline-none focus:border-action-blue focus:ring-1 focus:ring-action-blue"
               dir="ltr"
             />
             <p className="mt-1 text-xs text-text-secondary">
-              القيمة الحالية في DB: CHECK (absence_threshold BETWEEN 0 AND 100)
+              مثال: 5 يعني أن الطالب يُحرم تلقائياً بعد 5 غيابات غير معذورة في المقرر
             </p>
           </div>
           <SubmitButton

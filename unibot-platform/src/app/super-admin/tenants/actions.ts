@@ -12,6 +12,7 @@ export async function getTenants() {
   const { data, error } = await supabase
     .from("tenants")
     .select("*, subscriptions(*, subscription_plans(name))")
+    .neq("status", "deleted")
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -59,7 +60,7 @@ export async function createTenant(formData: FormData) {
       status: "active",
       primary_color: "#1E40AF",
       secondary_color: "#3B82F6",
-      absence_threshold: 25.0,
+      absence_limit_count: 5,
       timezone: "Asia/Riyadh",
       default_language: "ar",
     })

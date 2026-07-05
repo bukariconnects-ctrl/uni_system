@@ -10,7 +10,7 @@ export async function getColleges() {
 
   const { data, error } = await supabase
     .from("colleges")
-    .select("*, campus_id, absence_threshold, campuses(name), departments(*, majors(*, academic_levels(*)))")
+    .select("*, campus_id, absence_limit_count, campuses(name), departments(*, majors(*, academic_levels(*)))")
     .eq("tenant_id", profile.tenant_id)
     .order("created_at", { ascending: true });
 
@@ -26,7 +26,21 @@ export async function createCollege(formData: FormData) {
   const code = formData.get("code") as string;
   const dean_id = formData.get("dean_id") as string;
   const campus_id = formData.get("campus_id") as string;
-  const absence_threshold = formData.get("absence_threshold") as string;
+  const absence_limit_count = formData.get("absence_limit_count") as string;
+
+  // Validate college limit does not exceed tenant limit
+  if (absence_limit_count) {
+    const limit = parseInt(absence_limit_count);
+    const { data: tenant } = await supabase
+      .from("tenants")
+      .select("absence_limit_count")
+      .eq("id", profile.tenant_id)
+      .single();
+    const tenantLimit = tenant?.absence_limit_count ?? 5;
+    if (limit > tenantLimit) {
+      throw new Error(`حد الغياب للكلية (${limit}) لا يمكن أن يتجاوز الحد العام للجامعة (${tenantLimit})`);
+    }
+  }
 
   const { error } = await supabase.from("colleges").insert({
     tenant_id: profile.tenant_id,
@@ -34,7 +48,7 @@ export async function createCollege(formData: FormData) {
     code: code || null,
     dean_id: dean_id || null,
     campus_id: campus_id || null,
-    absence_threshold: absence_threshold ? parseFloat(absence_threshold) : null,
+    absence_limit_count: absence_limit_count ? parseInt(absence_limit_count) : null,
   });
 
   if (error) {
@@ -46,14 +60,28 @@ export async function createCollege(formData: FormData) {
 }
 
 export async function updateCollege(id: string, formData: FormData) {
-  await requireRole(["tenant_admin"]);
+  const { profile } = await requireRole(["tenant_admin"]);
   const supabase = await createClient();
 
   const name = formData.get("name") as string;
   const code = formData.get("code") as string;
   const dean_id = formData.get("dean_id") as string;
   const campus_id = formData.get("campus_id") as string;
-  const absence_threshold = formData.get("absence_threshold") as string;
+  const absence_limit_count = formData.get("absence_limit_count") as string;
+
+  // Validate college limit does not exceed tenant limit
+  if (absence_limit_count) {
+    const limit = parseInt(absence_limit_count);
+    const { data: tenant } = await supabase
+      .from("tenants")
+      .select("absence_limit_count")
+      .eq("id", profile.tenant_id)
+      .single();
+    const tenantLimit = tenant?.absence_limit_count ?? 5;
+    if (limit > tenantLimit) {
+      throw new Error(`حد الغياب للكلية (${limit}) لا يمكن أن يتجاوز الحد العام للجامعة (${tenantLimit})`);
+    }
+  }
 
   const { error } = await supabase
     .from("colleges")
@@ -62,7 +90,7 @@ export async function updateCollege(id: string, formData: FormData) {
       code: code || null,
       dean_id: dean_id || null,
       campus_id: campus_id || null,
-      absence_threshold: absence_threshold ? parseFloat(absence_threshold) : null,
+      absence_limit_count: absence_limit_count ? parseInt(absence_limit_count) : null,
     })
     .eq("id", id);
 

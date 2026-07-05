@@ -8,7 +8,7 @@ export default async function TenantAdminDashboard() {
 
   const { data: tenant } = await supabase
     .from("tenants")
-    .select("name, storage_used_gb, max_storage_gb, max_users, status, subdomain, absence_threshold, timezone, default_language")
+    .select("name, storage_used_gb, max_storage_gb, max_users, status, subdomain, absence_limit_count, timezone, default_language")
     .eq("id", profile.tenant_id)
     .single();
 

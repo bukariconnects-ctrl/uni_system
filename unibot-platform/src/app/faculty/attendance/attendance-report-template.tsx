@@ -14,7 +14,8 @@ interface ReportRow {
   attended: number;
   unexcused_absences: number;
   excused_absences: number;
-  absence_percentage: number;
+  absence_limit_count: number;
+  remaining_absences: number;
   is_dismissed: boolean;
 }
 
@@ -28,6 +29,7 @@ interface ReportData {
   totalSessions: number;
   totalStudents: number;
   totalDismissed: number;
+  absenceLimitCount: number;
   rows: ReportRow[];
   dismissed: ReportRow[];
   generatedAt: string;
@@ -118,8 +120,8 @@ function buildReportHtml(data: ReportData): string {
         <td style="padding:6px 8px;border:1px solid #ddd;text-align:center;color:#16a34a;font-weight:bold;">${r.attended}</td>
         <td style="padding:6px 8px;border:1px solid #ddd;text-align:center;color:#dc2626;font-weight:bold;">${r.unexcused_absences}</td>
         <td style="padding:6px 8px;border:1px solid #ddd;text-align:center;">${r.excused_absences}</td>
-        <td style="padding:6px 8px;border:1px solid #ddd;text-align:center;${r.is_dismissed ? "color:#dc2626;font-weight:bold;background:#fef2f2;" : ""}">${r.absence_percentage}%</td>
-        <td style="padding:6px 8px;border:1px solid #ddd;text-align:center;${r.is_dismissed ? "color:#dc2626;font-weight:bold;" : "color:#16a34a;"}">${r.is_dismissed ? "محروم" : "—"}</td>
+        <td style="padding:6px 8px;border:1px solid #ddd;text-align:center;${r.is_dismissed || r.remaining_absences <= 0 ? "color:#dc2626;font-weight:bold;" : r.remaining_absences <= 2 ? "color:#d97706;font-weight:bold;" : ""}">${r.unexcused_absences} / ${r.absence_limit_count}</td>
+        <td style="padding:6px 8px;border:1px solid #ddd;text-align:center;${r.is_dismissed ? "color:#dc2626;font-weight:bold;" : r.remaining_absences <= 2 ? "color:#d97706;" : "color:#16a34a;"}">${r.is_dismissed ? "محروم" : r.remaining_absences > 0 ? `${r.remaining_absences}` : "—"}</td>
       </tr>`
     )
     .join("");
@@ -134,7 +136,7 @@ function buildReportHtml(data: ReportData): string {
           <td style="padding:6px 8px;border:1px solid #ddd;text-align:center;direction:ltr">${r.student_number}</td>
           <td style="padding:6px 8px;border:1px solid #ddd;text-align:center;">${r.total_sessions}</td>
           <td style="padding:6px 8px;border:1px solid #ddd;text-align:center;">${r.unexcused_absences}</td>
-          <td style="padding:6px 8px;border:1px solid #ddd;text-align:center;color:#dc2626;font-weight:bold;">${r.absence_percentage}%</td>
+          <td style="padding:6px 8px;border:1px solid #ddd;text-align:center;color:#dc2626;font-weight:bold;">${r.unexcused_absences} / ${r.absence_limit_count}</td>
         </tr>`
         )
         .join("")
@@ -177,8 +179,8 @@ function buildReportHtml(data: ReportData): string {
           <th style="padding:7px 8px;border:1px solid #1e293b;text-align:center;">حاضر</th>
           <th style="padding:7px 8px;border:1px solid #1e293b;text-align:center;">غائب</th>
           <th style="padding:7px 8px;border:1px solid #1e293b;text-align:center;">معذور</th>
-          <th style="padding:7px 8px;border:1px solid #1e293b;text-align:center;">% الغياب</th>
-          <th style="padding:7px 8px;border:1px solid #1e293b;text-align:center;">حرمان</th>
+          <th style="padding:7px 8px;border:1px solid #1e293b;text-align:center;">الغياب / الحد</th>
+          <th style="padding:7px 8px;border:1px solid #1e293b;text-align:center;">المتبقي</th>
         </tr>
       </thead>
       <tbody>
@@ -196,7 +198,7 @@ function buildReportHtml(data: ReportData): string {
           <th style="padding:7px 8px;border:1px solid #991b1b;text-align:center;">الرقم الجامعي</th>
           <th style="padding:7px 8px;border:1px solid #991b1b;text-align:center;">إجمالي الجلسات</th>
           <th style="padding:7px 8px;border:1px solid #991b1b;text-align:center;">عدد مرات الغياب</th>
-          <th style="padding:7px 8px;border:1px solid #991b1b;text-align:center;">% الغياب</th>
+          <th style="padding:7px 8px;border:1px solid #991b1b;text-align:center;">الغياب / الحد</th>
         </tr>
       </thead>
       <tbody>

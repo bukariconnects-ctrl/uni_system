@@ -36,11 +36,44 @@ export default async function StudentAttendancePage() {
   let records: any[] = [];
 
   if (courseIds.length > 0) {
+    // 1. Fetch summaries
     const { data: summariesData } = await supabase
       .from("attendance_summaries")
       .select("*")
       .eq("student_id", profile.id)
       .in("course_id", courseIds);
+
+    // 2. Resolve absence_limit_count per course:
+    //    college.absence_limit_count → tenant.absence_limit_count → 5
+    const { data: tenant } = await supabase
+      .from("tenants")
+      .select("absence_limit_count")
+      .eq("id", profile.tenant_id)
+      .single();
+
+    const tenantLimit = tenant?.absence_limit_count ?? 5;
+
+    const collegeLimitMap: Record<string, number> = {};
+    const { data: courseDepts } = await supabase
+      .from("courses")
+      .select("id, departments!inner(college_id)")
+      .in("id", courseIds);
+
+    const collegeIds = [...new Set((courseDepts || []).map((cd: any) => cd.departments?.college_id).filter(Boolean))] as string[];
+    if (collegeIds.length > 0) {
+      const { data: colleges } = await supabase
+        .from("colleges")
+        .select("id, absence_limit_count")
+        .in("id", collegeIds);
+      if (colleges) {
+        const collegeMap: Record<string, number | null> = {};
+        for (const c of colleges) collegeMap[c.id] = c.absence_limit_count;
+        for (const cd of (courseDepts || [])) {
+          const cId = (cd as any).departments?.college_id;
+          if (cId && collegeMap[cId] != null) collegeLimitMap[cd.id] = collegeMap[cId]!;
+        }
+      }
+    }
 
     const seenEnrollment = new Set<string>();
     summaries = (summariesData || []).filter((s: any) => {
@@ -50,6 +83,7 @@ export default async function StudentAttendancePage() {
     }).map((s: any) => ({
       ...s,
       course_name: s.course_id ? courseLookup[s.course_id]?.name || null : null,
+      absence_limit_count: collegeLimitMap[s.course_id] ?? tenantLimit,
     }));
 
     const { data: recData } = await supabase

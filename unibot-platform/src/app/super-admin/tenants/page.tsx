@@ -9,6 +9,7 @@ export default async function TenantsPage() {
   const { data: tenants } = await supabase
     .from("tenants")
     .select("*, subscriptions(*, subscription_plans(name))")
+    .neq("status", "deleted")
     .order("created_at", { ascending: false });
 
   const { data: plans } = await supabase

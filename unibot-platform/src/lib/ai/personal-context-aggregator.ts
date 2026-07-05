@@ -200,17 +200,52 @@ export async function getStudentPersonalSnapshot(
 
   const summaries = attendanceRes.data ?? [];
   if (summaries.length > 0) {
+    // Resolve absence limit per course: college.absence_limit_count → tenant.absence_limit_count → 5
+    const { data: tenantData } = await db
+      .from("tenants")
+      .select("absence_limit_count")
+      .eq("id", tenantId)
+      .single();
+    const tenantLimit = tenantData?.absence_limit_count ?? 5;
+
+    // Build per-course college-level limit lookup
+    const courseCollegeLimitMap: Record<string, number> = {};
+    if (courseIds.length > 0) {
+      const { data: courseDepts } = await db
+        .from("courses")
+        .select("id, departments!inner(college_id)")
+        .in("id", courseIds);
+
+      const collegeIds = [...new Set((courseDepts || []).map((cd: any) => cd.departments?.college_id).filter(Boolean))] as string[];
+      if (collegeIds.length > 0) {
+        const { data: colleges } = await db
+          .from("colleges")
+          .select("id, absence_limit_count")
+          .in("id", collegeIds);
+        if (colleges) {
+          const collegeMap: Record<string, number | null> = {};
+          for (const c of colleges) collegeMap[c.id] = c.absence_limit_count;
+          for (const cd of (courseDepts || [])) {
+            const cId = (cd as any).departments?.college_id;
+            if (cId && collegeMap[cId] != null) courseCollegeLimitMap[cd.id] = collegeMap[cId]!;
+          }
+        }
+      }
+    }
+
     parts.push("## سجل الحضور والغياب");
     for (const s of summaries) {
       const enr = Array.isArray(s.enrollments) ? s.enrollments[0] : s.enrollments;
       const course = enr?.courses ? (Array.isArray(enr.courses) ? enr.courses[0] : enr.courses) : null;
+      const courseId = s.course_id;
+      const absenceLimit = courseCollegeLimitMap[courseId] ?? tenantLimit;
       const total = s.total_sessions ?? 0;
       const attended = s.attended_sessions ?? 0;
-      const attendPct = total > 0 ? Math.round((attended / total) * 100) : 100;
-      const absencePct = 100 - attendPct;
-      const risk = absencePct >= 25 ? "🔴 خطر الحرمان" : absencePct >= 15 ? "🟡 تحذير" : "🟢 آمن";
+      const unexcused = s.unexcused_absences ?? 0;
+      const remaining = Math.max(0, absenceLimit - unexcused);
+      const risk = unexcused >= absenceLimit ? "🔴 محروم" : remaining <= 1 ? "🔴 خطر الحرمان" : remaining <= 2 ? "🟡 تحذير" : "🟢 آمن";
       parts.push(
-        `- ${course?.code ?? "مادة"}: إجمالي ${total} محاضرة | حضور ${attended} (${attendPct}%) | غياب بعذر ${s.excused_absences ?? 0} | غياب بدون عذر ${s.unexcused_absences ?? 0} | تأخر ${s.late_count ?? 0} | الوضع: ${risk}${s.is_dismissed ? " — ⚠️ محروم من هذا المقرر" : ""}`
+        `- ${course?.code ?? "مادة"}: إجمالي ${total} محاضرة | حضور ${attended} | غياب بدون عذر ${unexcused} من ${absenceLimit} مسموح | غياب بعذر ${s.excused_absences ?? 0} | تأخر ${s.late_count ?? 0} | متبقي ${remaining} غياب | الوضع: ${risk}${s.is_dismissed ? " — ⚠️ محروم من هذا المقرر" : ""}`
       );
     }
     parts.push("");
