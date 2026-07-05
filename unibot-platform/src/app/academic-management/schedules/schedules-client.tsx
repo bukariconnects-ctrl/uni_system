@@ -470,31 +470,28 @@ export function SchedulesClient({
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border-2 border-black shadow-sm" dir="ltr">
+          <div className="overflow-x-auto rounded-2xl border-2 border-border shadow-sm" dir="ltr">
             <table className="w-full border-collapse" style={{ minWidth: 900 }}>
               {/* ── Header Row ───────────────────────────── */}
               <thead>
                 <tr>
                   <th
-                    className="border border-black bg-gray-100 px-3 py-2.5 text-sm font-bold text-gray-800"
-                    style={{ width: 90, backgroundColor: "#e5e7eb" }}
+                    className="border border-border bg-app-bg px-3 py-2.5 text-sm font-bold text-text-primary"
                   >
                     Day
                   </th>
                   <th
-                    className="border border-black bg-gray-100 px-3 py-2.5 text-sm font-bold text-gray-800"
-                    style={{ width: 80, backgroundColor: "#e5e7eb" }}
+                    className="border border-border bg-app-bg px-3 py-2.5 text-sm font-bold text-text-primary"
                   >
                     Details
                   </th>
                   {TIME_SLOTS.map((slot) => (
                     <th
                       key={slot.id}
-                      className="border border-black bg-gray-100 px-2 py-2.5 text-center text-sm font-bold text-gray-800"
-                      style={{ backgroundColor: "#e5e7eb" }}
+                      className="border border-border bg-app-bg px-2 py-2.5 text-center text-sm font-bold text-text-primary"
                     >
                       <div>{slot.label}</div>
-                      <div className="text-[10px] font-normal text-gray-500">
+                      <div className="text-[10px] font-normal text-text-secondary">
                         {slot.start} – {slot.end}
                       </div>
                     </th>
@@ -509,14 +506,13 @@ export function SchedulesClient({
                     <tr key={day.id}>
                       {/* ── Day cell (rowspan=3) ──────────── */}
                       <td
-                        className="border border-black bg-gray-100 px-3 py-2 text-center align-middle text-sm font-bold text-gray-700"
+                        className="border border-border bg-app-bg px-3 py-2 text-center align-middle text-sm font-bold text-text-primary"
                         rowSpan={3}
-                        style={{ backgroundColor: "#e5e7eb", minWidth: 90 }}
                       >
                         <div className="flex flex-col items-center gap-1">
                           <span>{day.label}</span>
                           {cellSlots.some((c) => c !== null) && (
-                            <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] text-green-700">
+                            <span className="rounded-full bg-success/10 px-1.5 py-0.5 text-[10px] text-success">
                               {cellSlots.filter(Boolean).length} slot{cellSlots.filter(Boolean).length !== 1 ? "s" : ""}
                             </span>
                           )}
@@ -525,8 +521,7 @@ export function SchedulesClient({
 
                       {/* ── Subject Row ────────────────────── */}
                       <td
-                        className="border border-black bg-gray-100 px-2 py-1.5 text-center text-[11px] font-semibold text-gray-700"
-                        style={{ backgroundColor: "#e5e7eb", width: 80 }}
+                        className="border border-border bg-app-bg px-2 py-1.5 text-center text-[11px] font-semibold text-text-primary"
                       >
                         Subject
                       </td>
@@ -554,8 +549,7 @@ export function SchedulesClient({
                     <tr key={`${day.id}-instructor`}>
                       {/* ── Dr. Row ───────────────────────── */}
                       <td
-                        className="border border-black bg-gray-100 px-2 py-1.5 text-center text-[11px] font-semibold text-gray-700"
-                        style={{ backgroundColor: "#e5e7eb" }}
+                        className="border border-border bg-app-bg px-2 py-1.5 text-center text-[11px] font-semibold text-text-primary"
                       >
                         Dr.
                       </td>
@@ -584,8 +578,7 @@ export function SchedulesClient({
                     <tr key={`${day.id}-hall`}>
                       {/* ── Hall Row ──────────────────────── */}
                       <td
-                        className="border border-black bg-gray-100 px-2 py-1.5 text-center text-[11px] font-semibold text-gray-700"
-                        style={{ backgroundColor: "#e5e7eb" }}
+                        className="border border-border bg-app-bg px-2 py-1.5 text-center text-[11px] font-semibold text-text-primary"
                       >
                         Hall
                       </td>
@@ -621,15 +614,15 @@ export function SchedulesClient({
           {/* ── Legend ──────────────────────────────────── */}
           <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-text-secondary">
             <span className="flex items-center gap-1">
-              <span className="inline-block h-3 w-3 rounded bg-green-100 border border-green-300"></span>
+              <span className="inline-block h-3 w-3 rounded bg-success/10 border border-success/30"></span>
               Published
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block h-3 w-3 rounded bg-yellow-100 border border-yellow-300"></span>
+              <span className="inline-block h-3 w-3 rounded bg-warning/10 border border-warning/30"></span>
               Draft
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block h-3 w-3 rounded border border-dashed border-gray-400"></span>
+              <span className="inline-block h-3 w-3 rounded border border-dashed border-border"></span>
               Empty — click to add
             </span>
           </div>
@@ -689,11 +682,11 @@ function Cell({
   if (rowType === "subject" && !cell) {
     if (isEditing) {
       return (
-        <td className="border border-black bg-white p-1 align-top">
+        <td className="border border-border bg-card-bg p-1 align-top">
           <div className="flex flex-col gap-1">
             <select
               autoFocus
-              className="w-full rounded border border-gray-400 px-1.5 py-1 text-[11px] outline-none focus:border-blue-600"
+              className="w-full rounded border border-border px-1.5 py-1 text-[11px] outline-none focus:border-action-blue"
               defaultValue=""
               onChange={(e) => {
                 if (e.target.value) onSubjectSelect(day, slotId, e.target.value);
@@ -718,14 +711,14 @@ function Cell({
             <div className="flex gap-1">
               <button
                 onClick={onCancelEdit}
-                className="flex-1 rounded border border-gray-300 px-1 py-0.5 text-[10px] text-gray-600 hover:bg-gray-100"
+                className="flex-1 rounded border border-border px-1 py-0.5 text-[10px] text-text-secondary hover:bg-app-bg"
               >
                 Cancel
               </button>
               {cell && (
                 <button
                   onClick={() => onDelete(day, slotId)}
-                  className="rounded border border-red-300 px-1 py-0.5 text-[10px] text-red-600 hover:bg-red-50"
+                  className="rounded border border-danger/30 px-1 py-0.5 text-[10px] text-danger hover:bg-danger/10"
                 >
                   Delete
                 </button>
@@ -738,14 +731,14 @@ function Cell({
 
     return (
       <td
-        className="border border-black bg-white p-0"
+        className="border border-border bg-card-bg p-0"
         onClick={() => onStartEdit(day, slotId, "subject")}
       >
-        <div className="flex min-h-[44px] cursor-pointer items-center justify-center hover:bg-blue-50">
+        <div className="flex min-h-[44px] cursor-pointer items-center justify-center hover:bg-action-blue/5">
           {isSaving ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-action-blue" />
           ) : (
-            <Plus className="h-4 w-4 text-gray-400" />
+            <Plus className="h-4 w-4 text-text-secondary" />
           )}
         </div>
       </td>
@@ -756,11 +749,11 @@ function Cell({
   if (rowType === "subject" && cell) {
     if (isEditing) {
       return (
-        <td className="border border-black bg-white p-1 align-top">
+        <td className="border border-border bg-card-bg p-1 align-top">
           <div className="flex flex-col gap-1">
             <select
               autoFocus
-              className="w-full rounded border border-gray-400 px-1.5 py-1 text-[11px] outline-none focus:border-blue-600"
+              className="w-full rounded border border-border px-1.5 py-1 text-[11px] outline-none focus:border-action-blue"
               defaultValue={cell.spcId}
               onChange={(e) => {
                 if (e.target.value) onSubjectSelect(day, slotId, e.target.value);
@@ -785,7 +778,7 @@ function Cell({
             <div className="flex gap-1">
               <button
                 onClick={onCancelEdit}
-                className="flex-1 rounded border border-gray-300 px-1 py-0.5 text-[10px] text-gray-600 hover:bg-gray-100"
+                className="flex-1 rounded border border-border px-1 py-0.5 text-[10px] text-text-secondary hover:bg-app-bg"
               >
                 Done
               </button>
@@ -793,15 +786,15 @@ function Cell({
                 onClick={() => onToggleStatus(day, slotId)}
                 className={`flex-1 rounded border px-1 py-0.5 text-[10px] ${
                   cell.status === "published"
-                    ? "border-yellow-300 text-yellow-700 hover:bg-yellow-50"
-                    : "border-green-300 text-green-700 hover:bg-green-50"
+                    ? "border-warning/30 text-warning hover:bg-warning/10"
+                    : "border-success/30 text-success hover:bg-success/10"
                 }`}
               >
                 {cell.status === "published" ? "Unpublish" : "Publish"}
               </button>
               <button
                 onClick={() => onDelete(day, slotId)}
-                className="rounded border border-red-300 px-1 py-0.5 text-[10px] text-red-600 hover:bg-red-50"
+                className="rounded border border-danger/30 px-1 py-0.5 text-[10px] text-danger hover:bg-danger/10"
               >
                 Remove
               </button>
@@ -816,38 +809,38 @@ function Cell({
 
     return (
       <td
-        className={`border border-black p-1.5 ${isPublished ? "bg-green-50" : "bg-yellow-50"} cursor-pointer`}
+        className={`border border-black p-1.5 ${isPublished ? "bg-success/10" : "bg-warning/10"} cursor-pointer`}
         onClick={() => onStartEdit(day, slotId, "subject")}
       >
         <div className="flex flex-col">
           <div className="flex items-center gap-1">
             {isPractical ? (
-              <FlaskConical className="h-3 w-3 flex-shrink-0 text-purple-600" />
+              <FlaskConical className="h-3 w-3 flex-shrink-0 text-purple" />
             ) : (
-              <BookOpen className="h-3 w-3 flex-shrink-0 text-blue-600" />
+              <BookOpen className="h-3 w-3 flex-shrink-0 text-action-blue" />
             )}
-            <span className="text-[11px] font-bold leading-tight text-gray-800">
+            <span className="text-[11px] font-bold leading-tight text-text-primary">
               {cell.courseCode}
             </span>
             {cell.creditHours > 0 && (
-              <span className="text-[9px] text-gray-500">({cell.creditHours}h)</span>
+              <span className="text-[9px] text-text-secondary">({cell.creditHours}h)</span>
             )}
           </div>
-          <span className="mt-0.5 text-[10px] leading-tight text-gray-600 line-clamp-2">
+          <span className="mt-0.5 text-[10px] leading-tight text-text-secondary line-clamp-2">
             {cell.courseName}
           </span>
           <div className="mt-1 flex items-center gap-1">
             {isPublished ? (
-              <span className="inline-flex items-center gap-0.5 text-[9px] text-green-600">
+              <span className="inline-flex items-center gap-0.5 text-[9px] text-success">
                 <CheckCircle className="h-2.5 w-2.5" /> Published
               </span>
             ) : (
-              <span className="inline-flex items-center gap-0.5 text-[9px] text-yellow-600">
+              <span className="inline-flex items-center gap-0.5 text-[9px] text-warning">
                 <Clock className="h-2.5 w-2.5" /> Draft
               </span>
             )}
             {isPractical && (
-              <span className="rounded bg-purple-100 px-1 text-[8px] text-purple-700">Lab</span>
+              <span className="rounded bg-purple/10 px-1 text-[8px] text-purple">Lab</span>
             )}
           </div>
         </div>
@@ -859,9 +852,9 @@ function Cell({
   if (rowType === "instructor") {
     if (!cell) {
       return (
-        <td className="border border-black bg-white p-0">
+        <td className="border border-border bg-card-bg p-0">
           <div className="flex min-h-[36px] items-center justify-center">
-            <span className="text-[10px] text-gray-300">—</span>
+            <span className="text-[10px] text-text-secondary/50">—</span>
           </div>
         </td>
       );
@@ -869,10 +862,10 @@ function Cell({
 
     if (isEditing) {
       return (
-        <td className="border border-black bg-white p-1 align-top">
+        <td className="border border-border bg-card-bg p-1 align-top">
           <select
             autoFocus
-            className="w-full rounded border border-gray-400 px-1.5 py-1 text-[11px] outline-none focus:border-blue-600"
+            className="w-full rounded border border-border px-1.5 py-1 text-[11px] outline-none focus:border-action-blue"
             defaultValue={cell.instructorId || ""}
             onChange={(e) => {
               if (e.target.value) onInstructorSelect(day, slotId, e.target.value);
@@ -888,7 +881,7 @@ function Cell({
           </select>
           <button
             onClick={onCancelEdit}
-            className="mt-1 w-full rounded border border-gray-300 px-1 py-0.5 text-[10px] text-gray-600 hover:bg-gray-100"
+            className="mt-1 w-full rounded border border-border px-1 py-0.5 text-[10px] text-text-secondary hover:bg-app-bg"
           >
             Done
           </button>
@@ -898,17 +891,17 @@ function Cell({
 
     return (
       <td
-        className="border border-black bg-white p-1.5 cursor-pointer hover:bg-blue-50"
+        className="border border-border bg-card-bg p-1.5 cursor-pointer hover:bg-action-blue/5"
         onClick={() => onStartEdit(day, slotId, "instructor")}
       >
         {isSaving ? (
           <div className="flex items-center justify-center">
-            <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+            <Loader2 className="h-3 w-3 animate-spin text-action-blue" />
           </div>
         ) : cell.instructorName ? (
-          <span className="text-[11px] text-gray-700">{cell.instructorName}</span>
+          <span className="text-[11px] text-text-primary">{cell.instructorName}</span>
         ) : (
-          <span className="text-[10px] text-gray-400 italic">—</span>
+          <span className="text-[10px] text-text-secondary italic">—</span>
         )}
       </td>
     );
@@ -918,9 +911,9 @@ function Cell({
   if (rowType === "venue") {
     if (!cell) {
       return (
-        <td className="border border-black bg-white p-0">
+        <td className="border border-border bg-card-bg p-0">
           <div className="flex min-h-[36px] items-center justify-center">
-            <span className="text-[10px] text-gray-300">—</span>
+            <span className="text-[10px] text-text-secondary/50">—</span>
           </div>
         </td>
       );
@@ -928,10 +921,10 @@ function Cell({
 
     if (isEditing) {
       return (
-        <td className="border border-black bg-white p-1 align-top">
+        <td className="border border-border bg-card-bg p-1 align-top">
           <select
             autoFocus
-            className="w-full rounded border border-gray-400 px-1.5 py-1 text-[11px] outline-none focus:border-blue-600"
+            className="w-full rounded border border-border px-1.5 py-1 text-[11px] outline-none focus:border-action-blue"
             defaultValue={cell.venueId || ""}
             onChange={(e) => {
               if (e.target.value) onVenueSelect(day, slotId, e.target.value);
@@ -947,7 +940,7 @@ function Cell({
           </select>
           <button
             onClick={onCancelEdit}
-            className="mt-1 w-full rounded border border-gray-300 px-1 py-0.5 text-[10px] text-gray-600 hover:bg-gray-100"
+            className="mt-1 w-full rounded border border-border px-1 py-0.5 text-[10px] text-text-secondary hover:bg-app-bg"
           >
             Done
           </button>
@@ -957,17 +950,17 @@ function Cell({
 
     return (
       <td
-        className="border border-black bg-white p-1.5 cursor-pointer hover:bg-blue-50"
+        className="border border-border bg-card-bg p-1.5 cursor-pointer hover:bg-action-blue/5"
         onClick={() => onStartEdit(day, slotId, "venue")}
       >
         {isSaving ? (
           <div className="flex items-center justify-center">
-            <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+            <Loader2 className="h-3 w-3 animate-spin text-action-blue" />
           </div>
         ) : cell.venueName ? (
-          <span className="text-[11px] text-gray-700">{cell.venueName}</span>
+          <span className="text-[11px] text-text-primary">{cell.venueName}</span>
         ) : (
-          <span className="text-[10px] text-gray-400 italic">—</span>
+          <span className="text-[10px] text-text-secondary italic">—</span>
         )}
       </td>
     );

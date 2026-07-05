@@ -205,6 +205,30 @@ export async function reopenSession(sessionId: string) {
   revalidatePath("/faculty/attendance");
 }
 
+export async function deleteAttendanceSession(sessionId: string) {
+  const { profile } = await requireRole(["faculty"]);
+  const serviceClient = createServiceClient();
+
+  // Verify the faculty owns this session
+  const { data: session } = await serviceClient
+    .from("attendance_sessions")
+    .select("created_by")
+    .eq("id", sessionId)
+    .single();
+
+  if (!session) throw new Error("الجلسة غير موجودة");
+  if (session.created_by !== profile.id) throw new Error("ليس لديك صلاحية حذف هذه الجلسة");
+
+  // Cascade deletes attendance_records via ON DELETE CASCADE
+  const { error } = await serviceClient
+    .from("attendance_sessions")
+    .delete()
+    .eq("id", sessionId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/faculty/attendance");
+}
+
 export async function getSessionRecords(sessionId: string) {
   await requireRole(["faculty"]);
   const serviceClient = createServiceClient();

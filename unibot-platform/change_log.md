@@ -2,6 +2,39 @@
 
 ---
 
+## UI Fix: Theme-Aware Colors for Schedule & Study Plan Tables
+**التاريخ:** 2026-07-04
+
+### ملخص
+إصلاح مشكلة عدم استجابة جداول الجدول الدراسي (Schedules) والخطة الدراسية (Study Plans) للوضع الليلي/النهاري. كانت الجداول تستخدم ألواناً صلبة (`bg-white`, `bg-gray-100`, `text-gray-800`, `border-black`) بدلاً من متغيرات CSS theme (`bg-card-bg`, `text-text-primary`, `border-border`).
+
+### التغييرات
+1. **إصلاح `schedules-client.tsx`**:
+   - استبدال جميع ألوان Tailwind الصلبة بمتغيرات CSS theme في خلايا الجدول بالكامل:
+     - `bg-white` ← `bg-card-bg`
+     - `bg-gray-100` + `style={{ backgroundColor: "#e5e7eb" }}` ← `bg-app-bg`
+     - `border-black` ← `border-border`
+     - `text-gray-800/700` ← `text-text-primary`
+     - `text-gray-600/500/400` ← `text-text-secondary`
+     - `hover:bg-blue-50` ← `hover:bg-action-blue/5`
+     - `hover:bg-gray-100` ← `hover:bg-app-bg`
+     - `hover:bg-red-50` ← `hover:bg-danger/10`
+     - ألوان الحالة: `bg-green-50` ← `bg-success/10`، `text-green-600` ← `text-success`، إلخ.
+     - `bg-purple-100` ← `bg-purple/10`
+     - `border-red-300/green-300/yellow-300` ← `border-danger/30` / `border-success/30` / `border-warning/30`
+     - `focus:border-blue-600` ← `focus:border-action-blue`
+   - إزالة جميع `style={{ backgroundColor: "#e5e7eb" }}` واستبدالها بكلاسات Tailwind.
+
+2. **إصلاح `study-plan-client.tsx`**:
+   - `CourseCard`: `bg-white` ← `bg-card-bg` (السطر 419)
+
+### النتيجة
+- تبديل الوضع الليلي والنهاري عبر زر Theme toggle يعمل الآن على كلا الجدولين.
+- الألوان تتبع متغيرات CSS theme المعرفة في `globals.css`.
+- البناء يمر بنجاح.
+
+---
+
 ## UI Enhancement: Applied Royal Blue & Peach Brand Identity to Landing Page
 **التاريخ:** 2026-07-04
 

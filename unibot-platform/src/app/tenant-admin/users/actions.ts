@@ -173,6 +173,8 @@ export async function createUser(formData: FormData): Promise<{ autoEnrollment?:
             student_id: authUser.user.id,
             course_id: pc.course_id,
             semester_id: activeSemester.id,
+            major_id: major_id || null,
+            academic_level_id: academic_level_id || null,
             status: "enrolled" as const,
           }));
 
@@ -416,6 +418,8 @@ export async function bulkImportUsers(rows: CsvRow[]) {
                   student_id: authUser.user.id,
                   course_id: pc.course_id,
                   semester_id: sem.id,
+                  major_id: row.major_id || null,
+                  academic_level_id: row.academic_level_id || null,
                   status: "enrolled" as const,
                 }));
                 await svc.from("enrollments").insert(entries);

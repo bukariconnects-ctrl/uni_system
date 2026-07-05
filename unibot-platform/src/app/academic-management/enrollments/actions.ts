@@ -76,7 +76,7 @@ export async function batchEnroll(
     .eq("course_id", courseId);
   prerequisites = (prereqRows || []) as unknown as PrereqRow[];
 
-  // Pre-fetch student names for meaningful error messages
+  // Pre-fetch student names and majors for meaningful error messages and enrollment data
   const { data: studentProfiles } = await serviceClient
     .from("profiles")
     .select("id, first_name, last_name")
@@ -85,6 +85,13 @@ export async function batchEnroll(
     acc[p.id] = `${p.first_name} ${p.last_name}`;
     return acc;
   }, {});
+
+  const { data: studentMajorsList } = await serviceClient
+    .from("student_majors")
+    .select("student_id, major_id, academic_level_id")
+    .in("student_id", studentIds)
+    .eq("is_primary", true);
+  const studentMajorMap = new Map((studentMajorsList || []).map((sm: any) => [sm.student_id, sm]));
 
   for (const studentId of studentIds) {
     const studentName = studentNameMap[studentId] || studentId;
@@ -115,12 +122,16 @@ export async function batchEnroll(
     }
     if (prereqBlocked) continue;
 
+    const sm = studentMajorMap.get(studentId);
+
     // Insert enrollment with course_id directly
     const { error: insertError } = await serviceClient.from("enrollments").insert({
       tenant_id: profile.tenant_id,
       student_id: studentId,
       course_id: courseId,
       semester_id: semesterId,
+      major_id: sm?.major_id || null,
+      academic_level_id: sm?.academic_level_id || null,
       status: "enrolled",
     });
 
@@ -320,6 +331,8 @@ export async function autoEnrollStudent(
       student_id: studentId,
       course_id: spc.course_id,
       semester_id: semesterId,
+      major_id: primaryMajor.major_id,
+      academic_level_id: academicLevel.id,
       status: "enrolled",
     });
 
@@ -335,6 +348,136 @@ export async function autoEnrollStudent(
 
   revalidatePath("/academic-management/enrollments");
   return results;
+}
+
+/**
+ * Repair channel memberships for existing enrollments that have NULL major_id or academic_level_id.
+ * This fixes the issue where faculty and students are in different channels for the same course.
+ * Call this after fixing enrollment flows to repair existing data.
+ */
+export async function repairChannelMemberships() {
+  const { profile } = await requireRole(["academic_management", "tenant_admin"]);
+  const serviceClient = createServiceClient();
+
+  // 1. Pre-fetch all study_plan_courses to resolve course_id → academic_level_id by major
+  const { data: allSpc } = await serviceClient
+    .from("study_plan_courses")
+    .select("course_id, academic_level_id, academic_levels!inner(major_id)");
+
+  const courseLevelByMajor = new Map<string, string>();
+  if (allSpc) {
+    for (const spc of allSpc as any[]) {
+      const al = spc.academic_levels as any;
+      if (al?.major_id) {
+        const key = `${spc.course_id}|${al.major_id}`;
+        if (!courseLevelByMajor.has(key)) {
+          courseLevelByMajor.set(key, spc.academic_level_id);
+        }
+      }
+    }
+  }
+
+  // 2. Fix enrollments with NULL major_id/academic_level_id
+  const { data: brokenEnrollments } = await serviceClient
+    .from("enrollments")
+    .select("id, student_id, course_id, tenant_id, major_id, academic_level_id")
+    .or("major_id.is.null,academic_level_id.is.null")
+    .eq("status", "enrolled");
+
+  if (!brokenEnrollments || brokenEnrollments.length === 0) {
+    return { message: "جميع التسجيلات سليمة", fixed: 0, cleaned: 0 };
+  }
+
+  const studentIds = [...new Set(brokenEnrollments.map((e: any) => e.student_id))];
+
+  const { data: studentMajors } = await serviceClient
+    .from("student_majors")
+    .select("student_id, major_id, academic_level_id")
+    .in("student_id", studentIds)
+    .eq("is_primary", true);
+
+  const studentMajorMap = new Map((studentMajors || []).map((sm: any) => [sm.student_id, sm]));
+
+  let fixed = 0;
+  let fixedStudentMajors = 0;
+  for (const enrollment of brokenEnrollments) {
+    const sm = studentMajorMap.get(enrollment.student_id);
+    if (!sm || !sm.major_id) continue;
+
+    const updates: Record<string, unknown> = {};
+    if (!enrollment.major_id) updates.major_id = sm.major_id;
+
+    // Resolve academic_level_id: from enrollment, student_majors, or study_plan_courses lookup
+    let levelId = enrollment.academic_level_id || sm.academic_level_id;
+    if (!levelId) {
+      levelId = courseLevelByMajor.get(`${enrollment.course_id}|${sm.major_id}`) || null;
+      if (levelId) {
+        // Also fix student_majors for future lookups
+        await serviceClient
+          .from("student_majors")
+          .update({ academic_level_id: levelId })
+          .eq("student_id", enrollment.student_id)
+          .eq("major_id", sm.major_id);
+        fixedStudentMajors++;
+      }
+    }
+
+    // Only update if we have both major_id and academic_level_id to prevent orphan channels
+    if (!levelId) continue;
+    updates.academic_level_id = levelId;
+
+    const { error } = await serviceClient.from("enrollments").update(updates).eq("id", enrollment.id);
+    if (!error) fixed++;
+  }
+
+  // 3. Clean up orphan channel memberships
+  const { data: orphanChannels } = await serviceClient
+    .from("channels")
+    .select("id, course_id, semester_id")
+    .eq("channel_type", "course")
+    .is("major_id", null);
+
+  let cleaned = 0;
+  if (orphanChannels) {
+    for (const channel of orphanChannels) {
+      const { data: members } = await serviceClient
+        .from("channel_members")
+        .select("profile_id")
+        .eq("channel_id", channel.id)
+        .eq("is_admin", false);
+
+      if (!members) continue;
+
+      for (const member of members) {
+        const { data: enrollment } = await serviceClient
+          .from("enrollments")
+          .select("id")
+          .eq("student_id", member.profile_id)
+          .eq("course_id", channel.course_id)
+          .eq("semester_id", channel.semester_id)
+          .eq("status", "enrolled")
+          .not("major_id", "is", null)
+          .maybeSingle();
+
+        if (enrollment) {
+          await serviceClient
+            .from("channel_members")
+            .delete()
+            .eq("channel_id", channel.id)
+            .eq("profile_id", member.profile_id);
+          cleaned++;
+        }
+      }
+    }
+  }
+
+  return {
+    message: `تم إصلاح ${fixed} تسجيل وتحديث ${fixedStudentMajors} تخصص طالب وتنظيف ${cleaned} عضوية قناة غير صحيحة`,
+    fixed,
+    fixedStudentMajors,
+    cleaned,
+    total: brokenEnrollments.length,
+  };
 }
 
 /** Get semesters for the enrollment filter */

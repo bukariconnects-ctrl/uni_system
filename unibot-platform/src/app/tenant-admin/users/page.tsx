@@ -15,7 +15,7 @@ export default async function UsersPage() {
         *,
         student_profiles!left(*),
         faculty_profiles!left(*),
-        student_majors!left(major_id, majors(name, code)),
+        student_majors!left(major_id, academic_level_id, majors(name, code)),
         faculty_departments!left(department_id, departments(name, code)),
         profile_custom_roles!profile_custom_roles_profile_id_fkey(custom_role_id, custom_roles(name)),
         academic_management_departments!academic_management_departments_profile_id_fkey(department_id, departments(name, code))

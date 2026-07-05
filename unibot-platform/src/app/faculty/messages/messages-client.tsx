@@ -9,6 +9,7 @@ import {
   startConversation,
   getChannelMembers,
   updateChannelSettings,
+  deleteAllChannelMessages,
   muteChannelMember,
   markChannelRead,
   markConversationRead,
@@ -26,6 +27,7 @@ import {
   Volume2,
   MessageCircleOff,
   MessageCircle,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -206,6 +208,21 @@ export function MessagesClient({
     }
   }
 
+  async function handleDeleteAllMessages() {
+    if (!target || target.type !== "channel") return;
+    if (!confirm("هل أنت متأكد من حذف جميع رسائل هذه القناة؟ لا يمكن التراجع عن هذا الإجراء.")) return;
+    setLoading(true);
+    try {
+      await deleteAllChannelMessages(target.id);
+      setMessages([]);
+      toast.success("تم حذف جميع رسائل القناة");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "حدث خطأ");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleMuteMember(memberId: string, isMuted: boolean) {
     if (!target) return;
     setLoading(true);
@@ -339,13 +356,23 @@ export function MessagesClient({
                 <span className="font-bold text-text-primary">{target.name}</span>
               </div>
               {target.type === "channel" && (
-                <button
-                  onClick={openChannelSettings}
-                  className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg hover:text-text-primary"
-                  title="إعدادات القناة"
-                >
-                  <Settings className="h-4 w-4" />
-                </button>
+                <>
+                  <button
+                    onClick={handleDeleteAllMessages}
+                    disabled={loading}
+                    className="rounded-lg p-1.5 text-danger hover:bg-danger/10"
+                    title="حذف جميع الرسائل"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={openChannelSettings}
+                    className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg hover:text-text-primary"
+                    title="إعدادات القناة"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </button>
+                </>
               )}
             </div>
 

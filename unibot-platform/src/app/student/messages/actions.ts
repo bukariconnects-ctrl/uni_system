@@ -9,16 +9,72 @@ export async function getChannels() {
 
   const { data } = await serviceClient
     .from("channel_members")
-    .select("muted_until, last_read_at, channels(id, name, channel_type, course_id, is_readonly, allow_student_messages, courses(code, name))")
+    .select("muted_until, last_read_at, channels(id, name, channel_type, course_id, academic_level_id, major_id, is_readonly, allow_student_messages)")
     .eq("profile_id", profile.id)
     .eq("tenant_id", profile.tenant_id);
 
-  const channels = (data || []).map((cm: any) => ({
+  let channels = (data || []).map((cm: any) => cm.channels ? {
     ...cm.channels,
     muted_until: cm.muted_until,
     last_read_at: cm.last_read_at,
-    can_send: cm.channels?.allow_student_messages !== false && (!cm.muted_until || new Date(cm.muted_until) <= new Date())
-  })).filter(Boolean);
+    can_send: cm.channels.allow_student_messages !== false && (!cm.muted_until || new Date(cm.muted_until) <= new Date())
+  } : null).filter(Boolean) as any[];
+
+  // Resolve channel names from canonical data (courses, majors, levels)
+  const courseIds = [...new Set(channels.map((ch: any) => ch.course_id).filter(Boolean))];
+  const levelIds = [...new Set(channels.map((ch: any) => ch.academic_level_id).filter(Boolean))];
+  const channelMajorIds = [...new Set(channels.map((ch: any) => ch.major_id).filter(Boolean))];
+
+  if (courseIds.length > 0 || levelIds.length > 0 || channelMajorIds.length > 0) {
+    const [coursesRes, levelsRes, channelMajorsRes] = await Promise.all([
+      courseIds.length > 0 ? serviceClient.from("courses").select("id, name").in("id", courseIds) : { data: [] },
+      levelIds.length > 0 ? serviceClient.from("academic_levels").select("id, major_id, level_number").in("id", levelIds) : { data: [] },
+      channelMajorIds.length > 0 ? serviceClient.from("majors").select("id, name").in("id", channelMajorIds) : { data: [] },
+    ]);
+
+    const courseMap = new Map((coursesRes.data || []).map((c: any) => [c.id, c.name]));
+    const levelMap = new Map((levelsRes.data || []).map((l: any) => [l.id, l]));
+    const channelMajorMap = new Map((channelMajorsRes.data || []).map((m: any) => [m.id, m.name]));
+
+    const majorIds = [...new Set(Array.from(levelMap.values()).map((l: any) => l.major_id).filter(Boolean))];
+    const majorMap = new Map(
+      majorIds.length > 0
+        ? (await serviceClient.from("majors").select("id, name").in("id", majorIds)).data?.map((m: any) => [m.id, m.name]) || []
+        : []
+    );
+
+    // Fetch student's own primary major as fallback for channels missing data
+    let studentMajorName: string | null = null;
+    let studentLevelNum: number | null = null;
+    if (profile.role === "student") {
+      const { data: sm } = await serviceClient
+        .from("student_majors")
+        .select("major_id, academic_level_id, majors(name), academic_levels(level_number)")
+        .eq("student_id", profile.id)
+        .eq("is_primary", true)
+        .maybeSingle();
+
+      if (sm) {
+        studentMajorName = (sm.majors as any)?.name ?? null;
+        studentLevelNum = (sm.academic_levels as any)?.level_number ?? null;
+      }
+    }
+
+    channels = channels.map((ch: any) => {
+      const courseName = courseMap.get(ch.course_id) || "مادة";
+      const level = levelMap.get(ch.academic_level_id);
+
+      // Priority: channel's own major_id → level's major_id → student's primary major
+      const majorName = channelMajorMap.get(ch.major_id)
+        || majorMap.get(level?.major_id)
+        || studentMajorName;
+
+      // Priority: channel's level → student's enrolled level
+      const levelNum = level?.level_number ?? studentLevelNum;
+
+      return { ...ch, name: `${courseName} - ${majorName || "تخصص"} - مستوى ${levelNum ?? "?"}` };
+    });
+  }
 
   // Fetch unread counts
   const { data: unreadData } = await serviceClient.rpc("get_unread_channel_counts", {

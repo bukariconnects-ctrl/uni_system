@@ -41,6 +41,7 @@ import { toast } from "sonner";
 
 interface StudentMajorLink {
   major_id: string;
+  academic_level_id: string | null;
   majors: { name: string; code: string | null } | null;
 }
 
@@ -180,16 +181,34 @@ export function UsersClient({
     if (p === "all" || p === "students" || p === "faculty" || p === "management") setTab(p as UserTab);
   }, []);
 
-  function changeTab(t: UserTab) {
-    setTab(t);
-    window.history.replaceState(null, "", `?tab=${t}`);
-  }
   const [modal, setModal] = useState<ModalState>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [autoEnrollMsg, setAutoEnrollMsg] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [filterCollege, setFilterCollege] = useState("");
+  const [filterDept, setFilterDept] = useState("");
+  const [filterMajor, setFilterMajor] = useState("");
+  const [filterLevel, setFilterLevel] = useState("");
   const [importResult, setImportResult] = useState<{ success: number; errors: string[] } | null>(null);
+
+  // Reset cascade filters when tab changes
+  useEffect(() => {
+    setFilterCollege("");
+    setFilterDept("");
+    setFilterMajor("");
+    setFilterLevel("");
+  }, [tab]);
+
+  // Cascade: reset child filters when parent changes
+  useEffect(() => { setFilterDept(""); setFilterMajor(""); setFilterLevel(""); }, [filterCollege]);
+  useEffect(() => { setFilterMajor(""); setFilterLevel(""); }, [filterDept]);
+  useEffect(() => { setFilterLevel(""); }, [filterMajor]);
+
+  function changeTab(t: UserTab) {
+    setTab(t);
+    window.history.replaceState(null, "", `?tab=${t}`);
+  }
   const fileRef = useRef<HTMLInputElement>(null);
 
   const closeModal = () => {
@@ -291,12 +310,54 @@ export function UsersClient({
       u.student_profiles?.[0]?.student_number?.toLowerCase().includes(search.toLowerCase()) ||
       u.faculty_profiles?.[0]?.employee_id?.toLowerCase().includes(search.toLowerCase());
 
-    if (tab === "all") return matchesSearch;
-    if (tab === "students") return u.role === "student" && matchesSearch;
-    if (tab === "faculty") return u.role === "faculty" && matchesSearch;
-    if (tab === "management") return (u.role === "academic_management" || u.role === "tenant_admin") && matchesSearch;
+    // Tab filter
+    if (tab === "all") { /* no tab filter */ }
+    else if (tab === "students") { if (u.role !== "student") return false; }
+    else if (tab === "faculty") { if (u.role !== "faculty") return false; }
+    else if (tab === "management") { if (u.role !== "academic_management" && u.role !== "tenant_admin") return false; }
+
+    // Cascade filters
+    if (filterCollege || filterDept || filterMajor || filterLevel) {
+      if (u.role === "student") {
+        const sm = u.student_majors?.[0];
+        if (!sm) return false;
+        if (filterMajor && sm.major_id !== filterMajor) return false;
+        if (filterLevel && sm.academic_level_id !== filterLevel) return false;
+        // For college/dept, check major's department → college chain
+        if (filterCollege || filterDept) {
+          const majorObj = majors.find((m) => m.id === sm.major_id);
+          if (!majorObj) return false;
+          if (filterDept && majorObj.department_id !== filterDept) return false;
+          if (filterCollege) {
+            const deptObj = departments.find((d) => d.id === majorObj.department_id);
+            if (!deptObj || deptObj.college_id !== filterCollege) return false;
+          }
+        }
+      } else if (u.role === "faculty" || u.role === "academic_management" || u.role === "tenant_admin") {
+        const deptLink = u.faculty_departments?.[0] || u.academic_management_departments?.[0];
+        if (!deptLink) return false;
+        if (filterDept && deptLink.department_id !== filterDept) return false;
+        if (filterCollege) {
+          const deptObj = departments.find((d) => d.id === deptLink.department_id);
+          if (!deptObj || deptObj.college_id !== filterCollege) return false;
+        }
+        // Major/level filters don't apply to non-students
+        if (filterMajor || filterLevel) return false;
+      }
+    }
+
     return matchesSearch;
   });
+
+  // Derived filter options (cascading)
+  const filteredDepts = departments.filter((d) => !filterCollege || d.college_id === filterCollege);
+  const filteredMajors = majors.filter((m) => !filterDept || m.department_id === filterDept);
+  const filteredLevels = academicLevels.filter((l) => !filterMajor || l.major_id === filterMajor);
+
+  const showStudentFilters = tab === "all" || tab === "students";
+  const showBasicFilters = tab === "all" || tab === "faculty" || tab === "management";
+
+  const isFilterActive = filterCollege || filterDept || filterMajor || filterLevel;
 
   const counts = {
     all: initialUsers.length,
@@ -368,6 +429,75 @@ export function UsersClient({
             className="w-full rounded-xl border border-border bg-card-bg py-2 pr-10 pl-4 text-sm text-text-primary outline-none transition-colors focus:border-action-blue focus:ring-2 focus:ring-action-blue/20"
           />
         </div>
+      </div>
+
+      {/* ── Cascading Filter Bar ── */}
+      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card-bg p-4 shadow-sm">
+        <div className="min-w-[160px] flex-1">
+          <label className="mb-1 block text-xs font-medium text-text-secondary">الكلية</label>
+          <select
+            value={filterCollege}
+            onChange={(e) => setFilterCollege(e.target.value)}
+            className="w-full rounded-lg border border-border bg-app-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
+          >
+            <option value="">— الكل —</option>
+            {colleges.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="min-w-[160px] flex-1">
+          <label className="mb-1 block text-xs font-medium text-text-secondary">القسم</label>
+          <select
+            value={filterDept}
+            onChange={(e) => setFilterDept(e.target.value)}
+            className="w-full rounded-lg border border-border bg-app-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
+          >
+            <option value="">— الكل —</option>
+            {filteredDepts.map((d) => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </select>
+        </div>
+        {showStudentFilters && (
+          <div className="min-w-[160px] flex-1">
+            <label className="mb-1 block text-xs font-medium text-text-secondary">التخصص</label>
+            <select
+              value={filterMajor}
+              onChange={(e) => setFilterMajor(e.target.value)}
+              className="w-full rounded-lg border border-border bg-app-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
+            >
+              <option value="">— الكل —</option>
+              {filteredMajors.map((m) => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        {showStudentFilters && (
+          <div className="min-w-[160px] flex-1">
+            <label className="mb-1 block text-xs font-medium text-text-secondary">المستوى</label>
+            <select
+              value={filterLevel}
+              onChange={(e) => setFilterLevel(e.target.value)}
+              className="w-full rounded-lg border border-border bg-app-bg px-3 py-2 text-sm outline-none focus:border-action-blue"
+            >
+              <option value="">— الكل —</option>
+              {filteredLevels.map((l) => (
+                <option key={l.id} value={l.id}>المستوى {l.level_number}{l.name ? ` — ${l.name}` : ""}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        {isFilterActive && (
+          <button
+            onClick={() => { setFilterCollege(""); setFilterDept(""); setFilterMajor(""); setFilterLevel(""); }}
+            className="flex items-center gap-1 rounded-lg border border-danger/30 px-3 py-2 text-xs font-medium text-danger hover:bg-danger/5"
+          >
+            <X className="h-3.5 w-3.5" />
+            مسح الفلاتر
+          </button>
+        )}
       </div>
 
       {filteredUsers.length === 0 ? (

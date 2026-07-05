@@ -64,7 +64,7 @@ export async function getStudentPersonalSnapshot(
 
     db
       .from("student_majors")
-      .select("majors(name, code, departments(name), academic_levels(level_number, name))")
+      .select("major_id, majors(name, code, departments(name)), academic_levels(level_number, name)")
       .eq("student_id", userId)
       .eq("is_primary", true)
       .maybeSingle(),
@@ -135,7 +135,7 @@ export async function getStudentPersonalSnapshot(
   const sp = profileRes.data;
   const studentName = nameRes.data;
   const majorData = (majorRes.data?.majors as any);
-  const levelData = (majorData?.academic_levels as any[])?.[0];
+  const levelData = (majorRes.data?.academic_levels as any);
 
   parts.push("## الملف الأكاديمي للطالب");
   parts.push(`- اسم الطالب: ${studentName?.first_name ?? ""} ${studentName?.last_name ?? ""}`);

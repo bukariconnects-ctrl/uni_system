@@ -6,6 +6,7 @@ import {
   generateQrCode,
   closeSession,
   reopenSession,
+  deleteAttendanceSession,
   getSessionRecords,
   updateAttendanceRecord,
   getAttendanceReportData,
@@ -23,6 +24,7 @@ import {
   ShieldCheck,
   RotateCcw,
   FileText,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAttendanceReport } from "./attendance-report-template";
@@ -322,6 +324,9 @@ export function AttendanceClient({
                     <XCircle className="h-4 w-4" />
                   </button>
                 )}
+                <button onClick={() => { if (confirm("هل أنت متأكد من حذف جلسة الحضور؟ سيتم حذف جميع سجلات الحضور المرتبطة بها.")) handleAction(() => deleteAttendanceSession(session.id), "تم حذف الجلسة"); }} className="rounded-lg p-1.5 text-danger hover:bg-danger/10" title="حذف الجلسة">
+                  <Trash2 className="h-4 w-4" />
+                </button>
                 <button onClick={() => loadRecords(session.id)} className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg">
                   {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                 </button>

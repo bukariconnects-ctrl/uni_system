@@ -6,6 +6,7 @@ import {
   batchEnroll,
   getEnrollments,
   updateEnrollmentStatus,
+  repairChannelMemberships,
 } from "./actions";
 import {
   Users,
@@ -16,6 +17,7 @@ import {
   BookOpen,
   Loader2,
   Search,
+  Wrench,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -233,6 +235,22 @@ export function EnrollmentsClient({
     }
   }
 
+  async function handleRepair() {
+    if (!confirm("سيتم إصلاح جميع التسجيلات التي تفتقد للتخصص والمستوى الدراسي، هل تريد المتابعة؟")) return;
+    setLoading(true);
+    const loadingToast = toast.loading("جاري إصلاح التسجيلات وعضويات القنوات...");
+    try {
+      const res = await repairChannelMemberships();
+      toast.dismiss(loadingToast);
+      toast.success(res.message);
+    } catch (e: unknown) {
+      toast.dismiss(loadingToast);
+      toast.error(e instanceof Error ? e.message : "حدث خطأ");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleStatusChange(id: string, status: "enrolled" | "dropped") {
     setLoading(true);
     const loadingToast = toast.loading("جاري تغيير الحالة...");
@@ -286,6 +304,18 @@ export function EnrollmentsClient({
         >
           <Users className="h-4 w-4" />
           سجل التسجيلات
+        </button>
+      </div>
+
+      {/* ── Repair button ── */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleRepair}
+          disabled={loading}
+          className="flex items-center gap-2 rounded-lg border border-warning/30 px-4 py-2 text-xs font-medium text-warning hover:bg-warning/5 disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wrench className="h-3.5 w-3.5" />}
+          إصلاح القنوات والتسجيلات
         </button>
       </div>
 

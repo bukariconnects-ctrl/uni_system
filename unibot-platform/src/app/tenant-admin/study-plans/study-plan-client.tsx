@@ -416,7 +416,7 @@ function CourseCard({
 
   return (
     <div
-      className={`group relative rounded-lg border border-border bg-white p-2.5 shadow-sm transition-shadow hover:shadow-md border-l-4 ${borderColor}`}
+      className={`group relative rounded-lg border border-border bg-card-bg p-2.5 shadow-sm transition-shadow hover:shadow-md border-l-4 ${borderColor}`}
     >
       <div className="mb-1.5 flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
