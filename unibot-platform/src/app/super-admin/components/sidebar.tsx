@@ -7,6 +7,7 @@ import {
   Building2,
   CreditCard,
   Megaphone,
+  BarChart3,
   LogOut,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -16,6 +17,7 @@ import { SidebarShell } from "@/components/sidebar-shell";
 
 const navItems = [
   { href: "/super-admin", label: "لوحة التحكم", icon: LayoutDashboard },
+  { href: "/super-admin/reports", label: "التقارير", icon: BarChart3 },
   { href: "/super-admin/plans", label: "خطط الاشتراك", icon: CreditCard },
   { href: "/super-admin/tenants", label: "إدارة الجامعات", icon: Building2 },
   { href: "/super-admin/announcements", label: "الإعلانات", icon: Megaphone },

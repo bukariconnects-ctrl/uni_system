@@ -19,6 +19,8 @@ interface RiskScore {
   absence_factor: number;
   grade_factor: number;
   engagement_factor: number;
+  student_major_name?: string | null;
+  student_level_name?: string | null;
   profiles?: { first_name: string; last_name: string; email: string };
   courses?: { code: string; name: string } | null;
 }
@@ -98,6 +100,13 @@ export function RiskZoneClient({
                   <p className="text-xs text-text-secondary">
                     {score.courses?.code} — {score.courses?.name || ""}
                   </p>
+                  {(score.student_major_name || score.student_level_name) && (
+                    <p className="text-xs text-text-secondary/70 mt-0.5">
+                      {score.student_major_name || ""}
+                      {score.student_major_name && score.student_level_name ? " — " : ""}
+                      {score.student_level_name || ""}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-4">

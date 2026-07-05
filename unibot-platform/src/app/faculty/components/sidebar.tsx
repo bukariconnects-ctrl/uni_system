@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   Ticket as TicketIcon,
   Megaphone,
+  BarChart3,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types/database";
@@ -22,6 +23,7 @@ import { RealtimePageRefresher } from "@/components/realtime-page-refresher";
 
 const navItems = [
   { href: "/faculty", label: "لوحة التحكم", icon: LayoutDashboard },
+  { href: "/faculty/reports", label: "التقارير", icon: BarChart3 },
   { href: "/faculty/materials", label: "المحتوى التعليمي", icon: BookOpen },
   { href: "/faculty/assignments", label: "التكاليف", icon: FileText },
   { href: "/faculty/attendance", label: "الحضور", icon: ClipboardCheck },

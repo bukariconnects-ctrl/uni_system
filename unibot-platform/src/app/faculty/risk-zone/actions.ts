@@ -1,13 +1,15 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 
 export async function getFacultyRiskScores() {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
+  const serviceClient = createServiceClient();
 
+  // Get the faculty's course IDs from course_schedules
   const { data: schedules } = await supabase
     .from("course_schedules")
     .select("study_plan_courses!inner(course_id)")
@@ -16,19 +18,47 @@ export async function getFacultyRiskScores() {
 
   if (!schedules || schedules.length === 0) return [];
 
-  const courseIds = [...new Set(schedules.map((s: any) => s.study_plan_courses?.course_id).filter(Boolean))];
+  const courseIds = [
+    ...new Set(
+      schedules
+        .map((s: any) => s.study_plan_courses?.course_id)
+        .filter(Boolean),
+    ),
+  ];
 
-  const { data } = await supabase
-    .from("student_risk_scores")
-    .select(
-      "*, profiles!student_risk_scores_student_id_fkey(first_name, last_name, email), courses!student_risk_scores_course_id_fkey(code, name)"
-    )
+  // Use the v_academic_risk_students view which has computed risk_status
+  const { data: riskData } = await serviceClient
+    .from("v_academic_risk_students")
+    .select("*")
     .eq("tenant_id", profile.tenant_id)
     .in("course_id", courseIds)
-    .in("risk_level", ["high", "critical"])
-    .order("risk_score", { ascending: false });
+    .in("risk_status", ["at_risk", "dismissed"])
+    .order("absence_percentage", { ascending: false });
 
-  return data || [];
+  if (!riskData) return [];
+
+  // Transform to match RiskScore interface expected by the client
+  return riskData.map((r: any) => ({
+    id: r.summary_id || r.student_id,
+    student_id: r.student_id,
+    course_id: r.course_id,
+    risk_level: r.is_dismissed ? "critical" : "high",
+    risk_score: Math.min(Math.round(r.absence_percentage || 0), 100),
+    absence_factor: r.unexcused_absences || 0,
+    grade_factor: 0,
+    engagement_factor: 0,
+    student_major_name: r.student_major_name || null,
+    student_level_name: r.student_level_name || null,
+    profiles: {
+      first_name: r.first_name,
+      last_name: r.last_name,
+      email: "",
+    },
+    courses: {
+      code: r.course_code || "",
+      name: r.course_name || "",
+    },
+  }));
 }
 
 export async function sendFacultyRecommendation(formData: FormData) {

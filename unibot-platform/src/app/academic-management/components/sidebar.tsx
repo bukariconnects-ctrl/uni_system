@@ -17,6 +17,7 @@ import { SidebarShell } from "@/components/sidebar-shell";
 
 const navItems = [
   { href: "/academic-management", label: "لوحة التحكم", icon: LayoutDashboard },
+  { href: "/academic-management/reports", label: "التقارير", icon: BarChart3 },
   { href: "/academic-management/schedules", label: "الجدول الدراسي", icon: CalendarClock },
   { href: "/academic-management/enrollments", label: "التسجيل الجماعي", icon: Users },
   { href: "/academic-management/circulars", label: "التعاميم", icon: Megaphone },
