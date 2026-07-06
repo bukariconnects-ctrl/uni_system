@@ -9,7 +9,7 @@ export async function getRecommendations() {
 
   const { data, error } = await supabase
     .from("student_recommendations")
-    .select("*, courses(name)")
+    .select("*, courses(name), profiles!sent_by(first_name, last_name)")
     .eq("student_id", profile.id)
     .order("created_at", { ascending: false });
 

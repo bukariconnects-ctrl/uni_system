@@ -18,13 +18,8 @@ import {
 } from "recharts";
 import {
   Building2,
-  Users,
-  BookOpen,
   Cpu,
   HardDrive,
-  GraduationCap,
-  TrendingUp,
-  DollarSign,
 } from "lucide-react";
 
 interface Overview {
@@ -36,20 +31,6 @@ interface Overview {
   total_max_storage_gb: number;
   total_max_users: number;
   avg_absence_limit: number;
-}
-
-interface PlatformStats {
-  total_students: number;
-  total_faculty: number;
-  total_tenant_admins: number;
-  total_academic_management: number;
-  total_profiles: number;
-  total_courses: number;
-  total_departments: number;
-  total_majors: number;
-  total_active_enrollments: number;
-  total_sessions: number;
-  total_colleges: number;
 }
 
 interface TokenUsage {
@@ -83,7 +64,6 @@ interface Tenant {
 
 interface ReportsData {
   overview: Overview | null;
-  platformStats: PlatformStats | null;
   tokenUsage: TokenUsage[];
   monthlyGrowth: MonthlyGrowth[];
   tenants: Tenant[];
@@ -102,7 +82,7 @@ const CHART_COLORS = {
 const PIE_COLORS = [CHART_COLORS.success, CHART_COLORS.warning, CHART_COLORS.danger, CHART_COLORS.royalBlue];
 
 export function SuperAdminReportsClient({ data }: { data: ReportsData }) {
-  const { overview, platformStats, tokenUsage, monthlyGrowth, tenants } = data;
+  const { overview, tokenUsage, monthlyGrowth, tenants } = data;
 
   // Token usage chart data (top 10)
   const tokenChartData = (tokenUsage || [])
@@ -122,9 +102,12 @@ export function SuperAdminReportsClient({ data }: { data: ReportsData }) {
   const totalMaxStorage = overview?.total_max_storage_gb || 0;
   const storagePct = totalMaxStorage > 0 ? ((totalStorageUsed / totalMaxStorage) * 100).toFixed(1) : "0";
 
+  // Total AI cost
+  const totalAiCost = (tokenUsage || []).reduce((s, t) => s + (t.total_cost_usd || 0), 0);
+
   return (
     <div className="space-y-6">
-      {/* ── KPIs ── */}
+      {/* ── KPIs (Platform-level only) ── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           title="إجمالي الجامعات"
@@ -137,30 +120,34 @@ export function SuperAdminReportsClient({ data }: { data: ReportsData }) {
           }}
         />
         <KpiCard
-          title="إجمالي الطلاب"
-          value={platformStats?.total_students || 0}
-          icon={GraduationCap}
-          iconColor="bg-success/10 text-success"
+          title="التخزين المستخدم"
+          value={`${totalStorageUsed.toFixed(1)} GB`}
+          icon={HardDrive}
+          iconColor="bg-teal/10 text-teal"
           trend={{
-            value: `${platformStats?.total_active_enrollments || 0} تسجيل نشط`,
-            direction: "up",
+            value: `${storagePct}%`,
+            direction: parseFloat(storagePct) > 80 ? "down" : "up",
+            label: "من السعة القصوى",
           }}
         />
         <KpiCard
-          title="أعضاء هيئة التدريس"
-          value={platformStats?.total_faculty || 0}
-          icon={Users}
-          iconColor="bg-peach/10 text-action-blue"
-        />
-        <KpiCard
-          title="إجمالي المقررات"
-          value={platformStats?.total_courses || 0}
-          icon={BookOpen}
+          title="إجمالي المستخدمين المسموح"
+          value={(overview?.total_max_users || 0).toLocaleString()}
+          icon={Cpu}
           iconColor="bg-purple/10 text-purple"
           trend={{
-            value: `${platformStats?.total_colleges || 0} كلية`,
+            value: `${tenants.length} جامعة`,
             direction: "neutral",
-            label: `${platformStats?.total_departments || 0} قسم`,
+          }}
+        />
+        <KpiCard
+          title="إجمالي تكلفة AI"
+          value={`$${totalAiCost.toFixed(2)}`}
+          icon={Cpu}
+          iconColor="bg-warning/10 text-warning"
+          trend={{
+            value: `${(tokenUsage || []).filter(t => t.total_tokens > 0).length} جامعات تستخدم AI`,
+            direction: "neutral",
           }}
         />
       </div>
@@ -246,7 +233,7 @@ export function SuperAdminReportsClient({ data }: { data: ReportsData }) {
         </ChartCard>
       </div>
 
-      {/* ── Charts Row 2 ── */}
+      {/* ── Charts Row 2: فقط حالة الجامعات ── */}
       <div className="grid gap-4 lg:grid-cols-3">
         <ChartCard title="حالة الجامعات" subtitle="توزيع الجامعات حسب الحالة">
           <ResponsiveContainer width="100%" height={240}>
@@ -283,53 +270,37 @@ export function SuperAdminReportsClient({ data }: { data: ReportsData }) {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="إحصائيات المنصة" className="lg:col-span-2">
-          <div className="grid h-[200px] grid-cols-2 gap-4 sm:grid-cols-3">
-            {[
-              { label: "الطلاب", value: platformStats?.total_students || 0, icon: GraduationCap, color: "text-academic-navy", bg: "bg-academic-navy/10" },
-              { label: "أعضاء التدريس", value: platformStats?.total_faculty || 0, icon: Users, color: "text-action-blue", bg: "bg-peach/10" },
-              { label: "المقررات", value: platformStats?.total_courses || 0, icon: BookOpen, color: "text-success", bg: "bg-success/10" },
-              { label: "الأقسام", value: platformStats?.total_departments || 0, icon: Building2, color: "text-purple", bg: "bg-purple/10" },
-              { label: "التخصصات", value: platformStats?.total_majors || 0, icon: TrendingUp, color: "text-teal", bg: "bg-teal/10" },
-              { label: "جلسات الحضور", value: platformStats?.total_sessions || 0, icon: HardDrive, color: "text-warning", bg: "bg-warning/10" },
-            ].map((stat) => (
-              <div key={stat.label} className="flex flex-col items-center justify-center rounded-xl border border-border bg-app-bg/50 p-3">
-                <div className={`mb-2 flex h-9 w-9 items-center justify-center rounded-lg ${stat.bg} ${stat.color}`}>
-                  <stat.icon className="h-4 w-4" />
-                </div>
-                <p className="text-xl font-bold text-text-primary">{stat.value.toLocaleString()}</p>
-                <p className="text-xs text-text-secondary">{stat.label}</p>
-              </div>
-            ))}
-          </div>
+        {/* ملخص سعة التخزين — إجمالي vs مستخدم */}
+        <ChartCard title="ملخص التخزين" subtitle="إجمالي التخزين المستخدم مقابل السعة القصوى" className="lg:col-span-2">
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart
+              data={[
+                { name: "المستخدم", value: totalStorageUsed, fill: CHART_COLORS.royalBlue },
+                { name: "السعة القصوى", value: totalMaxStorage, fill: CHART_COLORS.peach },
+              ]}
+              layout="vertical"
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+              <XAxis type="number" tick={{ fill: "var(--color-text-secondary)", fontSize: 11 }} />
+              <YAxis type="category" dataKey="name" tick={{ fill: "var(--color-text-secondary)", fontSize: 12 }} width={90} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "var(--color-card-bg)",
+                  borderColor: "var(--color-border)",
+                  borderRadius: "12px",
+                  color: "var(--color-text-primary)",
+                }}
+              />
+              <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                {[{ name: "المستخدم", value: totalStorageUsed, fill: CHART_COLORS.royalBlue },
+                  { name: "السعة القصوى", value: totalMaxStorage, fill: CHART_COLORS.peach },
+                ].map((entry, idx) => (
+                  <Cell key={`cell-${idx}`} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </ChartCard>
-      </div>
-
-      {/* ── Storage Overview ── */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <KpiCard
-          title="التخزين المستخدم"
-          value={`${totalStorageUsed.toFixed(1)} GB`}
-          icon={HardDrive}
-          iconColor="bg-teal/10 text-teal"
-          trend={{
-            value: `${storagePct}%`,
-            direction: parseFloat(storagePct) > 80 ? "down" : "up",
-            label: "من السعة القصوى",
-          }}
-        />
-        <KpiCard
-          title="إجمالي تكلفة AI"
-          value={`$${(tokenUsage || []).reduce((s, t) => s + (t.total_cost_usd || 0), 0).toFixed(2)}`}
-          icon={Cpu}
-          iconColor="bg-purple/10 text-purple"
-        />
-        <KpiCard
-          title="متوسط حد الغياب"
-          value={overview?.avg_absence_limit || 5}
-          icon={DollarSign}
-          iconColor="bg-academic-navy/10 text-academic-navy"
-        />
       </div>
 
       {/* ── Tenants Table ── */}
@@ -341,7 +312,7 @@ export function SuperAdminReportsClient({ data }: { data: ReportsData }) {
               <tr className="border-b border-border text-text-secondary">
                 <th className="pb-3 pl-4 font-medium">الاسم</th>
                 <th className="pb-3 pl-4 font-medium">الحالة</th>
-                <th className="pb-3 pl-4 font-medium">المستخدمين</th>
+                <th className="pb-3 pl-4 font-medium">أقصى عدد مستخدمين</th>
                 <th className="pb-3 pl-4 font-medium">التخزين</th>
                 <th className="pb-3 pl-4 font-medium">حد الغياب</th>
                 <th className="pb-3 font-medium">تاريخ الإنشاء</th>
@@ -367,7 +338,7 @@ export function SuperAdminReportsClient({ data }: { data: ReportsData }) {
                       {t.status === "active" ? "نشطة" : t.status === "suspended" ? "معلقة" : "محذوفة"}
                     </span>
                   </td>
-                  <td className="py-3 pl-4 text-text-primary">{t.max_users}</td>
+                  <td className="py-3 pl-4 text-text-primary">{t.max_users.toLocaleString()}</td>
                   <td className="py-3 pl-4 text-text-primary">
                     {t.storage_used_gb?.toFixed(1)} / {t.max_storage_gb} GB
                   </td>

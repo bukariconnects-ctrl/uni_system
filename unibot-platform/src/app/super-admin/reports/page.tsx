@@ -6,15 +6,14 @@ export default async function SuperAdminReportsPage() {
   await requireRole(["super_admin"]);
   const serviceClient = createServiceClient();
 
-  // Fetch data from views
-  const [{ data: overview }, { data: platformStats }, { data: tokenUsage }, { data: monthlyGrowth }] = await Promise.all([
+  // Fetch data from views — only platform-level data, no educational stats
+  const [{ data: overview }, { data: tokenUsage }, { data: monthlyGrowth }] = await Promise.all([
     serviceClient.from("v_super_admin_tenants_overview").select("*").maybeSingle(),
-    serviceClient.from("v_super_admin_platform_stats").select("*").maybeSingle(),
     serviceClient.from("v_super_admin_token_usage").select("*"),
     serviceClient.from("v_super_admin_monthly_growth").select("*").order("year_month"),
   ]);
 
-  // Tenant list with additional stats
+  // Tenant list with basic info — no educational data exposed
   const { data: tenants } = await serviceClient
     .from("tenants")
     .select("id, name, subdomain, status, max_users, storage_used_gb, max_storage_gb, created_at, absence_limit_count")
@@ -44,7 +43,6 @@ export default async function SuperAdminReportsPage() {
       <SuperAdminReportsClient
         data={{
           overview,
-          platformStats,
           tokenUsage: tokenUsage || [],
           monthlyGrowth: monthlyGrowth || [],
           tenants: (tenants || []).map((t: any) => ({
