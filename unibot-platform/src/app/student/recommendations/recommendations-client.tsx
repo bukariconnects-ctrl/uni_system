@@ -34,7 +34,7 @@ const MD_COMPONENTS: Components = {
   h3: ({ children }) => <h3 className="mb-2 mt-3 text-sm font-bold text-text-primary">{children}</h3>,
   p: ({ children }) => <p className="mb-2 text-sm leading-relaxed text-text-primary">{children}</p>,
   code: ({ children }) => (
-    <code className="rounded bg-black/10 px-1.5 py-0.5 text-xs text-text-primary">{children}</code>
+    <code className="rounded bg-[var(--color-border)]/40 px-1.5 py-0.5 text-xs text-text-primary">{children}</code>
   ),
 };
 
@@ -73,32 +73,32 @@ interface TypeConfig {
 
 const TYPE_CONFIG: Record<string, TypeConfig> = {
   daily_tip: {
-    border: "border-blue-300/40",
-    bg: "bg-gradient-to-br from-blue-50 via-white to-blue-50/30",
+    border: "border-blue/30",
+    bg: "bg-gradient-to-br from-blue/5 via-card-bg to-blue/5",
     icon: <Sparkles className="h-5 w-5 text-blue" />,
     badge: "bg-blue/10 text-blue",
     badgeText: "نصيحة اليوم",
     label: "توصية يومية",
   },
   remedial: {
-    border: "border-orange-300/40",
-    bg: "bg-gradient-to-br from-orange-50 to-white",
+    border: "border-orange/30",
+    bg: "bg-gradient-to-br from-orange/5 to-card-bg",
     icon: <AlertTriangle className="h-5 w-5 text-orange" />,
     badge: "bg-orange/10 text-orange",
     badgeText: "توصية تحسين",
     label: "توصية علاجية",
   },
   enrichment: {
-    border: "border-green-300/40",
-    bg: "bg-gradient-to-br from-green-50 to-white",
-    icon: <Star className="h-5 w-5 text-green" />,
-    badge: "bg-green/10 text-green",
+    border: "border-success/30",
+    bg: "bg-gradient-to-br from-success/5 to-card-bg",
+    icon: <Star className="h-5 w-5 text-success" />,
+    badge: "bg-success/10 text-success",
     badgeText: "توصية إثراء",
     label: "توصية إثرائية",
   },
   on_demand: {
-    border: "border-purple-300/40",
-    bg: "bg-gradient-to-br from-purple-50 to-white",
+    border: "border-purple/30",
+    bg: "bg-gradient-to-br from-purple/5 to-card-bg",
     icon: <Lightbulb className="h-5 w-5 text-purple" />,
     badge: "bg-purple/10 text-purple",
     badgeText: "بناء على طلبك",
@@ -106,7 +106,7 @@ const TYPE_CONFIG: Record<string, TypeConfig> = {
   },
   manual: {
     border: "border-academic-navy/20",
-    bg: "bg-gradient-to-br from-blue-50/30 to-white",
+    bg: "bg-gradient-to-br from-academic-navy/[0.04] to-card-bg",
     icon: <User className="h-5 w-5 text-academic-navy" />,
     badge: "bg-academic-navy/10 text-academic-navy",
     badgeText: "توصية من محاضر",
@@ -200,7 +200,7 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
       {/* Header row */}
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 shadow-sm">
+          <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-card-bg/80 shadow-sm">
             {config.icon}
           </div>
           <div className="min-w-0">
@@ -215,7 +215,7 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
 
               {/* Course name */}
               {courseName && (
-                <span className="flex items-center gap-1 text-xs text-text-secondary bg-white/60 rounded-full px-2.5 py-0.5 border border-border/50">
+                <span className="flex items-center gap-1 text-xs text-text-secondary bg-card-bg/80 rounded-full px-2.5 py-0.5 border border-border/50">
                   <BookOpen className="h-3 w-3" />
                   {courseName}
                 </span>
@@ -223,7 +223,7 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
 
               {/* Sender name (faculty) */}
               {senderName && (
-                <span className="flex items-center gap-1 text-xs text-academic-navy bg-academic-navy/5 rounded-full px-2.5 py-0.5 border border-academic-navy/10">
+                <span className="flex items-center gap-1 text-xs text-academic-navy bg-academic-navy/[0.06] rounded-full px-2.5 py-0.5 border border-academic-navy/20">
                   <User className="h-3 w-3" />
                   {senderName}
                 </span>
@@ -251,7 +251,7 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
 
         {/* Fade-out gradient for collapsed long content */}
         {!expanded && isLong && (
-          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white/90 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-card-bg/90 to-transparent" />
         )}
       </div>
 
@@ -288,10 +288,10 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
 // ── Daily Tip Hero ────────────────────────────────────────────
 function DailyTipHero({ rec }: { rec: Recommendation }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border-2 border-blue-300/40 bg-gradient-to-br from-blue-500/5 via-blue-50/40 to-purple-500/5 p-6 shadow-sm transition-all hover:shadow-md">
+    <div className="relative overflow-hidden rounded-2xl border-2 border-blue/30 bg-gradient-to-br from-blue/5 via-card-bg to-purple/5 p-6 shadow-sm transition-all hover:shadow-md">
       {/* Decorative background elements */}
-      <div className="pointer-events-none absolute -left-6 -top-6 h-24 w-24 rounded-full bg-blue-400/10 blur-2xl" />
-      <div className="pointer-events-none absolute -bottom-8 -right-8 h-28 w-28 rounded-full bg-purple-400/10 blur-3xl" />
+      <div className="pointer-events-none absolute -left-6 -top-6 h-24 w-24 rounded-full bg-blue/[0.08] blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-8 -right-8 h-28 w-28 rounded-full bg-purple/[0.08] blur-3xl" />
 
       <div className="relative">
         {/* Header */}
@@ -520,7 +520,7 @@ export function RecommendationsClient({
     if (!showRequestForm) return null;
 
     return (
-      <div className="rounded-2xl border-2 border-purple-200/50 bg-gradient-to-br from-purple-50 to-blue-50 p-5 shadow-sm transition-all">
+      <div className="rounded-2xl border-2 border-purple/20 bg-gradient-to-br from-purple/5 to-blue/5 p-5 shadow-sm transition-all">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Lightbulb className="h-5 w-5 text-purple" />
@@ -544,7 +544,7 @@ export function RecommendationsClient({
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="مثال: شبكات الحاسوب، TCP/IP، قواعد البيانات..."
-              className="flex-1 rounded-xl border border-border bg-white px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-purple/30"
+              className="flex-1 rounded-xl border border-border bg-card-bg px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-purple/30"
               disabled={loading}
               autoFocus
             />
@@ -566,7 +566,7 @@ export function RecommendationsClient({
             value={courseName}
             onChange={(e) => setCourseName(e.target.value)}
             placeholder="اسم المادة (اختياري) — مثال: شبكات الحاسوب"
-            className="w-full rounded-xl border border-border bg-white px-4 py-2.5 text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-purple/30"
+            className="rounded-xl border border-border bg-card-bg px-4 py-2.5 text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-purple/30"
             disabled={loading}
           />
         </form>
