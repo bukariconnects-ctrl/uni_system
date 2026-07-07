@@ -452,7 +452,9 @@ export function StudentReportsClient({ entries, semesters, attendanceSummaries }
       )}
 
       {/* ── Print Styles ── */}
-      <style jsx>{`
+      {/* Use a plain <style> tag — styled-jsx auto-hashes conflict with
+           Next.js 16 RSC/Turbopack hydration. */}
+      <style>{`
         @media print {
           .no-print { display: none !important; }
           body { background: white !important; }

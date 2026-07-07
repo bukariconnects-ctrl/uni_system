@@ -5,6 +5,17 @@ import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 import { generateAutoRecommendation } from "@/lib/ai/recommendation-engine";
 
+// ── Grade limits ──
+const MAX_COURSEWORK = 30;
+const MAX_MIDTERM = 30;
+const MAX_FINAL = 40;
+
+function clampGrade(value: number, label: string, max: number): void {
+  if (value < 0) throw new Error(`${label}: لا يمكن أن تكون أقل من 0`);
+  if (value > max)
+    throw new Error(`${label}: لا يمكن أن تتجاوز ${max}`);
+}
+
 export async function getGradebookEntries(
   courseId: string,
   majorId?: string,
@@ -98,9 +109,21 @@ export async function updateGrade(entryId: string, formData: FormData) {
   const midterm = formData.get("midterm_grade");
   const final = formData.get("final_grade");
 
-  if (coursework !== null && coursework !== "") updates.coursework_grade = parseFloat(coursework as string);
-  if (midterm !== null && midterm !== "") updates.midterm_grade = parseFloat(midterm as string);
-  if (final !== null && final !== "") updates.final_grade = parseFloat(final as string);
+  if (coursework !== null && coursework !== "") {
+    const v = parseFloat(coursework as string);
+    clampGrade(v, "أعمال السنة", MAX_COURSEWORK);
+    updates.coursework_grade = v;
+  }
+  if (midterm !== null && midterm !== "") {
+    const v = parseFloat(midterm as string);
+    clampGrade(v, "منتصف الفصل", MAX_MIDTERM);
+    updates.midterm_grade = v;
+  }
+  if (final !== null && final !== "") {
+    const v = parseFloat(final as string);
+    clampGrade(v, "النهائي", MAX_FINAL);
+    updates.final_grade = v;
+  }
 
   if (Object.keys(updates).length === 0) throw new Error("لم يتم إدخال أي درجة");
 
@@ -123,9 +146,18 @@ export async function saveGradeValues(
   const supabase = await createClient();
 
   const updates: Record<string, number | null> = {};
-  if (coursework !== null) updates.coursework_grade = coursework;
-  if (midterm !== null) updates.midterm_grade = midterm;
-  if (final !== null) updates.final_grade = final;
+  if (coursework !== null) {
+    clampGrade(coursework, "أعمال السنة", MAX_COURSEWORK);
+    updates.coursework_grade = coursework;
+  }
+  if (midterm !== null) {
+    clampGrade(midterm, "منتصف الفصل", MAX_MIDTERM);
+    updates.midterm_grade = midterm;
+  }
+  if (final !== null) {
+    clampGrade(final, "النهائي", MAX_FINAL);
+    updates.final_grade = final;
+  }
 
   if (Object.keys(updates).length === 0) return;
 

@@ -203,10 +203,14 @@ const TABS = [
 
 function getLetterGrade(total: number | null): string {
   if (total == null) return "—";
-  if (total >= 90) return "A";
-  if (total >= 80) return "B";
-  if (total >= 70) return "C";
-  if (total >= 60) return "D";
+  if (total >= 90) return "A+";
+  if (total >= 85) return "A";
+  if (total >= 80) return "B+";
+  if (total >= 75) return "B";
+  if (total >= 70) return "C+";
+  if (total >= 65) return "C";
+  if (total >= 60) return "D+";
+  if (total >= 55) return "D";
   return "F";
 }
 
@@ -973,7 +977,7 @@ export function FacultyReportsClient({ data }: { data: ReportsData }) {
       )}
 
       {/* Print styles */}
-      <style jsx>{`
+      <style>{`
         @media print {
           .no-print { display: none !important; }
           body { background: white !important; }

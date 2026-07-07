@@ -22,6 +22,10 @@ interface DraftEntry {
   final: string;
 }
 
+const MAX_COURSEWORK = 30;
+const MAX_MIDTERM = 30;
+const MAX_FINAL = 40;
+
 export function GradebookClient({
   courses,
   courseGroups,
@@ -153,11 +157,23 @@ export function GradebookClient({
     }
   }
 
+  const MAX_VALUES: Record<keyof DraftEntry, number> = {
+    coursework: MAX_COURSEWORK,
+    midterm: MAX_MIDTERM,
+    final: MAX_FINAL,
+  };
+
   function handleDraftChange(
     entryId: string,
     field: keyof DraftEntry,
     value: string
   ) {
+    // Clamp numeric input to max while typing
+    const num = value !== "" ? parseFloat(value) : NaN;
+    if (!isNaN(num) && num > MAX_VALUES[field]) {
+      // Allow backspace/delete but reject values over the max
+      return;
+    }
     setDrafts((prev) => ({
       ...prev,
       [entryId]: { ...prev[entryId], [field]: value },
@@ -167,6 +183,26 @@ export function GradebookClient({
 
   async function handleSaveAll() {
     if (dirty.size === 0) return;
+
+    // ── Client-side validation ──
+    const errors: string[] = [];
+    for (const id of dirty) {
+      const d = drafts[id];
+      const c = d.coursework !== "" ? parseFloat(d.coursework) : NaN;
+      const m = d.midterm !== "" ? parseFloat(d.midterm) : NaN;
+      const f = d.final !== "" ? parseFloat(d.final) : NaN;
+      if (!isNaN(c) && (c < 0 || c > MAX_COURSEWORK))
+        errors.push(`أعمال السنة خارج النطاق (0-${MAX_COURSEWORK})`);
+      if (!isNaN(m) && (m < 0 || m > MAX_MIDTERM))
+        errors.push(`منتصف الفصل خارج النطاق (0-${MAX_MIDTERM})`);
+      if (!isNaN(f) && (f < 0 || f > MAX_FINAL))
+        errors.push(`الدرجة النهائية خارج النطاق (0-${MAX_FINAL})`);
+    }
+    if (errors.length > 0) {
+      toast.error(errors.join("\n"));
+      return;
+    }
+
     setSaving(true);
     const loadingToast = toast.loading("جاري حفظ الدرجات...");
     try {
