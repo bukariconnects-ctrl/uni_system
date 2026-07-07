@@ -324,7 +324,7 @@ export function FacultyReportsClient({ data }: { data: ReportsData }) {
       const courseRecords = attendanceRoster.filter((r) => r.course_id === c.course_id);
       const present = courseRecords.reduce((s, r) => s + (r.present_count || 0), 0);
       const absent = courseRecords.reduce((s, r) => s + (r.absent_count || 0), 0);
-      return { name: c.course_code, حاضر: present, غائب: absent };
+      return { name: c.course_name, حاضر: present, غائب: absent };
     })
     .sort((a, b) => b.غائب - a.غائب);
 
@@ -443,7 +443,7 @@ export function FacultyReportsClient({ data }: { data: ReportsData }) {
                   const course = courseOptions.get(cid);
                   return (
                     <option key={cid} value={cid}>
-                      {course?.code || cid} — {course?.name || ""}
+                      {course?.name || cid}
                     </option>
                   );
                 })}
@@ -702,7 +702,7 @@ export function FacultyReportsClient({ data }: { data: ReportsData }) {
               <div className="flex justify-between items-center">
                 <div className="text-sm text-text-secondary">
                   المقرر: <span className="font-medium text-text-primary">
-                    {courseOptions.get(selectedCourseId)?.code} — {courseOptions.get(selectedCourseId)?.name}
+                    {courseOptions.get(selectedCourseId)?.name}
                   </span>
                   {" | "}عدد الطلاب: <span className="font-medium text-text-primary">{gradebookForCourse.length}</span>
                 </div>
@@ -719,7 +719,7 @@ export function FacultyReportsClient({ data }: { data: ReportsData }) {
               <div className="rounded-2xl border border-border bg-card-bg p-5 shadow-sm print-area">
                 <div className="mb-4 text-center">
                   <h2 className="text-lg font-bold text-text-primary">كشف درجات المقرر</h2>
-                  <p className="text-sm text-text-secondary">{courseOptions.get(selectedCourseId)?.code} — {courseOptions.get(selectedCourseId)?.name}</p>
+                  <p className="text-sm text-text-secondary">{courseOptions.get(selectedCourseId)?.name}</p>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-right text-sm">
@@ -780,7 +780,7 @@ export function FacultyReportsClient({ data }: { data: ReportsData }) {
                 <h2 className="mb-4 text-lg font-bold text-text-primary">
                   مصفوفة الحضور
                   <span className="mr-2 text-sm font-normal text-text-secondary">
-                    — {courseOptions.get(selectedCourseId)?.code} ({sessionsForSelectedCourse.length} جلسة)
+                    — {courseOptions.get(selectedCourseId)?.name} ({sessionsForSelectedCourse.length} جلسة)
                   </span>
                 </h2>
                 <div className="overflow-x-auto">

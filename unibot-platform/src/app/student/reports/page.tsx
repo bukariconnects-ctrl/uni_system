@@ -95,7 +95,6 @@ export default async function StudentReportsPage() {
   const enrichedSummaries = attendanceSummaries.map((s: any) => ({
     ...s,
     course_name: s.courses?.name || null,
-    course_code: s.courses?.code || null,
     credit_hours: s.courses?.credit_hours || 0,
     semester_id: s.enrollments?.semester_id || null,
     absence_limit_count: collegeLimitMap[s.course_id] ?? absenceLimit,

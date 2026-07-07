@@ -175,7 +175,7 @@ export function AcademicManagementReportsClient({ data }: { data: ReportsData })
     .sort((a, b) => b.avg_absence_percentage - a.avg_absence_percentage)
     .slice(0, 10)
     .map((c) => ({
-      name: c.course_code,
+      name: c.course_name,
       avgAbsence: c.avg_absence_percentage,
       dismissed: c.dismissed_count,
       students: c.enrolled_students,
@@ -531,7 +531,7 @@ export function AcademicManagementReportsClient({ data }: { data: ReportsData })
                           {t.profiles ? `${t.profiles.first_name} ${t.profiles.last_name}` : "—"}
                         </td>
                         <td className="py-3 pl-4 text-text-secondary">
-                          {t.courses ? `${t.courses.code} — ${t.courses.name}` : "—"}
+                          {t.courses ? `${t.courses.name}` : "—"}
                         </td>
                         <td className="py-3 pl-4">
                           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${priorityColor[t.priority] || "bg-app-bg text-text-secondary"}`}>

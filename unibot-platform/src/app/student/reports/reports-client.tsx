@@ -289,10 +289,7 @@ export function StudentReportsClient({ entries, semesters, attendanceSummaries }
                             >
                               <td className="py-3 pl-4">
                                 <p className="font-medium text-text-primary">
-                                  {g.courses?.code || "—"}
-                                </p>
-                                <p className="text-xs text-text-secondary">
-                                  {g.courses?.name || ""}
+                                  {g.courses?.name || "—"}
                                 </p>
                               </td>
                               <td className="py-3 pl-4 text-text-primary">
@@ -398,9 +395,6 @@ export function StudentReportsClient({ entries, semesters, attendanceSummaries }
                           <div>
                             <p className="font-medium text-text-primary">
                               {s.course_name || "—"}
-                            </p>
-                            <p className="text-xs text-text-secondary">
-                              {s.course_code || ""}
                             </p>
                           </div>
                           {getStatusBadge(s)}

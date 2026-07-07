@@ -169,7 +169,7 @@ export function TenantAdminReportsClient({ data }: { data: ReportsData }) {
     .sort((a, b) => b.absent_count - a.absent_count)
     .slice(0, 10)
     .map((c) => ({
-      name: c.course_code,
+      name: c.course_name,
       حاضر: c.present_count,
       غائب: c.absent_count,
       متأخر: c.late_count,
@@ -180,7 +180,7 @@ export function TenantAdminReportsClient({ data }: { data: ReportsData }) {
     .filter((c) => c.dismissed_count > 0)
     .sort((a, b) => b.dismissed_count - a.dismissed_count)
     .slice(0, 10)
-    .map((c) => ({ name: c.course_code, محرومون: c.dismissed_count }));
+    .map((c) => ({ name: c.course_name, محرومون: c.dismissed_count }));
 
   // Venue chart data
   const venueChartData = [...venueUtilization]
