@@ -5,29 +5,59 @@ import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
 import { generateAutoRecommendation } from "@/lib/ai/recommendation-engine";
 
-export async function getGradebookEntries(courseId: string) {
+export async function getGradebookEntries(
+  courseId: string,
+  majorId?: string,
+  academicLevelId?: string
+) {
   await requireRole(["faculty"]);
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("gradebook_entries")
     .select("*, profiles!gradebook_entries_student_id_fkey(first_name, last_name, student_profiles(student_number)), enrollments(status)")
-    .eq("course_id", courseId)
-    .order("created_at", { ascending: true });
+    .eq("course_id", courseId);
+
+  // If filtering by major/level, constrain to matching enrollments
+  if (majorId || academicLevelId) {
+    let enrollmentQuery = supabase
+      .from("enrollments")
+      .select("id")
+      .eq("course_id", courseId)
+      .eq("status", "enrolled");
+    if (majorId) enrollmentQuery = enrollmentQuery.eq("major_id", majorId);
+    if (academicLevelId) enrollmentQuery = enrollmentQuery.eq("academic_level_id", academicLevelId);
+
+    const { data: filteredEnrollments } = await enrollmentQuery;
+    const enrollmentIds = (filteredEnrollments || []).map((e: any) => e.id);
+
+    if (enrollmentIds.length === 0) return [];
+    query = query.in("enrollment_id", enrollmentIds);
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: true });
 
   if (error) throw new Error(error.message);
   return data || [];
 }
 
-export async function initGradebook(courseId: string) {
+export async function initGradebook(
+  courseId: string,
+  majorId?: string,
+  academicLevelId?: string
+) {
   const { profile } = await requireRole(["faculty"]);
   const supabase = await createClient();
 
-  const { data: enrollments } = await supabase
+  let enrollmentQuery = supabase
     .from("enrollments")
     .select("id, student_id")
     .eq("course_id", courseId)
     .eq("status", "enrolled");
+  if (majorId) enrollmentQuery = enrollmentQuery.eq("major_id", majorId);
+  if (academicLevelId) enrollmentQuery = enrollmentQuery.eq("academic_level_id", academicLevelId);
+
+  const { data: enrollments } = await enrollmentQuery;
 
   if (!enrollments || enrollments.length === 0) {
     throw new Error("لا يوجد طلاب مسجلون في هذه المادة");

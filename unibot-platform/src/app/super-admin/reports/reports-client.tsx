@@ -121,7 +121,7 @@ export function SuperAdminReportsClient({ data }: { data: ReportsData }) {
         />
         <KpiCard
           title="التخزين المستخدم"
-          value={`${totalStorageUsed.toFixed(1)} GB`}
+          value={`${totalStorageUsed.toFixed(1)} MB`}
           icon={HardDrive}
           iconColor="bg-teal/10 text-teal"
           trend={{
@@ -340,7 +340,7 @@ export function SuperAdminReportsClient({ data }: { data: ReportsData }) {
                   </td>
                   <td className="py-3 pl-4 text-text-primary">{t.max_users.toLocaleString()}</td>
                   <td className="py-3 pl-4 text-text-primary">
-                    {t.storage_used_gb?.toFixed(1)} / {t.max_storage_gb} GB
+                    {t.storage_used_gb?.toFixed(1)} / {t.max_storage_gb} MB
                   </td>
                   <td className="py-3 pl-4 text-text-primary">{t.absence_limit_count ?? 5}</td>
                   <td className="py-3 text-text-secondary">

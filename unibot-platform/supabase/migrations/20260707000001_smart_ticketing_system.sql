@@ -58,6 +58,7 @@ CREATE INDEX IF NOT EXISTS idx_ticket_escalations_escalated_to ON ticket_escalat
 ALTER TABLE ticket_escalations ENABLE ROW LEVEL SECURITY;
 
 -- RLS: users can see escalations for their tenant
+DROP POLICY IF EXISTS "tenant_isolation_ticket_escalations" ON ticket_escalations;
 CREATE POLICY "tenant_isolation_ticket_escalations"
     ON ticket_escalations
     FOR ALL

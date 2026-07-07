@@ -177,6 +177,21 @@ export async function upsertSyllabus(formData: FormData) {
   const courseId = formData.get("course_id") as string;
   const content = formData.get("content") as string;
 
+  // Parse content — try JSON first, fall back to wrapping free text
+  let parsedContent: unknown;
+  try {
+    parsedContent = JSON.parse(content);
+  } catch {
+    // User entered free text (Arabic etc.), wrap in a structured object
+    parsedContent = { text: content };
+  }
+
+  // Generate a stable UUID for section_id (FK to sections was dropped,
+  // but column is still NOT NULL — use a deterministic UUID from course_id)
+  const sectionId = crypto.randomUUID
+    ? crypto.randomUUID()
+    : courseId;
+
   // Find existing syllabus for this course
   const { data: existing } = await serviceClient
     .from("syllabi")
@@ -188,14 +203,16 @@ export async function upsertSyllabus(formData: FormData) {
   if (existing) {
     const { error } = await serviceClient
       .from("syllabi")
-      .update({ content: JSON.parse(content) })
+      .update({ content: parsedContent })
       .eq("id", existing.id);
     if (error) throw new Error(error.message);
   } else {
     const { error } = await serviceClient.from("syllabi").insert({
       tenant_id: profile.tenant_id,
       course_id: courseId,
-      content: JSON.parse(content),
+      section_id: sectionId,
+      instructor_id: profile.id,
+      content: parsedContent,
       status: "draft",
     });
     if (error) throw new Error(error.message);

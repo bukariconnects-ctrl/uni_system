@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   getGradebookEntries,
   initGradebook,
@@ -12,8 +12,7 @@ import {
   RefreshCw,
   Send,
   Save,
-  CheckCircle2,
-  AlertCircle,
+  Filter,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,14 +22,52 @@ interface DraftEntry {
   final: string;
 }
 
-export function GradebookClient({ courses }: { courses: any[] }) {
+export function GradebookClient({
+  courses,
+  courseGroups,
+}: {
+  courses: any[];
+  courseGroups: any[];
+}) {
   const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [selectedMajorId, setSelectedMajorId] = useState("");
+  const [selectedLevelId, setSelectedLevelId] = useState("");
   const [entries, setEntries] = useState<any[]>([]);
   const [drafts, setDrafts] = useState<Record<string, DraftEntry>>({});
   const [dirty, setDirty] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // ── Derived filter options ────────────────────────────
+  const availableGroups = selectedCourseId
+    ? courseGroups.filter((g: any) => g.course_id === selectedCourseId)
+    : [];
+
+  const uniqueMajors = [
+    ...new Map(
+      availableGroups.map((g: any) => [
+        g.major_id,
+        { id: g.major_id, name: g.major_name },
+      ])
+    ).values(),
+  ].filter((m: any) => m.id);
+
+  const levelsForMajor = selectedMajorId
+    ? availableGroups.filter((g: any) => g.major_id === selectedMajorId)
+    : availableGroups;
+
+  const uniqueLevels = [
+    ...new Map(
+      levelsForMajor.map((g: any) => [
+        g.academic_level_id,
+        { id: g.academic_level_id, level: g.level_number },
+      ])
+    ).values(),
+  ].filter((l: any) => l.id);
+
+  const hasFilters = uniqueMajors.length > 0 || uniqueLevels.length > 0;
+
+  // ── Data loading ─────────────────────────────────────
   function initDrafts(data: any[]) {
     const d: Record<string, DraftEntry> = {};
     data.forEach((entry) => {
@@ -44,19 +81,49 @@ export function GradebookClient({ courses }: { courses: any[] }) {
     setDirty(new Set());
   }
 
-  async function loadEntries(courseId: string) {
+  // Reload entries when filters change
+  useEffect(() => {
+    if (!selectedCourseId) return;
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data = await getGradebookEntries(
+          selectedCourseId,
+          selectedMajorId || undefined,
+          selectedLevelId || undefined
+        );
+        if (!cancelled) {
+          setEntries(data);
+          initDrafts(data);
+        }
+      } catch (e: unknown) {
+        if (!cancelled) toast.error(e instanceof Error ? e.message : "حدث خطأ");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [selectedCourseId, selectedMajorId, selectedLevelId]);
+
+  // ── Handlers ─────────────────────────────────────────
+  function handleCourseChange(courseId: string) {
     setSelectedCourseId(courseId);
-    if (!courseId) { setEntries([]); setDrafts({}); setDirty(new Set()); return; }
-    setLoading(true);
-    try {
-      const data = await getGradebookEntries(courseId);
-      setEntries(data);
-      initDrafts(data);
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "حدث خطأ");
-    } finally {
-      setLoading(false);
-    }
+    setSelectedMajorId("");
+    setSelectedLevelId("");
+    setEntries([]);
+    setDrafts({});
+    setDirty(new Set());
+  }
+
+  function handleMajorChange(majorId: string) {
+    setSelectedMajorId(majorId);
+    setSelectedLevelId("");
+  }
+
+  function handleLevelChange(levelId: string) {
+    setSelectedLevelId(levelId);
   }
 
   async function handleInit() {
@@ -64,10 +131,18 @@ export function GradebookClient({ courses }: { courses: any[] }) {
     setLoading(true);
     const loadingToast = toast.loading("جاري تهيئة السجل...");
     try {
-      await initGradebook(selectedCourseId);
+      await initGradebook(
+        selectedCourseId,
+        selectedMajorId || undefined,
+        selectedLevelId || undefined
+      );
       toast.dismiss(loadingToast);
       toast.success("تم تهيئة سجل الدرجات");
-      const data = await getGradebookEntries(selectedCourseId);
+      const data = await getGradebookEntries(
+        selectedCourseId,
+        selectedMajorId || undefined,
+        selectedLevelId || undefined
+      );
       setEntries(data);
       initDrafts(data);
     } catch (e: unknown) {
@@ -78,8 +153,15 @@ export function GradebookClient({ courses }: { courses: any[] }) {
     }
   }
 
-  function handleDraftChange(entryId: string, field: keyof DraftEntry, value: string) {
-    setDrafts((prev) => ({ ...prev, [entryId]: { ...prev[entryId], [field]: value } }));
+  function handleDraftChange(
+    entryId: string,
+    field: keyof DraftEntry,
+    value: string
+  ) {
+    setDrafts((prev) => ({
+      ...prev,
+      [entryId]: { ...prev[entryId], [field]: value },
+    }));
     setDirty((prev) => new Set(prev).add(entryId));
   }
 
@@ -95,13 +177,17 @@ export function GradebookClient({ courses }: { courses: any[] }) {
             id,
             d.coursework !== "" ? parseFloat(d.coursework) : null,
             d.midterm !== "" ? parseFloat(d.midterm) : null,
-            d.final !== "" ? parseFloat(d.final) : null,
+            d.final !== "" ? parseFloat(d.final) : null
           );
         })
       );
       toast.dismiss(loadingToast);
       toast.success("تم حفظ الدرجات بنجاح");
-      const data = await getGradebookEntries(selectedCourseId);
+      const data = await getGradebookEntries(
+        selectedCourseId,
+        selectedMajorId || undefined,
+        selectedLevelId || undefined
+      );
       setEntries(data);
       initDrafts(data);
     } catch (e: unknown) {
@@ -113,14 +199,22 @@ export function GradebookClient({ courses }: { courses: any[] }) {
   }
 
   async function handlePublish() {
-    if (!selectedCourseId || !confirm("نشر جميع الدرجات؟ سيتمكن الطلاب من رؤيتها.")) return;
+    if (
+      !selectedCourseId ||
+      !confirm("نشر جميع الدرجات؟ سيتمكن الطلاب من رؤيتها.")
+    )
+      return;
     setLoading(true);
     const loadingToast = toast.loading("جاري نشر الدرجات...");
     try {
       await publishGrades(selectedCourseId);
       toast.dismiss(loadingToast);
       toast.success("تم نشر الدرجات بنجاح");
-      const data = await getGradebookEntries(selectedCourseId);
+      const data = await getGradebookEntries(
+        selectedCourseId,
+        selectedMajorId || undefined,
+        selectedLevelId || undefined
+      );
       setEntries(data);
       initDrafts(data);
     } catch (e: unknown) {
@@ -145,17 +239,52 @@ export function GradebookClient({ courses }: { courses: any[] }) {
 
   return (
     <div className="space-y-4">
+      {/* ── Filters row ────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-3">
         <select
           value={selectedCourseId}
-          onChange={(e) => loadEntries(e.target.value)}
+          onChange={(e) => handleCourseChange(e.target.value)}
           className="rounded-xl border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue focus:ring-2 focus:ring-action-blue/20"
         >
           <option value="">— اختر المادة —</option>
           {courses.map((c: any) => (
-            <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
+            <option key={c.id} value={c.id}>
+              {c.code} — {c.name}
+            </option>
           ))}
         </select>
+
+        {selectedCourseId && hasFilters && (
+          <>
+            <span className="text-text-secondary/40">|</span>
+            <Filter className="h-4 w-4 text-text-secondary" />
+            <select
+              value={selectedMajorId}
+              onChange={(e) => handleMajorChange(e.target.value)}
+              className="rounded-xl border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue focus:ring-2 focus:ring-action-blue/20"
+            >
+              <option value="">كل التخصصات</option>
+              {uniqueMajors.map((m: any) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={selectedLevelId}
+              onChange={(e) => handleLevelChange(e.target.value)}
+              className="rounded-xl border border-border bg-card-bg px-3 py-2 text-sm outline-none focus:border-action-blue focus:ring-2 focus:ring-action-blue/20"
+            >
+              <option value="">كل المستويات</option>
+              {uniqueLevels.map((l: any) => (
+                <option key={l.id} value={l.id}>
+                  المستوى {l.level ?? ""}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
 
         {selectedCourseId && (
           <>
@@ -164,7 +293,9 @@ export function GradebookClient({ courses }: { courses: any[] }) {
               disabled={loading}
               className="flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm text-text-secondary hover:bg-app-bg disabled:opacity-50"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+              />
               تهيئة السجل
             </button>
 
@@ -175,7 +306,9 @@ export function GradebookClient({ courses }: { courses: any[] }) {
                 className="flex items-center gap-2 rounded-xl bg-action-blue px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-action-blue/90 disabled:opacity-50"
               >
                 <Save className="h-4 w-4" />
-                {saving ? "جاري الحفظ..." : `حفظ التغييرات (${dirty.size})`}
+                {saving
+                  ? "جاري الحفظ..."
+                  : `حفظ التغييرات (${dirty.size})`}
               </button>
             )}
 
@@ -196,15 +329,21 @@ export function GradebookClient({ courses }: { courses: any[] }) {
       {!selectedCourseId && (
         <div className="rounded-2xl border border-dashed border-border bg-card-bg p-12 text-center">
           <GraduationCap className="mx-auto mb-3 h-10 w-10 text-text-secondary" />
-          <p className="text-sm text-text-secondary">اختر مادة لعرض سجل الدرجات</p>
+          <p className="text-sm text-text-secondary">
+            اختر مادة لعرض سجل الدرجات
+          </p>
         </div>
       )}
 
       {selectedCourseId && entries.length === 0 && !loading && (
         <div className="rounded-2xl border border-dashed border-border bg-card-bg p-12 text-center">
           <GraduationCap className="mx-auto mb-3 h-10 w-10 text-text-secondary" />
-          <p className="mb-2 text-sm text-text-secondary">لا توجد سجلات درجات</p>
-          <p className="text-xs text-text-secondary">اضغط &quot;تهيئة السجل&quot; لإنشاء سجلات لجميع الطلاب المسجلين</p>
+          <p className="mb-2 text-sm text-text-secondary">
+            لا توجد سجلات درجات
+          </p>
+          <p className="text-xs text-text-secondary">
+            اضغط &quot;تهيئة السجل&quot; لإنشاء سجلات للطلاب
+          </p>
         </div>
       )}
 

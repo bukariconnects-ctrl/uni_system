@@ -15,6 +15,7 @@ import {
   Megaphone,
   ClipboardList,
   Lightbulb,
+  BarChart3,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types/database";
@@ -34,6 +35,7 @@ const navItems = [
   { href: "/student/unibot", label: "UniBot", icon: Sparkles },
   { href: "/student/recommendations", label: "التوصيات الذكية", icon: Lightbulb },
   { href: "/student/tickets", label: "تذاكري", icon: TicketIcon },
+  { href: "/student/reports", label: "تقاريري", icon: BarChart3 },
 ];
 
 export function StudentSidebar({ profile, tenantName }: { profile: Profile; tenantName?: string }) {
