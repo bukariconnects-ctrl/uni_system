@@ -49,6 +49,8 @@ export type TicketStatus =
   | "closed"
   | "rejected";
 
+export type TicketPriority = "low" | "medium" | "high" | "urgent";
+
 export type TicketCategory =
   | "grade_appeal"
   | "absence_excuse"
@@ -57,7 +59,12 @@ export type TicketCategory =
   | "venue_issue"
   | "technical_problem"
   | "administrative"
+  | "course_content_query"
+  | "leave_excuse_request"
+  | "schedule_conflict"
   | "other";
+
+export type TicketEscalationStatus = "pending" | "approved" | "rejected";
 
 export type TenantStatus = "active" | "suspended" | "trial" | "deleted";
 
@@ -73,22 +80,39 @@ export type ContentType = "lecture" | "assignment" | "resource" | "announcement"
 export interface Ticket {
   id: string;
   tenant_id: string;
-  student_id: string;
+  created_by: string;
   ticket_number: string;
   category: TicketCategory;
   title: string;
-  subject: string;
   description: string;
   status: TicketStatus;
-  priority: number;
-  section_id?: string | null;
+  priority: string;
   assigned_to?: string | null;
+  related_section_id?: string | null;
+  related_course_id?: string | null;
+  is_direct_to_faculty: boolean;
+  escalated_from?: string | null;
+  priority_reason?: string | null;
   rating?: number | null;
-  ai_attempted?: boolean | null;
+  ai_attempted: boolean;
   ai_suggestion?: string | null;
   resolved_at?: string | null;
+  closed_at?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface TicketEscalation {
+  id: string;
+  tenant_id: string;
+  ticket_id: string;
+  escalated_by: string;
+  escalated_to: string;
+  from_role: string;
+  to_role: string;
+  reason: string;
+  previous_status: TicketStatus;
+  created_at: string;
 }
 
 export interface Semester {

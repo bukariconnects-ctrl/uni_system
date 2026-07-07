@@ -1,20 +1,24 @@
-import { getMyTickets, getStudentCourses } from "@/app/student/tickets/actions";
-import { TicketsClient } from "@/app/student/tickets/tickets-client";
+import { getFacultyAssignedTickets } from "./actions";
+import { FacultyTicketsClient } from "./faculty-tickets-client";
 import { requireRole } from "@/lib/auth/get-user";
 
 export default async function FacultyTicketsPage() {
   const { profile } = await requireRole(["faculty"]);
-  const [tickets, courses] = await Promise.all([
-    getMyTickets(),
-    getStudentCourses(),
-  ]);
+  // Single OR query, split client-side to keep the two-tab UX
+  const allTickets = await getFacultyAssignedTickets();
+
+  const assignedTickets = allTickets.filter(
+    (t) => t.assigned_to === profile.id
+  );
+  const createdTickets = allTickets.filter(
+    (t) => t.created_by === profile.id
+  );
 
   return (
-    <TicketsClient
-      tickets={tickets}
-      courses={courses}
+    <FacultyTicketsClient
+      assignedTickets={assignedTickets}
+      createdTickets={createdTickets}
       profileId={profile.id}
-      tenantId={profile.tenant_id!}
     />
   );
 }

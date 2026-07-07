@@ -13,7 +13,9 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types/database";
+import { NotificationBell } from "@/components/notification-bell";
 import { SidebarShell } from "@/components/sidebar-shell";
+import { RealtimePageRefresher } from "@/components/realtime-page-refresher";
 
 const navItems = [
   { href: "/academic-management", label: "لوحة التحكم", icon: LayoutDashboard },
@@ -41,12 +43,14 @@ export function AcademicManagementSidebar({ profile, tenantName }: { profile: Pr
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-ai-light to-ai-lavender">
           <span className="text-lg">🎓</span>
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-text-primary">UniBot</p>
           <p className="text-xs text-text-secondary">الإدارة الأكاديمية</p>
           {tenantName && <p className="truncate text-[10px] text-text-secondary/70">{tenantName}</p>}
         </div>
+        <NotificationBell userId={profile.id} tenantId={profile.tenant_id!} userRole="academic_management" />
       </div>
+      <RealtimePageRefresher userId={profile.id} tenantId={profile.tenant_id!} userRole="academic_management" />
 
       <nav className="flex-1 space-y-1 p-3">
         {navItems.map((item) => {

@@ -4064,3 +4064,80 @@ if (!scopedCourseIds || scopedCourseIds.length === 0) {
 - عرض اسم المحاضر في التوصيات اليدوية
 - تجربة مستخدم أفضل بكامل الصفحة
 - البناء يمر بنجاح
+
+---
+
+## Ticketing V2.0 — تحسين شامل لنظام التذاكر
+**التاريخ:** 2026-07-07
+
+### Step 1: Dynamic Categories + Auto-Assignment Student Routing
+
+#### التغييرات
+- **إعادة تصميم واجهة إنشاء التذكرة للطالب** (`tickets-client.tsx`, `actions.ts`):
+  - إضافة زر تبديل (Switch) للتحويل المباشر للمحاضر بدلاً من الأزرار المزدوجة القديمة
+  - عند تفعيل التوجيه: تظهر فقط فئتي `grade_appeal` و `course_content_query`
+  - عند إلغاء التوجيه: تظهر جميع الفئات الـ 6 (`grade_appeal`, `absence_excuse`, `registration_issue`, `course_content_query`, `technical_problem`, `other`)
+  - **توجيه تلقائي**: عند اختيار التوجيه للمحاضر، يتم جلب `instructor_id` من `course_schedules` تلقائياً (تم حذف قائمة المحاضرين اليدوية)
+  - إظهار حقل `course_id` فقط عندما تكون التوجيه مفعّلاً أو عند اختيار `absence_excuse`/`grade_appeal`
+  - تصنيفات جديدة: "اعتراض على درجة" بدلاً من "طعن في درجة"، "مشكلة في التسجيل" بدلاً من "مشكلة تسجيل"
+- **تغيير اسم المتغير**: `isDirectToFaculty` → `routeToInstructor` شاملاً كامل JSX
+
+#### الملفات
+| الملف | التغيير |
+|-------|---------|
+| src/app/student/tickets/tickets-client.tsx | إعادة كتابة — Switch toggle + تصنيفات ديناميكية + إخفاء المحاضرين |
+| src/app/student/tickets/actions.ts | تعديل — تعيين تلقائي للمحاضر من course_schedules |
+
+### Step 2: Faculty Ticket Creation Refactor
+
+#### التغييرات
+- **تحديث تصنيفات التذاكر للمحاضر** (`faculty-tickets-client.tsx`):
+  - "مشكلة قاعة" → "طلب تغيير قاعة"
+  - "تعارض جدول" → "مشكلة في الجدول"
+  - "مشكلة فنية في القاعة" → "مشكلة فنية في القاعة/المعمل"
+
+#### الملفات
+| الملف | التغيير |
+|-------|---------|
+| src/app/faculty/tickets/faculty-tickets-client.tsx | تعديل — تحديث تسميات التصنيفات |
+
+### Step 3: Fix Faculty Dashboard Bug
+
+#### المشكلة
+التذاكر المُحالة/المُصعّدة من الإدارة الأكاديمية إلى المحاضر لم تكن تظهر للمحاضر في لوحة التحكم.
+
+#### التغييرات
+- **توسيع استعلام `getFacultyAssignedTickets`** (`actions.ts`): استخدام `.or()` ليشمل كلاً من `assigned_to` و `created_by`
+- **إضافة `assigned_profile`** إلى كل من `getFacultyAssignedTickets` و `getFacultyCreatedTickets` لعرض اسم المُسند
+- **تحديث `page.tsx`**: استخدام دالة واحدة (`getFacultyAssignedTickets`) والتصفية (filter) للحصول على المصفوفتين النظيفتين:
+  - `assignedTickets`: حيث `assigned_to === profile.id`
+  - `createdTickets`: حيث `created_by === profile.id`
+
+#### الملفات
+| الملف | التغيير |
+|-------|---------|
+| src/app/faculty/tickets/actions.ts | تعديل — استعلام OR + إضافة assigned_profile |
+| src/app/faculty/tickets/page.tsx | تعديل — تصفية نظيفة من مصدر واحد |
+
+### Step 4: Refactor Escalation Matrix
+
+#### التغييرات
+- **إزالة `escalateToTenantAdmin`** بالكامل من `academic-management/tickets/actions.ts`
+- **إزالة زر "تصعيد لمدير الجامعة"** ونموذج التصعيد المرافق من واجهة الإدارة الأكاديمية
+- **تبسيط شريط الإجراءات**: أصبح يظهر فقط زر "تحويل لمحاضر المادة" مع الشرط `ticket.profiles?.role === "student"`
+- **تحديث سجل التصعيد**: إزالة مراجع `tenant_admin` من أيقونات وتسميات سجل التصعيد
+- **إزالة `escalateToTenantAdmin`** من قائمة الاستيرادات
+
+#### الملفات
+| الملف | التغيير |
+|-------|---------|
+| src/app/academic-management/tickets/actions.ts | حذف — إزالة escalateToTenantAdmin |
+| src/app/academic-management/tickets/tickets-admin-client.tsx | تعديل — إزالة واجهة تصعيد مدير الجامعة بالكامل |
+
+### النتيجة
+- توجيه ذكي للطلاب مع تعيين تلقائي للمحاضرين
+- تصنيفات محدثة ومحسّنة للمحاضرين
+- المحاضر يرى جميع التذاكر المحولة إليه (من الإدارة الأكاديمية أو الطلاب)
+- إدارة أكاديمية تُحول فقط لمحاضر المادة — لا مزيد من التصعيد لمدير الجامعة
+- جميع المسارات تبقى: طالب → محاضر (مباشر)، طالب → إدارة أكاديمية (افتراضي)، محاضر → إدارة أكاديمية (تصعيد)، إدارة أكاديمية → محاضر (تحويل)
+- البناء يمر بنجاح

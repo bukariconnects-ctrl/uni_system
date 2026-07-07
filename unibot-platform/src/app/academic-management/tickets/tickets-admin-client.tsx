@@ -17,6 +17,8 @@ import {
   EyeOff,
   Star,
   Ticket,
+  ArrowUpRight,
+  User,
 } from "lucide-react";
 import type { TicketStatus, TicketCategory } from "@/lib/types/database";
 import {
@@ -26,6 +28,8 @@ import {
   getTicketDetail,
   createApprovalWorkflow,
   decideApproval,
+  escalateToFaculty,
+  getFacultyMembers,
 } from "./actions";
 import { toast } from "sonner";
 
@@ -41,7 +45,7 @@ const statusConfig: Record<
   rejected: { bg: "bg-danger/10", text: "text-danger", label: "مرفوضة", icon: XCircle },
 };
 
-const categoryLabels: Record<TicketCategory, string> = {
+const categoryLabels: Record<string, string> = {
   grade_appeal: "طعن في درجة",
   absence_excuse: "عذر غياب",
   registration_issue: "مشكلة تسجيل",
@@ -49,6 +53,9 @@ const categoryLabels: Record<TicketCategory, string> = {
   venue_issue: "مشكلة قاعة",
   technical_problem: "مشكلة تقنية",
   administrative: "إداري عام",
+  course_content_query: "استفسار عن محتوى المادة",
+  leave_excuse_request: "طلب إجازة/عذر",
+  schedule_conflict: "تعارض جدول",
   other: "أخرى",
 };
 
@@ -98,9 +105,15 @@ export function TicketsAdminClient({
   const [detail, setDetail] = useState<{
     messages: Record<string, unknown>[];
     workflows: Record<string, unknown>[];
+    escalations: Record<string, unknown>[];
   } | null>(null);
   const [replyText, setReplyText] = useState("");
   const [isInternal, setIsInternal] = useState(false);
+  const [showEscalateFaculty, setShowEscalateFaculty] = useState(false);
+  const [escalateReason, setEscalateReason] = useState("");
+  const [escalateFacultyId, setEscalateFacultyId] = useState("");
+  const [facultyList, setFacultyList] = useState<StaffMember[]>([]);
+  const [loadingFaculty, setLoadingFaculty] = useState(false);
 
   const filtered =
     filter === "all" ? tickets : tickets.filter((t) => t.status === filter);
@@ -119,11 +132,13 @@ export function TicketsAdminClient({
       return;
     }
     setExpandedId(ticketId);
+    setShowEscalateFaculty(false);
+    setEscalateReason("");
     try {
       const data = await getTicketDetail(ticketId);
-      setDetail({ messages: data.messages, workflows: data.workflows });
+      setDetail({ messages: data.messages, workflows: data.workflows, escalations: data.escalations || [] });
     } catch {
-      setDetail({ messages: [], workflows: [] });
+      setDetail({ messages: [], workflows: [], escalations: [] });
     }
   }
 
@@ -151,7 +166,7 @@ export function TicketsAdminClient({
       await sendAdminTicketMessage(ticketId, replyText.trim(), isInternal);
       setReplyText("");
       const data = await getTicketDetail(ticketId);
-      setDetail({ messages: data.messages, workflows: data.workflows });
+      setDetail({ messages: data.messages, workflows: data.workflows, escalations: data.escalations || [] });
       toast.success("تم إرسال الرد");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "خطأ");
@@ -163,7 +178,7 @@ export function TicketsAdminClient({
       const currentSteps = detail?.workflows?.length || 0;
       await createApprovalWorkflow(ticketId, approverId, currentSteps + 1);
       const data = await getTicketDetail(ticketId);
-      setDetail({ messages: data.messages, workflows: data.workflows });
+      setDetail({ messages: data.messages, workflows: data.workflows, escalations: data.escalations || [] });
       toast.success("تمت إضافة مسار الموافقة");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "خطأ");
@@ -178,10 +193,47 @@ export function TicketsAdminClient({
     try {
       await decideApproval(workflowId, decision, "");
       const data = await getTicketDetail(ticketId);
-      setDetail({ messages: data.messages, workflows: data.workflows });
+      setDetail({ messages: data.messages, workflows: data.workflows, escalations: data.escalations || [] });
       toast.success(decision === "approved" ? "تمت الموافقة" : "تم الرفض");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "خطأ");
+    }
+  }
+
+  async function handleEscalateToFaculty(ticketId: string) {
+    if (!escalateReason.trim()) {
+      toast.error("الرجاء كتابة سبب التصعيد");
+      return;
+    }
+    if (!escalateFacultyId) {
+      toast.error("الرجاء اختيار المحاضر");
+      return;
+    }
+    try {
+      await escalateToFaculty(ticketId, escalateFacultyId, escalateReason.trim());
+      toast.success("تم تحويل التذكرة إلى المحاضر");
+      setShowEscalateFaculty(false);
+      setEscalateReason("");
+      setEscalateFacultyId("");
+      const data = await getTicketDetail(ticketId);
+      setDetail({ messages: data.messages, workflows: data.workflows, escalations: data.escalations || [] });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "خطأ");
+    }
+  }
+
+  async function handleOpenEscalateFaculty() {
+    setShowEscalateFaculty(true);
+    if (facultyList.length === 0 && !loadingFaculty) {
+      setLoadingFaculty(true);
+      try {
+        const list = await getFacultyMembers();
+        setFacultyList(list);
+      } catch {
+        toast.error("فشل في تحميل قائمة المحاضرين");
+      } finally {
+        setLoadingFaculty(false);
+      }
     }
   }
 
@@ -381,7 +433,65 @@ export function TicketsAdminClient({
                         ))}
                       </select>
                     </div>
+
+                    {/* Escalate to Faculty (only for student tickets) */}
+                    {ticket.status !== "closed" && ticket.status !== "rejected" && ticket.profiles?.role === "student" && (
+                      <button
+                        onClick={handleOpenEscalateFaculty}
+                        className="flex items-center gap-1 rounded-lg border border-warning/30 px-2.5 py-1 text-xs font-medium text-warning hover:bg-warning/5"
+                      >
+                        <User className="h-3 w-3" />
+                        تحويل لمحاضر المادة
+                      </button>
+                    )}
                   </div>
+
+                  {/* Escalate to Faculty Form */}
+                  {showEscalateFaculty && (
+                    <div className="rounded-xl border border-warning/30 bg-warning/5 p-4">
+                      <h4 className="mb-2 text-xs font-bold text-warning">تحويل إلى محاضر المادة</h4>
+                      <p className="mb-2 text-xs text-text-secondary">
+                        تحويل التذكرة إلى المحاضر المختص لمعالجتها مباشرة
+                      </p>
+                      <select
+                        value={escalateFacultyId}
+                        onChange={(e) => setEscalateFacultyId(e.target.value)}
+                        className="mb-2 w-full rounded-lg border border-warning/30 bg-card-bg px-3 py-2 text-sm outline-none focus:border-warning"
+                      >
+                        <option value="">اختر المحاضر...</option>
+                        {loadingFaculty ? (
+                          <option disabled>جاري التحميل...</option>
+                        ) : (
+                          facultyList.map((f) => (
+                            <option key={f.id} value={f.id}>
+                              {f.first_name} {f.last_name}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                      <textarea
+                        value={escalateReason}
+                        onChange={(e) => setEscalateReason(e.target.value)}
+                        placeholder="سبب التحويل..."
+                        rows={2}
+                        className="mb-2 w-full rounded-lg border border-warning/30 bg-card-bg px-3 py-2 text-sm outline-none focus:border-warning"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEscalateToFaculty(ticket.id)}
+                          className="rounded-lg bg-warning px-3 py-1.5 text-xs font-medium text-white"
+                        >
+                          تأكيد التحويل
+                        </button>
+                        <button
+                          onClick={() => { setShowEscalateFaculty(false); setEscalateReason(""); setEscalateFacultyId(""); }}
+                          className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary"
+                        >
+                          إلغاء
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {detail.workflows.length > 0 && (
                     <div>
@@ -505,6 +615,36 @@ export function TicketsAdminClient({
                       ))}
                     </select>
                   </div>
+
+                  {/* Escalation History */}
+                  {detail.escalations.length > 0 && (
+                    <div>
+                      <h4 className="mb-2 flex items-center gap-1 text-xs font-medium text-text-secondary">
+                        <ArrowUpRight className="h-3 w-3" /> سجل التحويلات والتصعيد
+                      </h4>
+                      <div className="space-y-1">
+                        {detail.escalations.map((esc: Record<string, unknown>) => (
+                          <div key={esc.id as string} className="flex items-center gap-2 rounded-lg bg-app-bg px-3 py-2 text-xs">
+                            {esc.to_role === "faculty" ? (
+                              <ArrowUpRight className="h-3 w-3 text-warning shrink-0" />
+                            ) : (
+                              <ArrowUpRight className="h-3 w-3 text-orange shrink-0" />
+                            )}
+                            <span className="text-text-primary">
+                              {(esc.escalated_by_profile as Record<string, string>)?.first_name}
+                            </span>
+                            <span className="text-text-secondary">({esc.from_role as string === "academic_management" ? "إدارة أكاديمية" : esc.from_role as string})</span>
+                            <span className="text-text-secondary">←</span>
+                            <span className="text-text-primary">
+                              {(esc.escalated_to_profile as Record<string, string>)?.first_name}
+                            </span>
+                            <span className="text-text-secondary">({esc.to_role as string === "faculty" ? "محاضر" : esc.to_role as string})</span>
+                            <span className="text-text-secondary">— {esc.reason as string}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {detail.messages.length > 0 && (
                     <div>

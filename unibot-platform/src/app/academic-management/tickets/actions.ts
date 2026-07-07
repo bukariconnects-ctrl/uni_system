@@ -18,6 +18,7 @@ export async function getAllTickets(statusFilter?: TicketStatus) {
       "*, profiles:created_by(first_name, last_name, role), assigned_profile:assigned_to(first_name, last_name)"
     )
     .eq("tenant_id", profile.tenant_id)
+    .eq("is_direct_to_faculty", false)  // direct-to-faculty tickets go only to the instructor, not admin
     .order("created_at", { ascending: false });
 
   if (statusFilter) {
@@ -25,13 +26,7 @@ export async function getAllTickets(statusFilter?: TicketStatus) {
   }
 
   const { data, error } = await query;
-  
-  console.log("Academic Management - getAllTickets Debug:");
-  console.log("Profile:", { id: profile.id, role: profile.role, tenant_id: profile.tenant_id });
-  console.log("Tickets count:", data?.length || 0);
-  console.log("Error:", error);
-  console.log("First 3 tickets:", data?.slice(0, 3));
-  
+
   return data || [];
 }
 
@@ -65,10 +60,18 @@ export async function getTicketDetail(ticketId: string) {
     .eq("tenant_id", profile.tenant_id)
     .order("step_order", { ascending: true });
 
+  const { data: escalations } = await supabase
+    .from("ticket_escalations")
+    .select("*, escalated_by_profile:escalated_by(first_name, last_name), escalated_to_profile:escalated_to(first_name, last_name)")
+    .eq("ticket_id", ticketId)
+    .eq("tenant_id", profile.tenant_id)
+    .order("created_at", { ascending: true });
+
   return {
     ticket,
     messages: messages || [],
     workflows: workflows || [],
+    escalations: escalations || [],
   };
 }
 
@@ -137,6 +140,26 @@ export async function assignTicket(ticketId: string, assigneeId: string) {
     .eq("tenant_id", profile.tenant_id);
 
   if (error) throw new Error(error.message);
+
+  // Notify the assigned user
+  const { data: ticket } = await supabase
+    .from("tickets")
+    .select("title")
+    .eq("id", ticketId)
+    .single();
+
+  if (ticket) {
+    await supabase.from("notifications").insert({
+      tenant_id: profile.tenant_id,
+      recipient_id: assigneeId,
+      notification_type: "ticket_assigned" as any,
+      title: `📩 تذكرة جديدة موكلة إليك: ${ticket.title}`,
+      body: "تم تعيين تذكرة لك من الإدارة الأكاديمية",
+      reference_table: "tickets",
+      reference_id: ticketId,
+    });
+  }
+
   revalidatePath("/academic-management/tickets");
 }
 
@@ -223,6 +246,90 @@ export async function getStaffMembers() {
     .select("id, first_name, last_name, role")
     .eq("tenant_id", profile.tenant_id)
     .in("role", ["academic_management", "tenant_admin"])
+    .order("first_name");
+
+  return data || [];
+}
+
+export async function escalateToFaculty(ticketId: string, facultyId: string, reason: string) {
+  const { profile } = await requireRole(["academic_management"]);
+  const supabase = await createClient();
+
+  // Get current ticket
+  const { data: ticket } = await supabase
+    .from("tickets")
+    .select("*")
+    .eq("id", ticketId)
+    .eq("tenant_id", profile.tenant_id)
+    .single();
+
+  if (!ticket) throw new Error("التذكرة غير موجودة");
+
+  // Verify faculty member exists
+  const { data: facultyMember } = await supabase
+    .from("profiles")
+    .select("id, first_name, last_name")
+    .eq("id", facultyId)
+    .eq("tenant_id", profile.tenant_id)
+    .single();
+
+  if (!facultyMember) throw new Error("المحاضر غير موجود");
+
+  // Create escalation record
+  await supabase.from("ticket_escalations").insert({
+    tenant_id: profile.tenant_id,
+    ticket_id: ticketId,
+    escalated_by: profile.id,
+    escalated_to: facultyId,
+    from_role: "academic_management",
+    to_role: "faculty",
+    reason,
+    previous_status: ticket.status,
+  });
+
+  // Update ticket - assign to faculty member
+  await supabase
+    .from("tickets")
+    .update({
+      assigned_to: facultyId,
+      status: "in_progress",
+    })
+    .eq("id", ticketId)
+    .eq("tenant_id", profile.tenant_id);
+
+  // Add internal message
+  await supabase.from("ticket_messages").insert({
+    tenant_id: profile.tenant_id,
+    ticket_id: ticketId,
+    sender_id: profile.id,
+    body: `🔄 تم تحويل التذكرة إلى المحاضر: ${facultyMember.first_name} ${facultyMember.last_name}. السبب: ${reason}`,
+    is_internal: true,
+  });
+
+  // Notify the faculty member
+  await supabase.from("notifications").insert({
+    tenant_id: profile.tenant_id,
+    recipient_id: facultyId,
+    notification_type: "ticket_assigned" as any,
+    title: `📩 تذكرة محوّلة إليك: ${ticket.title}`,
+    body: `تم تحويل التذكرة من الإدارة الأكاديمية. السبب: ${reason}`,
+    reference_table: "tickets",
+    reference_id: ticketId,
+  });
+
+  revalidatePath("/academic-management/tickets");
+  revalidatePath("/faculty/tickets");
+}
+
+export async function getFacultyMembers() {
+  const { profile } = await requireRole(["academic_management"]);
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, first_name, last_name, role")
+    .eq("tenant_id", profile.tenant_id)
+    .eq("role", "faculty")
     .order("first_name");
 
   return data || [];

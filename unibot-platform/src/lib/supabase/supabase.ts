@@ -3494,6 +3494,8 @@ export type Database = {
         | "grade_released"
         | "assignment_due"
         | "ticket_update"
+        | "new_ticket"
+        | "ticket_assigned"
         | "system"
         | "risk_alert"
         | "recommendation"
@@ -3739,6 +3741,8 @@ export const Constants = {
         "grade_released",
         "assignment_due",
         "ticket_update",
+        "new_ticket",
+        "ticket_assigned",
         "system",
         "risk_alert",
         "recommendation",

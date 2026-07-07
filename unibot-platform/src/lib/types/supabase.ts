@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -11,6 +11,31 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.4"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -51,11 +76,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "academic_levels_major_id_fkey"
+            columns: ["major_id"]
+            isOneToOne: false
+            referencedRelation: "v_faculty_my_courses"
+            referencedColumns: ["major_id"]
+          },
+          {
             foreignKeyName: "academic_levels_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academic_levels_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -97,6 +136,34 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "academic_management_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "academic_management_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_dept_stats"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "academic_management_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_risk_students"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "academic_management_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["department_id"]
+          },
+          {
             foreignKeyName: "academic_management_departments_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
@@ -109,6 +176,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academic_management_departments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -164,10 +238,18 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ai_document_chunks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       ai_knowledge_documents: {
         Row: {
+          course_id: string | null
           created_at: string
           doc_type: Database["public"]["Enums"]["ai_document_type"]
           file_url: string | null
@@ -182,6 +264,7 @@ export type Database = {
           uploaded_by: string
         }
         Insert: {
+          course_id?: string | null
           created_at?: string
           doc_type?: Database["public"]["Enums"]["ai_document_type"]
           file_url?: string | null
@@ -196,6 +279,7 @@ export type Database = {
           uploaded_by: string
         }
         Update: {
+          course_id?: string | null
           created_at?: string
           doc_type?: Database["public"]["Enums"]["ai_document_type"]
           file_url?: string | null
@@ -211,17 +295,38 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "ai_knowledge_documents_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_knowledge_documents_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "ai_knowledge_documents_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "ai_knowledge_documents_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "ai_knowledge_documents_material_id_fkey"
             columns: ["material_id"]
             isOneToOne: false
             referencedRelation: "course_materials"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ai_knowledge_documents_section_id_fkey"
-            columns: ["section_id"]
-            isOneToOne: false
-            referencedRelation: "sections"
             referencedColumns: ["id"]
           },
           {
@@ -230,6 +335,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_knowledge_documents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
           {
             foreignKeyName: "ai_knowledge_documents_uploaded_by_fkey"
@@ -281,6 +393,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_token_usage_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
           {
             foreignKeyName: "ai_token_usage_user_id_fkey"
@@ -344,6 +463,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "approval_workflows_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+          {
             foreignKeyName: "approval_workflows_ticket_id_fkey"
             columns: ["ticket_id"]
             isOneToOne: false
@@ -354,51 +480,105 @@ export type Database = {
       }
       assignments: {
         Row: {
+          academic_level_id: string | null
           allow_late: boolean
+          attachment_url: string | null
+          course_id: string | null
           created_at: string
           created_by: string
           description: string | null
           due_date: string
           id: string
           is_published: boolean
+          major_id: string | null
           max_grade: number
-          section_id: string
+          section_id: string | null
           tenant_id: string
           title: string
           updated_at: string
           week_number: number | null
         }
         Insert: {
+          academic_level_id?: string | null
           allow_late?: boolean
+          attachment_url?: string | null
+          course_id?: string | null
           created_at?: string
           created_by: string
           description?: string | null
           due_date: string
           id?: string
           is_published?: boolean
+          major_id?: string | null
           max_grade?: number
-          section_id: string
+          section_id?: string | null
           tenant_id: string
           title: string
           updated_at?: string
           week_number?: number | null
         }
         Update: {
+          academic_level_id?: string | null
           allow_late?: boolean
+          attachment_url?: string | null
+          course_id?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
           due_date?: string
           id?: string
           is_published?: boolean
+          major_id?: string | null
           max_grade?: number
-          section_id?: string
+          section_id?: string | null
           tenant_id?: string
           title?: string
           updated_at?: string
           week_number?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "assignments_academic_level_id_fkey"
+            columns: ["academic_level_id"]
+            isOneToOne: false
+            referencedRelation: "academic_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_academic_level_id_fkey"
+            columns: ["academic_level_id"]
+            isOneToOne: false
+            referencedRelation: "v_faculty_my_courses"
+            referencedColumns: ["academic_level_id"]
+          },
+          {
+            foreignKeyName: "assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
           {
             foreignKeyName: "assignments_created_by_fkey"
             columns: ["created_by"]
@@ -407,11 +587,18 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "assignments_section_id_fkey"
-            columns: ["section_id"]
+            foreignKeyName: "assignments_major_id_fkey"
+            columns: ["major_id"]
             isOneToOne: false
-            referencedRelation: "sections"
+            referencedRelation: "majors"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_major_id_fkey"
+            columns: ["major_id"]
+            isOneToOne: false
+            referencedRelation: "v_faculty_my_courses"
+            referencedColumns: ["major_id"]
           },
           {
             foreignKeyName: "assignments_tenant_id_fkey"
@@ -420,18 +607,26 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "assignments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       attendance_records: {
         Row: {
           check_in_time: string | null
+          course_id: string | null
           created_at: string
           id: string
           method: string | null
           modification_reason: string | null
           modified_at: string | null
           modified_by: string | null
-          section_id: string
+          section_id: string | null
           session_id: string
           status: Database["public"]["Enums"]["attendance_status"]
           student_id: string
@@ -440,13 +635,14 @@ export type Database = {
         }
         Insert: {
           check_in_time?: string | null
+          course_id?: string | null
           created_at?: string
           id?: string
           method?: string | null
           modification_reason?: string | null
           modified_at?: string | null
           modified_by?: string | null
-          section_id: string
+          section_id?: string | null
           session_id: string
           status?: Database["public"]["Enums"]["attendance_status"]
           student_id: string
@@ -455,13 +651,14 @@ export type Database = {
         }
         Update: {
           check_in_time?: string | null
+          course_id?: string | null
           created_at?: string
           id?: string
           method?: string | null
           modification_reason?: string | null
           modified_at?: string | null
           modified_by?: string | null
-          section_id?: string
+          section_id?: string | null
           session_id?: string
           status?: Database["public"]["Enums"]["attendance_status"]
           student_id?: string
@@ -470,17 +667,38 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "attendance_records_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "attendance_records_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "attendance_records_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "attendance_records_modified_by_fkey"
             columns: ["modified_by"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "attendance_records_section_id_fkey"
-            columns: ["section_id"]
-            isOneToOne: false
-            referencedRelation: "sections"
             referencedColumns: ["id"]
           },
           {
@@ -504,10 +722,19 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "attendance_records_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       attendance_sessions: {
         Row: {
+          academic_level_id: string | null
+          course_id: string | null
           created_at: string
           created_by: string | null
           end_time: string | null
@@ -516,16 +743,21 @@ export type Database = {
           geo_radius_m: number | null
           id: string
           is_open: boolean
+          major_id: string | null
           qr_code: string | null
           qr_expires_at: string | null
           schedule_id: string | null
-          section_id: string
+          section_id: string | null
+          semester_id: string | null
           session_date: string
           start_time: string
           tenant_id: string
+          title: string | null
           updated_at: string
         }
         Insert: {
+          academic_level_id?: string | null
+          course_id?: string | null
           created_at?: string
           created_by?: string | null
           end_time?: string | null
@@ -534,16 +766,21 @@ export type Database = {
           geo_radius_m?: number | null
           id?: string
           is_open?: boolean
+          major_id?: string | null
           qr_code?: string | null
           qr_expires_at?: string | null
           schedule_id?: string | null
-          section_id: string
+          section_id?: string | null
+          semester_id?: string | null
           session_date: string
           start_time: string
           tenant_id: string
+          title?: string | null
           updated_at?: string
         }
         Update: {
+          academic_level_id?: string | null
+          course_id?: string | null
           created_at?: string
           created_by?: string | null
           end_time?: string | null
@@ -552,16 +789,61 @@ export type Database = {
           geo_radius_m?: number | null
           id?: string
           is_open?: boolean
+          major_id?: string | null
           qr_code?: string | null
           qr_expires_at?: string | null
           schedule_id?: string | null
-          section_id?: string
+          section_id?: string | null
+          semester_id?: string | null
           session_date?: string
           start_time?: string
           tenant_id?: string
+          title?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "attendance_sessions_academic_level_id_fkey"
+            columns: ["academic_level_id"]
+            isOneToOne: false
+            referencedRelation: "academic_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_sessions_academic_level_id_fkey"
+            columns: ["academic_level_id"]
+            isOneToOne: false
+            referencedRelation: "v_faculty_my_courses"
+            referencedColumns: ["academic_level_id"]
+          },
+          {
+            foreignKeyName: "attendance_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "attendance_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "attendance_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
           {
             foreignKeyName: "attendance_sessions_created_by_fkey"
             columns: ["created_by"]
@@ -570,17 +852,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "attendance_sessions_schedule_id_fkey"
-            columns: ["schedule_id"]
+            foreignKeyName: "attendance_sessions_major_id_fkey"
+            columns: ["major_id"]
             isOneToOne: false
-            referencedRelation: "schedules"
+            referencedRelation: "majors"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "attendance_sessions_section_id_fkey"
-            columns: ["section_id"]
+            foreignKeyName: "attendance_sessions_major_id_fkey"
+            columns: ["major_id"]
             isOneToOne: false
-            referencedRelation: "sections"
+            referencedRelation: "v_faculty_my_courses"
+            referencedColumns: ["major_id"]
+          },
+          {
+            foreignKeyName: "attendance_sessions_semester_id_fkey"
+            columns: ["semester_id"]
+            isOneToOne: false
+            referencedRelation: "semesters"
             referencedColumns: ["id"]
           },
           {
@@ -590,12 +879,20 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "attendance_sessions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       attendance_summaries: {
         Row: {
           absence_percentage: number
           attended_sessions: number
+          course_id: string | null
           dismissed_at: string | null
           enrollment_id: string
           excused_absences: number
@@ -603,7 +900,7 @@ export type Database = {
           is_dismissed: boolean
           last_updated: string
           late_count: number
-          section_id: string
+          section_id: string | null
           student_id: string
           tenant_id: string
           total_sessions: number
@@ -612,6 +909,7 @@ export type Database = {
         Insert: {
           absence_percentage?: number
           attended_sessions?: number
+          course_id?: string | null
           dismissed_at?: string | null
           enrollment_id: string
           excused_absences?: number
@@ -619,7 +917,7 @@ export type Database = {
           is_dismissed?: boolean
           last_updated?: string
           late_count?: number
-          section_id: string
+          section_id?: string | null
           student_id: string
           tenant_id: string
           total_sessions?: number
@@ -628,6 +926,7 @@ export type Database = {
         Update: {
           absence_percentage?: number
           attended_sessions?: number
+          course_id?: string | null
           dismissed_at?: string | null
           enrollment_id?: string
           excused_absences?: number
@@ -635,7 +934,7 @@ export type Database = {
           is_dismissed?: boolean
           last_updated?: string
           late_count?: number
-          section_id?: string
+          section_id?: string | null
           student_id?: string
           tenant_id?: string
           total_sessions?: number
@@ -643,17 +942,38 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "attendance_summaries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "attendance_summaries_enrollment_id_fkey"
             columns: ["enrollment_id"]
             isOneToOne: true
             referencedRelation: "enrollments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "attendance_summaries_section_id_fkey"
-            columns: ["section_id"]
-            isOneToOne: false
-            referencedRelation: "sections"
             referencedColumns: ["id"]
           },
           {
@@ -669,6 +989,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -730,6 +1057,13 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "audit_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       campuses: {
@@ -768,6 +1102,13 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "campuses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       channel_members: {
@@ -776,6 +1117,7 @@ export type Database = {
           id: string
           is_admin: boolean
           joined_at: string
+          last_read_at: string
           muted_until: string | null
           profile_id: string
           tenant_id: string
@@ -785,6 +1127,7 @@ export type Database = {
           id?: string
           is_admin?: boolean
           joined_at?: string
+          last_read_at?: string
           muted_until?: string | null
           profile_id: string
           tenant_id: string
@@ -794,6 +1137,7 @@ export type Database = {
           id?: string
           is_admin?: boolean
           joined_at?: string
+          last_read_at?: string
           muted_until?: string | null
           profile_id?: string
           tenant_id?: string
@@ -820,49 +1164,110 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "channel_members_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       channels: {
         Row: {
+          academic_level_id: string | null
           allow_student_messages: boolean
           channel_type: Database["public"]["Enums"]["channel_type"]
+          course_id: string | null
           created_at: string
           created_by: string | null
           id: string
           is_readonly: boolean
+          major_id: string | null
           name: string
           section_id: string | null
+          semester_id: string | null
           settings: Json | null
           tenant_id: string
           updated_at: string
         }
         Insert: {
+          academic_level_id?: string | null
           allow_student_messages?: boolean
           channel_type?: Database["public"]["Enums"]["channel_type"]
+          course_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           is_readonly?: boolean
+          major_id?: string | null
           name: string
           section_id?: string | null
+          semester_id?: string | null
           settings?: Json | null
           tenant_id: string
           updated_at?: string
         }
         Update: {
+          academic_level_id?: string | null
           allow_student_messages?: boolean
           channel_type?: Database["public"]["Enums"]["channel_type"]
+          course_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           is_readonly?: boolean
+          major_id?: string | null
           name?: string
           section_id?: string | null
+          semester_id?: string | null
           settings?: Json | null
           tenant_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "channels_academic_level_id_fkey"
+            columns: ["academic_level_id"]
+            isOneToOne: false
+            referencedRelation: "academic_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channels_academic_level_id_fkey"
+            columns: ["academic_level_id"]
+            isOneToOne: false
+            referencedRelation: "v_faculty_my_courses"
+            referencedColumns: ["academic_level_id"]
+          },
+          {
+            foreignKeyName: "channels_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channels_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "channels_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "channels_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
           {
             foreignKeyName: "channels_created_by_fkey"
             columns: ["created_by"]
@@ -871,10 +1276,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "channels_section_id_fkey"
-            columns: ["section_id"]
+            foreignKeyName: "channels_major_id_fkey"
+            columns: ["major_id"]
             isOneToOne: false
-            referencedRelation: "sections"
+            referencedRelation: "majors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channels_major_id_fkey"
+            columns: ["major_id"]
+            isOneToOne: false
+            referencedRelation: "v_faculty_my_courses"
+            referencedColumns: ["major_id"]
+          },
+          {
+            foreignKeyName: "channels_semester_id_fkey"
+            columns: ["semester_id"]
+            isOneToOne: false
+            referencedRelation: "semesters"
             referencedColumns: ["id"]
           },
           {
@@ -883,6 +1302,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channels_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -924,6 +1350,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chatbot_conversations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
           {
             foreignKeyName: "chatbot_conversations_user_id_fkey"
@@ -980,10 +1413,18 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "chatbot_messages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       circulars: {
         Row: {
+          academic_level_id: string | null
           body: string
           created_at: string
           created_by: string
@@ -991,6 +1432,7 @@ export type Database = {
           id: string
           is_mandatory: boolean
           is_published: boolean
+          major_id: string | null
           published_at: string | null
           target_id: string | null
           target_type: Database["public"]["Enums"]["circular_target_type"]
@@ -999,6 +1441,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          academic_level_id?: string | null
           body: string
           created_at?: string
           created_by: string
@@ -1006,6 +1449,7 @@ export type Database = {
           id?: string
           is_mandatory?: boolean
           is_published?: boolean
+          major_id?: string | null
           published_at?: string | null
           target_id?: string | null
           target_type?: Database["public"]["Enums"]["circular_target_type"]
@@ -1014,6 +1458,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          academic_level_id?: string | null
           body?: string
           created_at?: string
           created_by?: string
@@ -1021,6 +1466,7 @@ export type Database = {
           id?: string
           is_mandatory?: boolean
           is_published?: boolean
+          major_id?: string | null
           published_at?: string | null
           target_id?: string | null
           target_type?: Database["public"]["Enums"]["circular_target_type"]
@@ -1030,11 +1476,39 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "circulars_academic_level_id_fkey"
+            columns: ["academic_level_id"]
+            isOneToOne: false
+            referencedRelation: "academic_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circulars_academic_level_id_fkey"
+            columns: ["academic_level_id"]
+            isOneToOne: false
+            referencedRelation: "v_faculty_my_courses"
+            referencedColumns: ["academic_level_id"]
+          },
+          {
             foreignKeyName: "circulars_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circulars_major_id_fkey"
+            columns: ["major_id"]
+            isOneToOne: false
+            referencedRelation: "majors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circulars_major_id_fkey"
+            columns: ["major_id"]
+            isOneToOne: false
+            referencedRelation: "v_faculty_my_courses"
+            referencedColumns: ["major_id"]
           },
           {
             foreignKeyName: "circulars_tenant_id_fkey"
@@ -1043,10 +1517,18 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "circulars_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       colleges: {
         Row: {
+          absence_limit_count: number | null
           absence_threshold: number | null
           campus_id: string | null
           code: string | null
@@ -1058,6 +1540,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          absence_limit_count?: number | null
           absence_threshold?: number | null
           campus_id?: string | null
           code?: string | null
@@ -1069,6 +1552,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          absence_limit_count?: number | null
           absence_threshold?: number | null
           campus_id?: string | null
           code?: string | null
@@ -1101,6 +1585,13 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "colleges_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       conversations: {
@@ -1108,6 +1599,8 @@ export type Database = {
           created_at: string
           id: string
           last_message_at: string | null
+          last_read_at_a: string
+          last_read_at_b: string
           participant_a: string
           participant_b: string
           tenant_id: string
@@ -1116,6 +1609,8 @@ export type Database = {
           created_at?: string
           id?: string
           last_message_at?: string | null
+          last_read_at_a?: string
+          last_read_at_b?: string
           participant_a: string
           participant_b: string
           tenant_id: string
@@ -1124,6 +1619,8 @@ export type Database = {
           created_at?: string
           id?: string
           last_message_at?: string | null
+          last_read_at_a?: string
+          last_read_at_b?: string
           participant_a?: string
           participant_b?: string
           tenant_id?: string
@@ -1150,11 +1647,20 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "conversations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       course_materials: {
         Row: {
+          academic_level_id: string | null
           content_type: Database["public"]["Enums"]["content_type"]
+          course_id: string | null
           created_at: string
           description: string | null
           file_size_bytes: number | null
@@ -1162,7 +1668,8 @@ export type Database = {
           id: string
           is_ai_approved: boolean
           is_published: boolean
-          section_id: string
+          major_id: string | null
+          section_id: string | null
           tenant_id: string
           title: string
           updated_at: string
@@ -1171,7 +1678,9 @@ export type Database = {
           week_number: number | null
         }
         Insert: {
+          academic_level_id?: string | null
           content_type?: Database["public"]["Enums"]["content_type"]
+          course_id?: string | null
           created_at?: string
           description?: string | null
           file_size_bytes?: number | null
@@ -1179,7 +1688,8 @@ export type Database = {
           id?: string
           is_ai_approved?: boolean
           is_published?: boolean
-          section_id: string
+          major_id?: string | null
+          section_id?: string | null
           tenant_id: string
           title: string
           updated_at?: string
@@ -1188,7 +1698,9 @@ export type Database = {
           week_number?: number | null
         }
         Update: {
+          academic_level_id?: string | null
           content_type?: Database["public"]["Enums"]["content_type"]
+          course_id?: string | null
           created_at?: string
           description?: string | null
           file_size_bytes?: number | null
@@ -1196,7 +1708,8 @@ export type Database = {
           id?: string
           is_ai_approved?: boolean
           is_published?: boolean
-          section_id?: string
+          major_id?: string | null
+          section_id?: string | null
           tenant_id?: string
           title?: string
           updated_at?: string
@@ -1206,11 +1719,60 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "course_materials_section_id_fkey"
-            columns: ["section_id"]
+            foreignKeyName: "course_materials_academic_level_id_fkey"
+            columns: ["academic_level_id"]
             isOneToOne: false
-            referencedRelation: "sections"
+            referencedRelation: "academic_levels"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_materials_academic_level_id_fkey"
+            columns: ["academic_level_id"]
+            isOneToOne: false
+            referencedRelation: "v_faculty_my_courses"
+            referencedColumns: ["academic_level_id"]
+          },
+          {
+            foreignKeyName: "course_materials_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_materials_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "course_materials_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "course_materials_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "course_materials_major_id_fkey"
+            columns: ["major_id"]
+            isOneToOne: false
+            referencedRelation: "majors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_materials_major_id_fkey"
+            columns: ["major_id"]
+            isOneToOne: false
+            referencedRelation: "v_faculty_my_courses"
+            referencedColumns: ["major_id"]
           },
           {
             foreignKeyName: "course_materials_tenant_id_fkey"
@@ -1218,6 +1780,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_materials_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
           {
             foreignKeyName: "course_materials_uploaded_by_fkey"
@@ -1262,11 +1831,53 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "course_prerequisites_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "course_prerequisites_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "course_prerequisites_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "course_prerequisites_prerequisite_id_fkey"
             columns: ["prerequisite_id"]
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_prerequisites_prerequisite_id_fkey"
+            columns: ["prerequisite_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "course_prerequisites_prerequisite_id_fkey"
+            columns: ["prerequisite_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "course_prerequisites_prerequisite_id_fkey"
+            columns: ["prerequisite_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "course_prerequisites_tenant_id_fkey"
@@ -1275,6 +1886,13 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "course_prerequisites_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       course_risk_flags: {
@@ -1282,12 +1900,13 @@ export type Database = {
           alert_sent: boolean
           avg_risk_score: number
           computed_at: string
+          course_id: string | null
           engagement_drop: boolean
           failure_rate_pct: number
           flagged: boolean
           high_risk_count: number
           id: string
-          section_id: string
+          section_id: string | null
           semester_id: string
           tenant_id: string
         }
@@ -1295,12 +1914,13 @@ export type Database = {
           alert_sent?: boolean
           avg_risk_score?: number
           computed_at?: string
+          course_id?: string | null
           engagement_drop?: boolean
           failure_rate_pct?: number
           flagged?: boolean
           high_risk_count?: number
           id?: string
-          section_id: string
+          section_id?: string | null
           semester_id: string
           tenant_id: string
         }
@@ -1308,22 +1928,44 @@ export type Database = {
           alert_sent?: boolean
           avg_risk_score?: number
           computed_at?: string
+          course_id?: string | null
           engagement_drop?: boolean
           failure_rate_pct?: number
           flagged?: boolean
           high_risk_count?: number
           id?: string
-          section_id?: string
+          section_id?: string | null
           semester_id?: string
           tenant_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "course_risk_flags_section_id_fkey"
-            columns: ["section_id"]
+            foreignKeyName: "course_risk_flags_course_id_fkey"
+            columns: ["course_id"]
             isOneToOne: false
-            referencedRelation: "sections"
+            referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_risk_flags_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "course_risk_flags_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "course_risk_flags_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "course_risk_flags_semester_id_fkey"
@@ -1337,6 +1979,104 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_risk_flags_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+        ]
+      }
+      course_schedules: {
+        Row: {
+          component_type: string
+          created_at: string
+          day_of_week: Database["public"]["Enums"]["schedule_day"]
+          end_time: string
+          id: string
+          instructor_id: string | null
+          semester_id: string
+          start_time: string
+          status: string
+          study_plan_course_id: string
+          tenant_id: string
+          updated_at: string
+          venue_id: string | null
+        }
+        Insert: {
+          component_type: string
+          created_at?: string
+          day_of_week: Database["public"]["Enums"]["schedule_day"]
+          end_time: string
+          id?: string
+          instructor_id?: string | null
+          semester_id: string
+          start_time: string
+          status?: string
+          study_plan_course_id: string
+          tenant_id: string
+          updated_at?: string
+          venue_id?: string | null
+        }
+        Update: {
+          component_type?: string
+          created_at?: string
+          day_of_week?: Database["public"]["Enums"]["schedule_day"]
+          end_time?: string
+          id?: string
+          instructor_id?: string | null
+          semester_id?: string
+          start_time?: string
+          status?: string
+          study_plan_course_id?: string
+          tenant_id?: string
+          updated_at?: string
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_course_schedules_instructor"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_course_schedules_semester"
+            columns: ["semester_id"]
+            isOneToOne: false
+            referencedRelation: "semesters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_course_schedules_study_plan_course"
+            columns: ["study_plan_course_id"]
+            isOneToOne: false
+            referencedRelation: "study_plan_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_course_schedules_tenant"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_course_schedules_tenant"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+          {
+            foreignKeyName: "fk_course_schedules_venue"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
             referencedColumns: ["id"]
           },
         ]
@@ -1390,11 +2130,46 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "courses_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "courses_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_dept_stats"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "courses_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_risk_students"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "courses_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["department_id"]
+          },
+          {
             foreignKeyName: "courses_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -1436,6 +2211,100 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_roles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+        ]
+      }
+      department_staff: {
+        Row: {
+          created_at: string
+          department_id: string
+          id: string
+          is_active: boolean
+          profile_id: string
+          role: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          department_id: string
+          id?: string
+          is_active?: boolean
+          profile_id: string
+          role: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string
+          id?: string
+          is_active?: boolean
+          profile_id?: string
+          role?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_staff_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "department_staff_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "department_staff_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_dept_stats"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "department_staff_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_risk_students"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "department_staff_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "department_staff_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "department_staff_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "department_staff_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -1479,6 +2348,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "departments_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_dept_stats"
+            referencedColumns: ["college_id"]
+          },
+          {
+            foreignKeyName: "departments_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_college_stats"
+            referencedColumns: ["college_id"]
+          },
+          {
             foreignKeyName: "departments_head_id_fkey"
             columns: ["head_id"]
             isOneToOne: false
@@ -1492,17 +2375,27 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "departments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       enrollments: {
         Row: {
+          academic_level_id: string | null
+          course_id: string | null
           created_at: string
           dropped_at: string | null
           enrolled_at: string
           final_grade: number | null
           id: string
           letter_grade: string | null
-          section_id: string
+          major_id: string | null
+          section_id: string | null
           semester_id: string
           status: Database["public"]["Enums"]["enrollment_status"]
           student_id: string
@@ -1510,13 +2403,16 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          academic_level_id?: string | null
+          course_id?: string | null
           created_at?: string
           dropped_at?: string | null
           enrolled_at?: string
           final_grade?: number | null
           id?: string
           letter_grade?: string | null
-          section_id: string
+          major_id?: string | null
+          section_id?: string | null
           semester_id: string
           status?: Database["public"]["Enums"]["enrollment_status"]
           student_id: string
@@ -1524,13 +2420,16 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          academic_level_id?: string | null
+          course_id?: string | null
           created_at?: string
           dropped_at?: string | null
           enrolled_at?: string
           final_grade?: number | null
           id?: string
           letter_grade?: string | null
-          section_id?: string
+          major_id?: string | null
+          section_id?: string | null
           semester_id?: string
           status?: Database["public"]["Enums"]["enrollment_status"]
           student_id?: string
@@ -1539,11 +2438,60 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "enrollments_section_id_fkey"
-            columns: ["section_id"]
+            foreignKeyName: "enrollments_academic_level_id_fkey"
+            columns: ["academic_level_id"]
             isOneToOne: false
-            referencedRelation: "sections"
+            referencedRelation: "academic_levels"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollments_academic_level_id_fkey"
+            columns: ["academic_level_id"]
+            isOneToOne: false
+            referencedRelation: "v_faculty_my_courses"
+            referencedColumns: ["academic_level_id"]
+          },
+          {
+            foreignKeyName: "enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "enrollments_major_id_fkey"
+            columns: ["major_id"]
+            isOneToOne: false
+            referencedRelation: "majors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollments_major_id_fkey"
+            columns: ["major_id"]
+            isOneToOne: false
+            referencedRelation: "v_faculty_my_courses"
+            referencedColumns: ["major_id"]
           },
           {
             foreignKeyName: "enrollments_semester_id_fkey"
@@ -1565,6 +2513,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -1596,6 +2551,34 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "faculty_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "faculty_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_dept_stats"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "faculty_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_risk_students"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "faculty_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["department_id"]
+          },
+          {
             foreignKeyName: "faculty_departments_faculty_id_fkey"
             columns: ["faculty_id"]
             isOneToOne: false
@@ -1608,6 +2591,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "faculty_departments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -1654,10 +2644,18 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "faculty_profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       gradebook_entries: {
         Row: {
+          course_id: string | null
           coursework_grade: number | null
           created_at: string
           enrollment_id: string
@@ -1667,13 +2665,14 @@ export type Database = {
           midterm_grade: number | null
           published_at: string | null
           recorded_by: string | null
-          section_id: string
+          section_id: string | null
           student_id: string
           tenant_id: string
           total_grade: number | null
           updated_at: string
         }
         Insert: {
+          course_id?: string | null
           coursework_grade?: number | null
           created_at?: string
           enrollment_id: string
@@ -1683,13 +2682,14 @@ export type Database = {
           midterm_grade?: number | null
           published_at?: string | null
           recorded_by?: string | null
-          section_id: string
+          section_id?: string | null
           student_id: string
           tenant_id: string
           total_grade?: number | null
           updated_at?: string
         }
         Update: {
+          course_id?: string | null
           coursework_grade?: number | null
           created_at?: string
           enrollment_id?: string
@@ -1699,13 +2699,41 @@ export type Database = {
           midterm_grade?: number | null
           published_at?: string | null
           recorded_by?: string | null
-          section_id?: string
+          section_id?: string | null
           student_id?: string
           tenant_id?: string
           total_grade?: number | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "gradebook_entries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gradebook_entries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "gradebook_entries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "gradebook_entries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
           {
             foreignKeyName: "gradebook_entries_enrollment_id_fkey"
             columns: ["enrollment_id"]
@@ -1721,13 +2749,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "gradebook_entries_section_id_fkey"
-            columns: ["section_id"]
-            isOneToOne: false
-            referencedRelation: "sections"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "gradebook_entries_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
@@ -1740,6 +2761,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gradebook_entries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -1798,6 +2826,13 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "invoices_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       majors: {
@@ -1843,11 +2878,46 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "majors_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "majors_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_dept_stats"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "majors_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_risk_students"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "majors_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["department_id"]
+          },
+          {
             foreignKeyName: "majors_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "majors_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -1899,6 +2969,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_attachments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -1997,6 +3074,13 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "messages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       notifications: {
@@ -2053,6 +3137,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -2168,160 +3259,12 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      schedules: {
-        Row: {
-          created_at: string
-          day_of_week: Database["public"]["Enums"]["schedule_day"]
-          end_time: string
-          id: string
-          section_id: string
-          start_time: string
-          status: Database["public"]["Enums"]["schedule_status"]
-          tenant_id: string
-          updated_at: string
-          venue_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          day_of_week: Database["public"]["Enums"]["schedule_day"]
-          end_time: string
-          id?: string
-          section_id: string
-          start_time: string
-          status?: Database["public"]["Enums"]["schedule_status"]
-          tenant_id: string
-          updated_at?: string
-          venue_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          day_of_week?: Database["public"]["Enums"]["schedule_day"]
-          end_time?: string
-          id?: string
-          section_id?: string
-          start_time?: string
-          status?: Database["public"]["Enums"]["schedule_status"]
-          tenant_id?: string
-          updated_at?: string
-          venue_id?: string | null
-        }
-        Relationships: [
           {
-            foreignKeyName: "schedules_section_id_fkey"
-            columns: ["section_id"]
-            isOneToOne: false
-            referencedRelation: "sections"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "schedules_tenant_id_fkey"
+            foreignKeyName: "profiles_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "schedules_venue_id_fkey"
-            columns: ["venue_id"]
-            isOneToOne: false
-            referencedRelation: "venues"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sections: {
-        Row: {
-          course_id: string
-          created_at: string
-          enrolled_count: number
-          id: string
-          instructor_id: string | null
-          max_capacity: number
-          merged_into_id: string | null
-          parent_section_id: string | null
-          section_code: string
-          section_type: Database["public"]["Enums"]["section_type"]
-          semester_id: string
-          status: Database["public"]["Enums"]["section_status"]
-          tenant_id: string
-          updated_at: string
-        }
-        Insert: {
-          course_id: string
-          created_at?: string
-          enrolled_count?: number
-          id?: string
-          instructor_id?: string | null
-          max_capacity?: number
-          merged_into_id?: string | null
-          parent_section_id?: string | null
-          section_code: string
-          section_type?: Database["public"]["Enums"]["section_type"]
-          semester_id: string
-          status?: Database["public"]["Enums"]["section_status"]
-          tenant_id: string
-          updated_at?: string
-        }
-        Update: {
-          course_id?: string
-          created_at?: string
-          enrolled_count?: number
-          id?: string
-          instructor_id?: string | null
-          max_capacity?: number
-          merged_into_id?: string | null
-          parent_section_id?: string | null
-          section_code?: string
-          section_type?: Database["public"]["Enums"]["section_type"]
-          semester_id?: string
-          status?: Database["public"]["Enums"]["section_status"]
-          tenant_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sections_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sections_instructor_id_fkey"
-            columns: ["instructor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sections_merged_into_id_fkey"
-            columns: ["merged_into_id"]
-            isOneToOne: false
-            referencedRelation: "sections"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sections_parent_section_id_fkey"
-            columns: ["parent_section_id"]
-            isOneToOne: false
-            referencedRelation: "sections"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sections_semester_id_fkey"
-            columns: ["semester_id"]
-            isOneToOne: false
-            referencedRelation: "semesters"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sections_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -2394,6 +3337,13 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "semesters_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       student_majors: {
@@ -2430,11 +3380,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "student_majors_academic_level_id_fkey"
+            columns: ["academic_level_id"]
+            isOneToOne: false
+            referencedRelation: "v_faculty_my_courses"
+            referencedColumns: ["academic_level_id"]
+          },
+          {
             foreignKeyName: "student_majors_major_id_fkey"
             columns: ["major_id"]
             isOneToOne: false
             referencedRelation: "majors"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_majors_major_id_fkey"
+            columns: ["major_id"]
+            isOneToOne: false
+            referencedRelation: "v_faculty_my_courses"
+            referencedColumns: ["major_id"]
           },
           {
             foreignKeyName: "student_majors_student_id_fkey"
@@ -2449,6 +3413,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_majors_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -2510,15 +3481,24 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "student_profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       student_recommendations: {
         Row: {
           body: string
+          course_id: string | null
           created_at: string
           id: string
           is_read: boolean
           material_url: string | null
+          rec_type: string | null
           section_id: string | null
           sent_by: string | null
           student_id: string
@@ -2527,10 +3507,12 @@ export type Database = {
         }
         Insert: {
           body: string
+          course_id?: string | null
           created_at?: string
           id?: string
           is_read?: boolean
           material_url?: string | null
+          rec_type?: string | null
           section_id?: string | null
           sent_by?: string | null
           student_id: string
@@ -2539,10 +3521,12 @@ export type Database = {
         }
         Update: {
           body?: string
+          course_id?: string | null
           created_at?: string
           id?: string
           is_read?: boolean
           material_url?: string | null
+          rec_type?: string | null
           section_id?: string | null
           sent_by?: string | null
           student_id?: string
@@ -2551,11 +3535,32 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "student_recommendations_section_id_fkey"
-            columns: ["section_id"]
+            foreignKeyName: "student_recommendations_course_id_fkey"
+            columns: ["course_id"]
             isOneToOne: false
-            referencedRelation: "sections"
+            referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_recommendations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "student_recommendations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "student_recommendations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "student_recommendations_sent_by_fkey"
@@ -2578,6 +3583,13 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "student_recommendations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       student_risk_scores: {
@@ -2585,12 +3597,13 @@ export type Database = {
           absence_factor: number
           alert_sent: boolean
           computed_at: string
+          course_id: string | null
           engagement_factor: number
           grade_factor: number
           id: string
           risk_level: Database["public"]["Enums"]["risk_level"]
           risk_score: number
-          section_id: string
+          section_id: string | null
           semester_id: string
           student_id: string
           tenant_id: string
@@ -2599,12 +3612,13 @@ export type Database = {
           absence_factor?: number
           alert_sent?: boolean
           computed_at?: string
+          course_id?: string | null
           engagement_factor?: number
           grade_factor?: number
           id?: string
           risk_level?: Database["public"]["Enums"]["risk_level"]
           risk_score?: number
-          section_id: string
+          section_id?: string | null
           semester_id: string
           student_id: string
           tenant_id: string
@@ -2613,23 +3627,45 @@ export type Database = {
           absence_factor?: number
           alert_sent?: boolean
           computed_at?: string
+          course_id?: string | null
           engagement_factor?: number
           grade_factor?: number
           id?: string
           risk_level?: Database["public"]["Enums"]["risk_level"]
           risk_score?: number
-          section_id?: string
+          section_id?: string | null
           semester_id?: string
           student_id?: string
           tenant_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "student_risk_scores_section_id_fkey"
-            columns: ["section_id"]
+            foreignKeyName: "student_risk_scores_course_id_fkey"
+            columns: ["course_id"]
             isOneToOne: false
-            referencedRelation: "sections"
+            referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_risk_scores_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "student_risk_scores_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "student_risk_scores_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "student_risk_scores_semester_id_fkey"
@@ -2651,6 +3687,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_risk_scores_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -2694,6 +3737,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "study_plan_courses_academic_level_id_fkey"
+            columns: ["academic_level_id"]
+            isOneToOne: false
+            referencedRelation: "v_faculty_my_courses"
+            referencedColumns: ["academic_level_id"]
+          },
+          {
             foreignKeyName: "study_plan_courses_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
@@ -2701,11 +3751,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "study_plan_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "study_plan_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "study_plan_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "study_plan_courses_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_plan_courses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -2767,6 +3845,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "submissions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_faculty_submission_stats"
+            referencedColumns: ["assignment_id"]
+          },
+          {
             foreignKeyName: "submissions_graded_by_fkey"
             columns: ["graded_by"]
             isOneToOne: false
@@ -2786,6 +3871,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submissions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -2877,11 +3969,19 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       syllabi: {
         Row: {
           content: Json
+          course_id: string | null
           created_at: string
           id: string
           instructor_id: string
@@ -2895,6 +3995,7 @@ export type Database = {
         }
         Insert: {
           content?: Json
+          course_id?: string | null
           created_at?: string
           id?: string
           instructor_id: string
@@ -2908,6 +4009,7 @@ export type Database = {
         }
         Update: {
           content?: Json
+          course_id?: string | null
           created_at?: string
           id?: string
           instructor_id?: string
@@ -2920,6 +4022,34 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "syllabi_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "syllabi_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "syllabi_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "syllabi_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
           {
             foreignKeyName: "syllabi_instructor_id_fkey"
             columns: ["instructor_id"]
@@ -2935,18 +4065,18 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "syllabi_section_id_fkey"
-            columns: ["section_id"]
-            isOneToOne: true
-            referencedRelation: "sections"
+            foreignKeyName: "syllabi_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "syllabi_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -2979,6 +4109,7 @@ export type Database = {
       }
       tenants: {
         Row: {
+          absence_limit_count: number
           absence_threshold: number
           admin_email: string
           contract_end: string | null
@@ -3003,6 +4134,7 @@ export type Database = {
           welcome_message: string | null
         }
         Insert: {
+          absence_limit_count?: number
           absence_threshold?: number
           admin_email: string
           contract_end?: string | null
@@ -3027,6 +4159,7 @@ export type Database = {
           welcome_message?: string | null
         }
         Update: {
+          absence_limit_count?: number
           absence_threshold?: number
           admin_email?: string
           contract_end?: string | null
@@ -3103,6 +4236,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ticket_attachments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+          {
             foreignKeyName: "ticket_attachments_ticket_id_fkey"
             columns: ["ticket_id"]
             isOneToOne: false
@@ -3114,6 +4254,81 @@ export type Database = {
             columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_escalations: {
+        Row: {
+          created_at: string
+          escalated_by: string
+          escalated_to: string
+          from_role: string
+          id: string
+          previous_status: Database["public"]["Enums"]["ticket_status"]
+          reason: string
+          tenant_id: string
+          ticket_id: string
+          to_role: string
+        }
+        Insert: {
+          created_at?: string
+          escalated_by: string
+          escalated_to: string
+          from_role: string
+          id?: string
+          previous_status: Database["public"]["Enums"]["ticket_status"]
+          reason: string
+          tenant_id: string
+          ticket_id: string
+          to_role: string
+        }
+        Update: {
+          created_at?: string
+          escalated_by?: string
+          escalated_to?: string
+          from_role?: string
+          id?: string
+          previous_status?: Database["public"]["Enums"]["ticket_status"]
+          reason?: string
+          tenant_id?: string
+          ticket_id?: string
+          to_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_escalations_escalated_by_fkey"
+            columns: ["escalated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_escalations_escalated_to_fkey"
+            columns: ["escalated_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_escalations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_escalations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+          {
+            foreignKeyName: "ticket_escalations_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
             referencedColumns: ["id"]
           },
         ]
@@ -3162,6 +4377,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ticket_messages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+          {
             foreignKeyName: "ticket_messages_ticket_id_fkey"
             columns: ["ticket_id"]
             isOneToOne: false
@@ -3191,6 +4413,13 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ticket_number_sequences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
       tickets: {
@@ -3203,9 +4432,13 @@ export type Database = {
           created_at: string
           created_by: string
           description: string
+          escalated_from: string | null
           id: string
+          is_direct_to_faculty: boolean
           priority: Database["public"]["Enums"]["ticket_priority"]
+          priority_reason: string | null
           rating: number | null
+          related_course_id: string | null
           related_section_id: string | null
           resolved_at: string | null
           search_vector: unknown
@@ -3224,9 +4457,13 @@ export type Database = {
           created_at?: string
           created_by: string
           description: string
+          escalated_from?: string | null
           id?: string
+          is_direct_to_faculty?: boolean
           priority?: Database["public"]["Enums"]["ticket_priority"]
+          priority_reason?: string | null
           rating?: number | null
+          related_course_id?: string | null
           related_section_id?: string | null
           resolved_at?: string | null
           search_vector?: unknown
@@ -3245,9 +4482,13 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string
+          escalated_from?: string | null
           id?: string
+          is_direct_to_faculty?: boolean
           priority?: Database["public"]["Enums"]["ticket_priority"]
+          priority_reason?: string | null
           rating?: number | null
+          related_course_id?: string | null
           related_section_id?: string | null
           resolved_at?: string | null
           search_vector?: unknown
@@ -3273,11 +4514,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "tickets_related_section_id_fkey"
-            columns: ["related_section_id"]
+            foreignKeyName: "tickets_escalated_from_fkey"
+            columns: ["escalated_from"]
             isOneToOne: false
-            referencedRelation: "sections"
+            referencedRelation: "tickets"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_related_course_id_fkey"
+            columns: ["related_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_related_course_id_fkey"
+            columns: ["related_course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "tickets_related_course_id_fkey"
+            columns: ["related_course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "tickets_related_course_id_fkey"
+            columns: ["related_course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "tickets_tenant_id_fkey"
@@ -3285,6 +4554,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
           },
         ]
       }
@@ -3352,15 +4628,631 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "venues_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      v_academic_course_performance: {
+        Row: {
+          avg_absence_percentage: number | null
+          avg_unexcused_absences: number | null
+          course_code: string | null
+          course_id: string | null
+          course_name: string | null
+          department_id: string | null
+          department_name: string | null
+          dismissed_count: number | null
+          enrolled_students: number | null
+          tenant_id: string | null
+          total_assignments: number | null
+          total_sessions: number | null
+          total_submissions: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+        ]
+      }
+      v_academic_dept_stats: {
+        Row: {
+          college_id: string | null
+          college_name: string | null
+          course_count: number | null
+          department_code: string | null
+          department_id: string | null
+          department_name: string | null
+          enrolled_students: number | null
+          faculty_count: number | null
+          major_count: number | null
+          tenant_id: string | null
+          total_sessions: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+        ]
+      }
+      v_academic_risk_students: {
+        Row: {
+          absence_limit_count: number | null
+          absence_percentage: number | null
+          attended_sessions: number | null
+          course_code: string | null
+          course_id: string | null
+          course_name: string | null
+          department_id: string | null
+          department_name: string | null
+          dismissed_at: string | null
+          enrollment_id: string | null
+          excused_absences: number | null
+          first_name: string | null
+          is_dismissed: boolean | null
+          last_name: string | null
+          late_count: number | null
+          remaining_absences: number | null
+          risk_status: string | null
+          student_id: string | null
+          student_level_name: string | null
+          student_major_name: string | null
+          student_number: string | null
+          summary_id: string | null
+          tenant_id: string | null
+          total_sessions: number | null
+          unexcused_absences: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_summaries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: true
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+        ]
+      }
+      v_faculty_attendance_roster: {
+        Row: {
+          absence_percentage: number | null
+          absent_count: number | null
+          course_code: string | null
+          course_id: string | null
+          course_name: string | null
+          excused_count: number | null
+          first_name: string | null
+          is_dismissed: boolean | null
+          last_name: string | null
+          late_count: number | null
+          present_count: number | null
+          student_id: string | null
+          student_level_name: string | null
+          student_major_name: string | null
+          student_number: string | null
+          tenant_id: string | null
+          total_sessions: number | null
+          unexcused_absences: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_records_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "attendance_records_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "attendance_records_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "attendance_records_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+        ]
+      }
+      v_faculty_dismissed_students: {
+        Row: {
+          absence_percentage: number | null
+          attended_sessions: number | null
+          course_code: string | null
+          course_id: string | null
+          course_name: string | null
+          dismissed_at: string | null
+          enrollment_id: string | null
+          excused_absences: number | null
+          first_name: string | null
+          last_name: string | null
+          late_count: number | null
+          student_id: string | null
+          student_level_name: string | null
+          student_major_name: string | null
+          student_number: string | null
+          tenant_id: string | null
+          total_sessions: number | null
+          unexcused_absences: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_summaries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: true
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_summaries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+        ]
+      }
+      v_faculty_my_courses: {
+        Row: {
+          academic_level_id: string | null
+          academic_level_name: string | null
+          academic_level_number: number | null
+          academic_year: string | null
+          course_code: string | null
+          course_id: string | null
+          course_name: string | null
+          credit_hours: number | null
+          enrolled_students: number | null
+          faculty_id: string | null
+          major_id: string | null
+          major_name: string | null
+          semester_id: string | null
+          semester_name: string | null
+          tenant_id: string | null
+          total_assignments: number | null
+          total_sessions: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_course_schedules_instructor"
+            columns: ["faculty_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_course_schedules_semester"
+            columns: ["semester_id"]
+            isOneToOne: false
+            referencedRelation: "semesters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_course_schedules_tenant"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_course_schedules_tenant"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+          {
+            foreignKeyName: "study_plan_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_plan_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "study_plan_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "study_plan_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
+        ]
+      }
+      v_faculty_submission_stats: {
+        Row: {
+          assignment_id: string | null
+          assignment_title: string | null
+          avg_grade: number | null
+          course_id: string | null
+          due_date: string | null
+          faculty_id: string | null
+          graded_count: number | null
+          is_published: boolean | null
+          max_grade: number | null
+          max_grade_achieved: number | null
+          min_grade_achieved: number | null
+          submitted_count: number | null
+          tenant_id: string | null
+          total_submissions: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_academic_course_performance"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_attendance_summary"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_tenant_course_overview"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "assignments_created_by_fkey"
+            columns: ["faculty_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+        ]
+      }
+      v_super_admin_monthly_growth: {
+        Row: {
+          cumulative_tenants: number | null
+          new_tenants: number | null
+          year_month: string | null
+        }
+        Relationships: []
+      }
+      v_super_admin_tenants_overview: {
+        Row: {
+          active_count: number | null
+          avg_absence_limit: number | null
+          deleted_count: number | null
+          suspended_count: number | null
+          total_max_storage_gb: number | null
+          total_max_users: number | null
+          total_storage_used_gb: number | null
+          total_tenants: number | null
+        }
+        Relationships: []
+      }
+      v_super_admin_token_usage: {
+        Row: {
+          last_usage_at: string | null
+          tenant_id: string | null
+          tenant_name: string | null
+          tenant_status: Database["public"]["Enums"]["tenant_status"] | null
+          total_cost_usd: number | null
+          total_requests: number | null
+          total_tokens: number | null
+        }
+        Relationships: []
+      }
+      v_tenant_attendance_summary: {
+        Row: {
+          absence_percentage: number | null
+          absent_count: number | null
+          course_code: string | null
+          course_id: string | null
+          course_name: string | null
+          dismissed_count: number | null
+          excused_count: number | null
+          late_count: number | null
+          present_count: number | null
+          tenant_id: string | null
+          total_records: number | null
+          total_sessions: number | null
+          total_students: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+        ]
+      }
+      v_tenant_college_stats: {
+        Row: {
+          absence_limit_count: number | null
+          college_code: string | null
+          college_id: string | null
+          college_name: string | null
+          course_count: number | null
+          department_count: number | null
+          faculty_count: number | null
+          major_count: number | null
+          tenant_id: string | null
+          total_students: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "colleges_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "colleges_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+        ]
+      }
+      v_tenant_course_overview: {
+        Row: {
+          course_code: string | null
+          course_id: string | null
+          course_name: string | null
+          credit_hours: number | null
+          department_id: string | null
+          department_name: string | null
+          dismissed_count: number | null
+          enrolled_students: number | null
+          is_active: boolean | null
+          tenant_id: string | null
+          total_assignments: number | null
+          total_sessions: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+        ]
+      }
+      v_tenant_user_stats: {
+        Row: {
+          academic_management_count: number | null
+          active_faculty: number | null
+          active_students: number | null
+          active_users: number | null
+          admin_count: number | null
+          faculty_count: number | null
+          student_count: number | null
+          tenant_id: string | null
+          total_users: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "v_super_admin_token_usage"
+            referencedColumns: ["tenant_id"]
+          },
+        ]
+      }
     }
     Functions: {
       auth_tenant_id: { Args: never; Returns: string }
       auth_user_role: { Args: never; Returns: string }
+      auto_close_stale_tickets: { Args: never; Returns: number }
       calculate_student_gpa: {
         Args: { p_student_id: string; p_tenant_id: string }
         Returns: undefined
@@ -3377,25 +5269,84 @@ export type Database = {
       current_tenant_id: { Args: never; Returns: string }
       current_user_role: { Args: never; Returns: string }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      find_or_create_course_channel: {
+        Args: {
+          p_academic_level_id: string
+          p_course_id: string
+          p_major_id: string
+          p_semester_id: string
+          p_tenant_id: string
+        }
+        Returns: string
+      }
       generate_renewal_invoices: { Args: never; Returns: undefined }
+      get_faculty_courses: {
+        Args: { p_faculty_id: string; p_semester_id: string }
+        Returns: {
+          component_type: string
+          course_code: string
+          course_id: string
+          course_name: string
+          credit_hours: number
+        }[]
+      }
       get_my_channel_ids: { Args: never; Returns: string[] }
       get_my_managed_departments: { Args: never; Returns: string[] }
       get_my_role: { Args: never; Returns: string }
       get_my_tenant_id: { Args: never; Returns: string }
-      match_chunks: {
-        Args: {
-          match_count?: number
-          match_tenant_id: string
-          query_embedding: string
-        }
+      get_student_enrolled_courses: {
+        Args: { p_semester_id: string; p_student_id: string }
         Returns: {
-          content: string
-          id: string
-          page_number: number
-          similarity: number
-          timestamp_sec: number
+          course_code: string
+          course_id: string
+          course_name: string
+          credit_hours: number
         }[]
       }
+      get_unread_channel_counts: {
+        Args: { p_profile_id: string }
+        Returns: {
+          channel_id: string
+          unread_count: number
+        }[]
+      }
+      get_unread_conversation_counts: {
+        Args: { p_profile_id: string }
+        Returns: {
+          conversation_id: string
+          unread_count: number
+        }[]
+      }
+      match_chunks:
+        | {
+            Args: {
+              match_count?: number
+              match_tenant_id: string
+              query_embedding: string
+            }
+            Returns: {
+              content: string
+              id: string
+              page_number: number
+              similarity: number
+              timestamp_sec: number
+            }[]
+          }
+        | {
+            Args: {
+              match_count?: number
+              match_tenant_id: string
+              min_similarity?: number
+              query_embedding: string
+            }
+            Returns: {
+              content: string
+              id: string
+              page_number: number
+              similarity: number
+              timestamp_sec: number
+            }[]
+          }
       private_get_profile_claims: {
         Args: { uid: string }
         Returns: {
@@ -3466,6 +5417,8 @@ export type Database = {
         | "grade_released"
         | "assignment_due"
         | "ticket_update"
+        | "new_ticket"
+        | "ticket_assigned"
         | "system"
         | "risk_alert"
         | "recommendation"
@@ -3481,9 +5434,6 @@ export type Database = {
         | "thursday"
         | "friday"
         | "saturday"
-      schedule_status: "draft" | "published"
-      section_status: "open" | "closed" | "archived" | "merged"
-      section_type: "lecture" | "lab" | "tutorial"
       semester_status:
         | "planning"
         | "registration"
@@ -3505,6 +5455,9 @@ export type Database = {
         | "technical_problem"
         | "administrative"
         | "other"
+        | "course_content_query"
+        | "leave_excuse_request"
+        | "schedule_conflict"
       ticket_priority: "low" | "medium" | "high" | "urgent"
       ticket_status:
         | "open"
@@ -3649,6 +5602,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       account_status: ["active", "suspended", "terminated"],
@@ -3715,6 +5671,8 @@ export const Constants = {
         "grade_released",
         "assignment_due",
         "ticket_update",
+        "new_ticket",
+        "ticket_assigned",
         "system",
         "risk_alert",
         "recommendation",
@@ -3732,9 +5690,6 @@ export const Constants = {
         "friday",
         "saturday",
       ],
-      schedule_status: ["draft", "published"],
-      section_status: ["open", "closed", "archived", "merged"],
-      section_type: ["lecture", "lab", "tutorial"],
       semester_status: [
         "planning",
         "registration",
@@ -3757,6 +5712,9 @@ export const Constants = {
         "technical_problem",
         "administrative",
         "other",
+        "course_content_query",
+        "leave_excuse_request",
+        "schedule_conflict",
       ],
       ticket_priority: ["low", "medium", "high", "urgent"],
       ticket_status: [

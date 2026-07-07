@@ -149,6 +149,8 @@ export function NotificationBell({
     grade_released: "text-success",
     assignment_due: "text-action-blue",
     ticket_update: "text-purple",
+    new_ticket: "text-action-blue",
+    ticket_assigned: "text-purple",
     risk_alert: "text-danger",
     circular: "text-academic-navy",
     system: "text-text-secondary",
