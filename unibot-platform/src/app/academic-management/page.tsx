@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth/get-user";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { AcademicManagementDashboardClient } from "./academic-management-client";
 
 export default async function AcademicManagementDashboard() {
@@ -66,19 +66,30 @@ export default async function AcademicManagementDashboard() {
   // Fetch section IDs from enrollments for backward-compat with attendance_summaries
   const enrolledSectionIds = Object.keys(enrollmentSectionToCourse);
 
-  // Fetch attendance summaries (still uses section_id — backward compat)
-  const { data: attendanceSummaries } =
-    enrolledSectionIds.length > 0
-      ? await supabase
-          .from("attendance_summaries")
-          .select("student_id, section_id, attended_sessions, total_sessions, unexcused_absences, is_dismissed")
-          .in("section_id", enrolledSectionIds)
-      : { data: [] };
+  // Fetch attendance summaries — try via section_id first, then course_id fallback
+  let attendanceSummaries: any[] = [];
+
+  if (enrolledSectionIds.length > 0) {
+    const { data: sectionData } = await supabase
+      .from("attendance_summaries")
+      .select("student_id, section_id, course_id, attended_sessions, total_sessions, unexcused_absences, is_dismissed")
+      .in("section_id", enrolledSectionIds);
+    attendanceSummaries = sectionData || [];
+  }
+
+  // If no results from section_id join, try using course_id directly
+  if (attendanceSummaries.length === 0 && courseIds.length > 0) {
+    const { data: courseData } = await supabase
+      .from("attendance_summaries")
+      .select("student_id, section_id, course_id, attended_sessions, total_sessions, unexcused_absences, is_dismissed")
+      .in("course_id", courseIds);
+    attendanceSummaries = courseData || [];
+  }
 
   // Attach course_id to each summary
   const enrichedSummaries = (attendanceSummaries || []).map((s: any) => ({
     ...s,
-    course_id: enrollmentSectionToCourse[s.section_id] || null,
+    course_id: s.course_id || enrollmentSectionToCourse[s.section_id] || null,
   }));
 
   // Resolve absence_limit_count per course (college → tenant fallback)
@@ -112,16 +123,64 @@ export default async function AcademicManagementDashboard() {
     courseLimitCache[cid] = tn?.absence_limit_count ?? 5;
   }
 
-  // Fetch risk zone students
+  // ── Risk Students ──────────────────────────────────────────
+  // Priority: 1) student_risk_scores  2) student_profiles  3) v_academic_risk_students
   const studentIds = (enrollments || []).map((e: any) => e.student_id);
-  const { data: riskStudents } =
-    studentIds.length > 0
-      ? await supabase
-          .from("student_profiles")
-          .select("profile_id, risk_level, risk_score, cumulative_gpa, student_number, profiles(first_name, last_name)")
-          .in("profile_id", studentIds)
-          .in("risk_level", ["high", "critical"])
-      : { data: [] };
+  let riskStudents: any[] = [];
+
+  if (studentIds.length > 0 && courseIds.length > 0) {
+    // 1. Try computed student_risk_scores first
+    const query = supabase
+      .from("student_risk_scores")
+      .select("student_id, risk_level, risk_score, course_id, profiles!student_risk_scores_student_id_fkey(first_name, last_name)")
+      .in("risk_level", ["high", "critical"])
+      .in("course_id", courseIds);
+
+    if (semesterId) {
+      query.eq("semester_id", semesterId);
+    }
+
+    const { data: riskData } = await query;
+    riskStudents = (riskData || []).map((r: any) => ({
+      profile_id: r.student_id,
+      risk_level: r.risk_level,
+      risk_score: r.risk_score,
+      cumulative_gpa: null,
+      student_number: "",
+      profiles: r.profiles ? [r.profiles] : [],
+    }));
+  }
+
+  // 2. Fallback to student_profiles
+  if (riskStudents.length === 0 && studentIds.length > 0) {
+    const { data: profileData } = await supabase
+      .from("student_profiles")
+      .select("profile_id, risk_level, risk_score, cumulative_gpa, student_number, profiles(first_name, last_name)")
+      .in("profile_id", studentIds)
+      .in("risk_level", ["high", "critical"]);
+    riskStudents = (profileData || []) as any[];
+  }
+
+  // 3. Fallback to real-time v_academic_risk_students view
+  if (riskStudents.length === 0 && courseIds.length > 0) {
+    const serviceClient = createServiceClient();
+    const { data: viewData } = await serviceClient
+      .from("v_academic_risk_students")
+      .select("student_id, first_name, last_name, course_id, course_code, course_name, risk_status, absence_percentage, is_dismissed")
+      .eq("tenant_id", profile.tenant_id)
+      .in("course_id", courseIds)
+      .in("risk_status", ["at_risk", "dismissed"])
+      .order("absence_percentage", { ascending: false });
+
+    riskStudents = (viewData || []).map((r: any) => ({
+      profile_id: r.student_id,
+      risk_level: r.is_dismissed ? "critical" : "high",
+      risk_score: Math.min(Math.round(r.absence_percentage || 0), 100),
+      cumulative_gpa: null,
+      student_number: "",
+      profiles: [{ first_name: r.first_name, last_name: r.last_name }],
+    }));
+  }
 
   return (
     <div>
@@ -137,7 +196,7 @@ export default async function AcademicManagementDashboard() {
           courses: (courseList || []) as any,
           enrollments: (enrollments || []) as any,
           attendanceSummaries: enrichedSummaries as any,
-          riskStudents: (riskStudents || []) as any,
+          riskStudents: riskStudents as any,
           courseLimitCache,
         }}
       />

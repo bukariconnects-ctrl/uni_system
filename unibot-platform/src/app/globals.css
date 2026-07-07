@@ -27,6 +27,7 @@
   --color-orange: hsl(20 78% 71%);
   --color-royal-blue: #00539C;
   --color-peach: #EEA47F;
+  --color-navy: #0A1628;
 }
 
 /* ─── Dark Mode Design Tokens (applied via .dark class by next-themes) ── */
@@ -51,6 +52,7 @@
   --color-teal: hsl(174 60% 56%);
   --color-purple: hsl(263 80% 77%);
   --color-orange: hsl(20 78% 65%);
+  --color-navy: hsl(214 32% 91%);
 }
 
 /* ─── Tailwind v4: register tokens so utility classes work ─── */
@@ -76,6 +78,7 @@
   --color-orange: var(--color-orange);
   --color-royal-blue: var(--color-royal-blue);
   --color-peach: var(--color-peach);
+  --color-navy: var(--color-navy);
   --font-sans: var(--font-inter);
   --animate-marquee-left: marquee-left 35s linear infinite;
   --animate-marquee-right: marquee-right 35s linear infinite;

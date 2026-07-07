@@ -1,8 +1,9 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient, createServiceClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/get-user";
 import { revalidatePath } from "next/cache";
+import { computeRiskScores } from "@/lib/risk-computation";
 
 async function getScopedCourseIds(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -66,6 +67,7 @@ export async function getRiskZoneData(semesterId?: string) {
 
   const scopedCourseIds = await getScopedCourseIds(supabase, profile);
 
+  // Try computed student_risk_scores first
   let query = supabase
     .from("student_risk_scores")
     .select(
@@ -81,10 +83,53 @@ export async function getRiskZoneData(semesterId?: string) {
 
   const { data } = await query;
 
-  if (scopedCourseIds === null) return data || [];
-  return (data || []).filter(
-    (r: any) => r.course_id && scopedCourseIds.includes(r.course_id)
-  );
+  let result = data || [];
+  if (scopedCourseIds !== null) {
+    result = result.filter(
+      (r: any) => r.course_id && scopedCourseIds.includes(r.course_id)
+    );
+  }
+
+  // If computed data exists, return it
+  if (result.length > 0) {
+    return result;
+  }
+
+  // Fallback: use v_academic_risk_students view (real-time from attendance)
+  const targetCourses = scopedCourseIds ?? undefined;
+  let viewQuery = supabase
+    .from("v_academic_risk_students")
+    .select("student_id, first_name, last_name, course_id, course_code, course_name, risk_status, absence_percentage, is_dismissed, student_major_name, student_level_name")
+    .eq("tenant_id", profile.tenant_id)
+    .in("risk_status", ["at_risk", "dismissed"]);
+
+  if (targetCourses) {
+    viewQuery = viewQuery.in("course_id", targetCourses);
+  }
+
+  const { data: viewData } = await viewQuery.order("absence_percentage", { ascending: false });
+
+  return (viewData || []).map((r: any) => ({
+    id: r.student_id,
+    student_id: r.student_id,
+    course_id: r.course_id,
+    risk_level: r.is_dismissed ? "critical" : "high",
+    risk_score: Math.min(Math.round(r.absence_percentage || 0), 100),
+    absence_factor: 0,
+    grade_factor: 0,
+    engagement_factor: 0,
+    student_major_name: r.student_major_name || null,
+    student_level_name: r.student_level_name || null,
+    profiles: {
+      first_name: r.first_name,
+      last_name: r.last_name,
+      email: "",
+    },
+    courses: {
+      code: r.course_code || "",
+      name: r.course_name || "",
+    },
+  }));
 }
 
 export async function getCourseRiskFlags(semesterId?: string) {
@@ -126,6 +171,7 @@ export async function getAllRiskScores(semesterId?: string) {
 
   const scopedCourseIds = await getScopedCourseIds(supabase, profile);
 
+  // Try computed student_risk_scores first
   let query = supabase
     .from("student_risk_scores")
     .select("risk_level, course_id, courses!student_risk_scores_course_id_fkey(id)")
@@ -137,10 +183,44 @@ export async function getAllRiskScores(semesterId?: string) {
 
   const { data } = await query;
 
-  if (scopedCourseIds === null) return data || [];
-  return (data || []).filter(
-    (r: any) => r.course_id && scopedCourseIds.includes(r.course_id)
-  );
+  let result = data || [];
+  if (scopedCourseIds !== null) {
+    result = result.filter(
+      (r: any) => r.course_id && scopedCourseIds.includes(r.course_id)
+    );
+  }
+
+  // If computed data exists, return it
+  if (result.length > 0) {
+    return result;
+  }
+
+  // Fallback: use v_academic_risk_students view (real-time from attendance)
+  // to get risk_status for as many students as possible
+  const targetCourses = scopedCourseIds ?? undefined;
+  let viewQuery = supabase
+    .from("v_academic_risk_students")
+    .select("student_id, course_id, risk_status")
+    .eq("tenant_id", profile.tenant_id);
+
+  if (targetCourses) {
+    viewQuery = viewQuery.in("course_id", targetCourses);
+  }
+
+  const { data: viewData } = await viewQuery;
+
+  if (viewData && viewData.length > 0) {
+    return viewData.map((r: any) => ({
+      risk_level:
+        r.risk_status === "dismissed"
+          ? "critical"
+          : r.risk_status === "at_risk"
+            ? "high"
+            : "low",
+    }));
+  }
+
+  return [];
 }
 
 export async function getSemesters() {
@@ -165,18 +245,12 @@ export async function triggerRiskComputation(semesterId: string) {
     "tenant_admin",
   ]);
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/analytics/compute-risk`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      tenant_id: profile.tenant_id,
-      semester_id: semesterId,
-    }),
-  });
+  if (!profile.tenant_id) {
+    throw new Error("لا يوجد مستأجر مرتبط بحسابك");
+  }
 
-  const result = await res.json();
-  if (!res.ok) throw new Error(result.error);
+  const adminClient = await createAdminClient();
+  const result = await computeRiskScores(adminClient, profile.tenant_id, semesterId);
   revalidatePath("/academic-management/analytics");
   return result;
 }
