@@ -522,7 +522,7 @@ export function UsersClient({
           )}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-border bg-card-bg shadow-sm">
+        <div className="overflow-x-auto rounded-2xl border border-border bg-card-bg shadow-sm">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-app-bg text-right">
@@ -830,12 +830,12 @@ function Modal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={`w-full rounded-2xl bg-card-bg shadow-2xl ${wide ? "max-w-2xl" : "max-w-lg"}`}>
+      <div className={`w-full rounded-2xl bg-card-bg shadow-2xl my-8 ${wide ? "max-w-2xl" : "max-w-lg"}`}>
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div>
             <h2 className="text-lg font-bold text-text-primary">{title}</h2>
@@ -1365,10 +1365,10 @@ function ViewUserModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-lg rounded-2xl bg-card-bg shadow-2xl overflow-hidden">
+      <div className="w-full max-w-lg rounded-2xl bg-card-bg shadow-2xl overflow-hidden my-8">
         {/* Header */}
         <div className="relative bg-gradient-to-r from-academic-navy to-academic-navy/80 px-6 pt-6 pb-14">
           <button

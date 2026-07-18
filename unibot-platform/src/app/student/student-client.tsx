@@ -136,7 +136,7 @@ export function StudentDashboardClient({ data }: { data: DashboardData }) {
   return (
     <div className="space-y-6">
       {/* KPIs */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
         <KpiCard
           title="نسبة الحضور"
           value={`${attendanceRate}%`}

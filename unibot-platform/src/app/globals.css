@@ -106,6 +106,8 @@ body {
 }
 
 .sidebar-responsive.sidebar-open {
+	z-index: 60;
+
   transform: translateX(0);
 }
 

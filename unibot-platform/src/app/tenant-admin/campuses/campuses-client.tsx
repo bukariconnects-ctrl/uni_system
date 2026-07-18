@@ -45,8 +45,8 @@ function Modal({
   children: React.ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-card-bg shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/50 p-4">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card-bg shadow-xl my-8">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 className="text-base font-bold text-text-primary">{title}</h2>
           <button onClick={onClose} className="rounded-lg p-1.5 text-text-secondary hover:bg-app-bg">

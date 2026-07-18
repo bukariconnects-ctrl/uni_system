@@ -2,6 +2,94 @@
 
 ---
 
+## Hotfix: Mobile Responsiveness & Layout Overhaul
+**التاريخ:** 2026-07-18
+
+### ملخص
+إصلاح شامل لمشاكل الاستجابة على الأجهزة المحمولة (Mobile Responsiveness) التي تم اكتشافها خلال اختبارات الجودة (QA). شمل الإصلاح: تحسين سلوك الشريط الجانبي (Sidebar) كدرج منزلق، جعل الجداول قابلة للتمرير أفقياً، تحسين تخطيط لوحة المعلومات، وإصلاح مشكلة تداخل الـ z-index التي كانت تحجب الشريط الجانبي خلف الطبقة الشفافة (backdrop).
+
+### التغييرات
+
+#### 1. إصلاح z-index في الشريط الجانبي (Sidebar Drawer)
+**الملف:** `src/app/globals.css`
+
+- **المشكلة:** كل من الطبقة الشفافة (backdrop) والشريط الجانبي لديهما `z-index: 50`، لكن backdrop يظهر لاحقاً في DOM مما يجعله يغطي الشريط الجانبي بالكامل — لا يمكن النقر على روابط القائمة أو الأزرار في الشريط الجانبي على الجوال.
+- **الإصلاح:** إضافة `z-index: 60` إلى `.sidebar-responsive.sidebar-open` بحيث يكون الشريط الجانبي دائماً فوق الطبقة الشفافة.
+
+#### 2. جعل الجداول قابلة للتمرير أفقياً
+**الملفات:**
+- `src/app/tenant-admin/courses/catalog-client.tsx`
+- `src/app/tenant-admin/users/users-client.tsx`
+
+- **المشكلة:** الجدولان كانا يستخدمان `overflow-hidden` مما يقطع الأعمدة الزائدة بدلاً من السماح بالتمرير الأفقي.
+- **الإصلاح:** تغيير `overflow-hidden` إلى `overflow-x-auto` لتمكين التمرير الأفقي على الشاشات الضيقة.
+
+#### 3. تحسين تخطيط بطاقات مؤشرات الأداء (Dashboard KPI Grids)
+**الملفات:**
+- `src/app/student/student-client.tsx`
+- `src/app/faculty/faculty-client.tsx`
+- `src/app/academic-management/academic-management-client.tsx`
+- `src/app/tenant-admin/tenant-admin-client.tsx`
+- `src/app/super-admin/super-admin-client.tsx`
+
+- **المشكلة:** شبكات البطاقات كانت تفتقد إلى `grid-cols-1` الصريح للجوال، مما قد يسبب سلوكاً غير متوقع في بعض المتصفحات.
+- **الإصلاح:** إضافة `grid-cols-1` صراحةً لجميع شبكات KPI الرئيسية، مع الإبقاء على `sm:grid-cols-2` و `lg:grid-cols-4` للشاشات المتوسطة والكبيرة.
+
+#### 4. تخطيط UniBot (سبق تنفيذه)
+**الملف:** `src/app/student/unibot/unibot-client.tsx`
+
+- التخطيط منفصل مسبقاً: `flex-col` للجوال و `lg:flex-row` لسطح المكتب.
+- لوحة المستندات مخفية على الجوال (`hidden lg:flex`) ولا تؤثر على عرض الدردشة.
+- لا يتطلب تعديلاً إضافياً.
+
+### النتيجة
+- ✅ الشريط الجانبي يعمل كدرج منزلق كامل على الجوال مع hamburger menu
+- ✅ الجداول قابلة للتمرير أفقياً على الشاشات الضيقة
+- ✅ شبكات البطاقات تستجيب بشكل صحيح لكل الأحجام
+- ✅ UniBot يعرض الدردشة كاملة العرض على الجوال مع إخفاء لوحة المستندات
+- ✅ لا توجد مشكلة z-index تحجب التفاعل مع الشريط الجانبي
+
+---
+
+## Hotfix: Modal Scroll & Notification Dropdown Mobile Fixes
+**التاريخ:** 2026-07-18
+
+### ملخص
+إصلاح مشكلتين رئيسيتين تم الإبلاغ عنهما بعد التحديث السابق: (1) نماذج الإضافة والتعديل في الشاشات العائمة (Modals) لا تحتوي على زر تمرير ولا تظهر بالكامل على الجوال، (2) قائمة الإشعارات (Notification Dropdown) تتجاوز حدود الشاشة على الجوال.
+
+### التغييرات
+
+#### 1. إصلاح تمرير النماذج في الشاشات العائمة (Modal Scroll)
+**الملفات (7 ملفات — 9 مودال):**
+- `src/app/tenant-admin/users/users-client.tsx` — مودال المستخدم العام + مودال عرض المستخدم
+- `src/app/tenant-admin/courses/catalog-client.tsx` — مودال إضافة/تعديل المادة
+- `src/app/tenant-admin/academic/academic-client.tsx` — مودال الكلية
+- `src/app/tenant-admin/campuses/campuses-client.tsx` — مودال الحرم الجامعي
+- `src/app/tenant-admin/study-plans/study-plan-client.tsx` — مودال إضافة مقرر + ربط متطلب سابق
+- `src/app/academic-management/analytics/analytics-client.tsx` — مودال التوصيات
+- `src/app/faculty/risk-zone/risk-zone-client.tsx` — مودال إرسال توصية
+
+- **المشكلة:** المودالات تستخدم `items-center` لعرض المحتوى في منتصف الشاشة بدون `overflow-y-auto`، مما يؤدي إلى قص المحتوى الطويل (مثل نموذج تسجيل طالب) على الشاشات الضيقة دون إمكانية التمرير.
+- **الإصلاح:**
+  - إضافة `overflow-y-auto` إلى الحاوية الخارجية لتمكين التمرير
+  - تغيير `items-center` إلى `items-start sm:items-center` ليبدأ المحتوى من الأعلى على الجوال ويتوسط تلقائياً على سطح المكتب
+  - إضافة `my-8` إلى البطاقة الداخلية لتوفير مسافة رأسية عند التمرير
+
+#### 2. إصلاح موضع قائمة الإشعارات (Notification Dropdown)
+**الملف:** `src/components/notification-bell.tsx`
+
+- **المشكلة:** القائمة تستخدم `absolute right-0` في تخطيط RTL مما يجعلها تمتد خارج الشاشة على الجوال، لأن مكان الجرس في الشريط الجانبي (aligned left in RTL) يبعد القائمة عن حافة الشاشة.
+- **الإصلاح:**
+  - الجوال: استخدام `fixed left-4 right-4 top-16 z-[70]` لتوسيط القائمة أسفل الشريط العلوي بعرض كامل
+  - سطح المكتب: استخدام `lg:absolute lg:right-0 lg:left-auto lg:top-full lg:mt-2 lg:w-80 lg:z-50` للحفاظ على السلوك الأصلي
+
+### النتيجة
+- ✅ جميع المودالات تحتوي على تمرير عمودي عند الحاجة على الجوال وسطح المكتب
+- ✅ قائمة الإشعارات تظهر بشكل صحيح داخل الشاشة على جميع الأحجام
+- ✅ لا تغيير في سلوك سطح المكتب
+
+---
+
 ## UI Fix: Theme-Aware Colors for Schedule & Study Plan Tables
 **التاريخ:** 2026-07-04
 

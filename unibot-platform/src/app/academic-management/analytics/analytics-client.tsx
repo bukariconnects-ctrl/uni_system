@@ -406,8 +406,8 @@ export function AnalyticsClient({
       </div>
 
       {showRecommendation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-2xl bg-card-bg p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-card-bg p-6 shadow-xl my-8">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-bold text-text-primary">
                 إرسال توصية لـ {recStudentName}

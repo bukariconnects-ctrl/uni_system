@@ -517,10 +517,10 @@ function StatBadge({ icon, label, count, color }: { icon: React.ReactNode; label
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-lg rounded-2xl bg-card-bg shadow-2xl">
+      <div className="w-full max-w-lg rounded-2xl bg-card-bg shadow-2xl my-8">
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <h2 className="text-lg font-bold text-text-primary">{title}</h2>
           <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-app-bg">
